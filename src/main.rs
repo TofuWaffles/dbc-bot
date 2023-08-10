@@ -1,6 +1,5 @@
 /*
 TODO:
-- Figure out how to set descriptions for commands
 - Build out self role and new channel alert feature
 - Plan and subsequently build the tournament bracket feature
 */
