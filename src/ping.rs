@@ -1,6 +1,6 @@
 use crate::utils::types;
 
-// A simple ping command as an example. You might want to disable this in production.
+/// Ping the bot and possibly get a response, probably, maybe, maybe not?
 #[poise::command(slash_command)]
 pub async fn ping(ctx: types::Context<'_>) -> Result<(), types::Error> {
     let response = "Pong".to_owned();
