@@ -5,10 +5,15 @@ TODO:
 */
 
 mod ping;
-mod utils;
 
 use poise::serenity_prelude as serenity;
-use utils::types::Data;
+
+// These are the common type aliases used throughout the bot
+
+// This data struct is used to pass data (such as the db_pool) to the context object
+pub struct Data {}
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;     // The Context type with our custom Data struct and custom Error type
 
 #[tokio::main]
 async fn main() {
