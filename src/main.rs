@@ -6,41 +6,70 @@ TODO:
 
 mod ping;
 
-use poise::serenity_prelude as serenity;
-
-// These are the common type aliases used throughout the bot
+use poise::serenity_prelude::{
+    self as serenity,
+    GatewayIntents,
+};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
-pub struct Data {}
+pub struct Data {
+    db_pool: sqlx::PgPool,
+}
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
-pub type Context<'a> = poise::Context<'a, Data, Error>;     // The Context type with our custom Data struct and custom Error type
+pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() {
     // Load the environment variable from the .env file
     dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
 
-    let token = std::env::var("DISCORD_TOKEN")
-        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+    if let Err(e) = run().await {
+        println!("Error trying to run the bot: {}", e);
+    }
+}
 
-    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
-    // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![ping::ping()];
+async fn run() -> Result<(), Error> {
+    let options = poise::FrameworkOptions {
+        commands: vec![ping::ping()],
+        ..Default::default()
+    };
+
+    let db_pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(10)
+        .connect(
+            &std::env::var("DATABASE_URL").expect("Missing DATABASE_URL environment variable."),
+        )
+        .await?;
 
     let framework = poise::Framework::builder()
-        .options(poise::FrameworkOptions {
-            commands: commands,
-            ..Default::default()
-        })
-        .token(token)
-        .intents(serenity::GatewayIntents::non_privileged())
-        .setup(|ctx, _ready, framework| {
+        .token(
+            std::env::var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN environment variable."),
+        )
+        .setup(move |ctx, _ready, _framework| {
             Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
-            })
-        });
+                ctx.set_activity(serenity::Activity::playing("Discord Brawl Cup"))
+                    .await;
 
-    println!("The bot is starting...");
-    framework.run().await.unwrap();
+                Ok(Data { db_pool })
+            })
+        })
+        .initialize_owners(true)
+        .options(options)
+        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
+        .build()
+        .await?;
+
+    let shard_manager = framework.shard_manager().clone();
+
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Could not register the ctrl+c handler");
+        shard_manager.lock().await.shutdown_all().await;
+    });
+
+    println!("Starting the bot...");
+    framework.start().await?;
+
+    Ok(())
 }
