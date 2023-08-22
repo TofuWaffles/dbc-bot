@@ -5,15 +5,15 @@ TODO:
 */
 
 mod ping;
+mod self_role;
 
-use poise::serenity_prelude::{
-    self as serenity,
-    GatewayIntents,
-};
+use poise::serenity_prelude::{self as serenity, GatewayIntents};
+use dashmap::DashMap;
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
     db_pool: sqlx::PgPool,
+    self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -29,8 +29,9 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Error> {
+    // The list of commands goes here
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping()],
+        commands: vec![ping::ping(), self_role::selfrole()],
         ..Default::default()
     };
 
@@ -41,16 +42,31 @@ async fn run() -> Result<(), Error> {
         )
         .await?;
 
+    sqlx::migrate!("./migrations").run(&db_pool).await?;
+
+    // We want to load the messages into a hashmap for quick lookup in the self_role event handler
+    let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
+
+    for msg in sqlx::query_as!(
+        self_role::SelfRoleMessage,
+        "SELECT message_id, guild_id, role_id, ping_channel_id FROM self_role_message;"
+    ).fetch_all(&db_pool)
+    .await? {
+        self_role_messages.insert(msg.message_id, msg);
+    }
+
     let framework = poise::Framework::builder()
-        .token(
-            std::env::var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN environment variable."),
-        )
-        .setup(move |ctx, _ready, _framework| {
+        .token(std::env::var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN environment variable."))
+        .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
                 ctx.set_activity(serenity::Activity::playing("Discord Brawl Cup"))
                     .await;
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
 
-                Ok(Data { db_pool })
+                Ok(Data {
+                    db_pool,
+                    self_role_messages,
+                })
             })
         })
         .initialize_owners(true)
