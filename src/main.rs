@@ -3,8 +3,8 @@ TODO:
 - Build out self role and new channel alert feature
 - Plan and subsequently build the tournament bracket feature
 */
-
-mod ping;
+mod bracket_tournament;
+mod commands;
 mod self_role;
 
 use std::fs::File;
