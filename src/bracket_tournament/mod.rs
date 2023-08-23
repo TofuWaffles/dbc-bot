@@ -1,1 +1,2 @@
-// Work in progress. Stay tuned, folks!
+pub mod battle_log;
+pub mod player;
