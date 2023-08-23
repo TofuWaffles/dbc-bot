@@ -99,15 +99,9 @@ async fn run() -> Result<(), Error> {
     // We want to load the messages into a hashmap for quick lookup in the self_role event handler
     let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
 
-    for msg in sqlx::query_as!(
-        self_role::SelfRoleMessage,
-        "SELECT message_id, guild_id, role_id, ping_channel_id FROM self_role_message;"
-    )
-    .fetch_all(&db_pool)
-    .await?
-    {
-        self_role_messages.insert(msg.message_id, msg);
-    }
+    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
+    // Might be better to find a more scalable and flexible solution down the line.
+    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::log()];
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
