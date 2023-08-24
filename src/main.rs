@@ -7,8 +7,10 @@ TODO:
 mod ping;
 mod self_role;
 
-use poise::serenity_prelude::{self as serenity, GatewayIntents};
 use dashmap::DashMap;
+use poise::serenity_prelude::InteractionType;
+use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction};
+use poise::Event;
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
@@ -32,6 +34,28 @@ async fn run() -> Result<(), Error> {
     // The list of commands goes here
     let options = poise::FrameworkOptions {
         commands: vec![ping::ping(), self_role::selfrole()],
+        event_handler: |ctx, event, _framework, data| {
+            Box::pin(async move {
+                match event {
+                    Event::Ready { data_about_bot } => {
+                        println!("{} is connected!", data_about_bot.user.name);
+                    }
+                    Event::InteractionCreate { interaction } => match interaction {
+                        serenity::Interaction::MessageComponent(message_component_interaction) => {
+                            match message_component_interaction.data.component_type {
+                                // We exhaustively check the specific interaction type so that we don't have to do it inside every function
+                                serenity::ComponentType::Button => todo!(),
+                                _ => (),
+                            }
+                        }
+                        _ => (),
+                    },
+                   _ => (),
+                }
+
+                Ok(())
+            })
+        },
         ..Default::default()
     };
 
@@ -50,8 +74,10 @@ async fn run() -> Result<(), Error> {
     for msg in sqlx::query_as!(
         self_role::SelfRoleMessage,
         "SELECT message_id, guild_id, role_id, ping_channel_id FROM self_role_message;"
-    ).fetch_all(&db_pool)
-    .await? {
+    )
+    .fetch_all(&db_pool)
+    .await?
+    {
         self_role_messages.insert(msg.message_id, msg);
     }
 
@@ -71,7 +97,11 @@ async fn run() -> Result<(), Error> {
         })
         .initialize_owners(true)
         .options(options)
-        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
+        .intents(
+            GatewayIntents::non_privileged()
+                | GatewayIntents::MESSAGE_CONTENT
+                | GatewayIntents::GUILD_MEMBERS,
+        )
         .build()
         .await?;
 
