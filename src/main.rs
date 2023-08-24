@@ -8,8 +8,7 @@ mod commands;
 mod self_role;
 mod utils;
 
-use dashmap::DashMap;
-use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
+use poise::serenity_prelude as serenity;
 
 
 // This data struct is used to pass data (such as the db_pool) to the context object
@@ -30,11 +29,11 @@ async fn main() {
 
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::log()];
+    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::latest_log()];
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: commands,
+            commands,
             ..Default::default()
         })
         .token(token)

@@ -1,5 +1,3 @@
-use poise::serenity_prelude::CreateEmbedAuthor;
-
 use crate::bracket_tournament::player::Player;
 use crate::{Context, Error};
 
@@ -18,13 +16,13 @@ pub async fn player(
            e.title(format!("**{}({})**",player.name, player.tag))
             .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player.icon.id))
             .fields(vec![
-              ("Trophies", format!("{}", player.trophies), true),
-              ("Highest Trophies", format!("{}", player.highest_trophies), true),
-              ("3v3 Victories", format!("{}", player.victories_3v3), true),
-              ("Solo Victories", format!("{}", player.solo_victories), true),
-              ("Duo Victories", format!("{}", player.duo_victories), true),
-              ("Best Robo Rumble Time", format!("{}", player.best_robo_rumble_time), true),
-              ("Club", format!("{}", player.club.name), true),
+              ("Trophies", &player.trophies.to_string(), true),
+              ("Highest Trophies", &player.highest_trophies.to_string(), true),
+              ("3v3 Victories",&player.victories_3v3.to_string(), true),
+              ("Solo Victories", &player.solo_victories.to_string(), true),
+              ("Duo Victories", &player.duo_victories.to_string(), true),
+              ("Best Robo Rumble Time", &player.best_robo_rumble_time.to_string(), true),
+              ("Club", &player.club.name.to_string(), true),
           ])
           .timestamp(ctx.created_at())
         })

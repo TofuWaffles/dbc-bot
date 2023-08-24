@@ -36,7 +36,7 @@ impl Player {
   pub async fn new(tag: &str) -> Player {
     let endpoint = api_handlers::get_api_link("player", tag);
     let player = api_handlers::request::<Player>(&endpoint).await.unwrap();
-    return player;
+    player
   }
 }
 
