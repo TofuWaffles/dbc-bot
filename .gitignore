@@ -2,4 +2,6 @@
 .env
 .vscode/
 vscode/
+.env.example
+
 debug.log
