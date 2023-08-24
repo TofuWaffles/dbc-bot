@@ -6,6 +6,7 @@ TODO:
 mod bracket_tournament;
 mod commands;
 mod self_role;
+mod utils;
 
 use std::fs::File;
 use std::sync::Arc;
@@ -18,8 +19,8 @@ use tracing_subscriber::{prelude::*, filter};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    db_pool: sqlx::PgPool,
-    self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+    // db_pool: sqlx::PgPool,
+    // self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -34,11 +35,16 @@ async fn main() {
         println!("Unable to create subscriber: {}", e);
     }
 
+    let token = std::env::var("DISCORD_TOKEN")
+        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
     if let Err(e) = run().await {
         panic!("Error trying to run the bot: {}", e);
     }
 }
 
+    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
+    // Might be better to find a more scalable and flexible solution down the line.
+    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::log()];
 #[instrument]
 async fn run() -> Result<(), Error> {
     info!("Setting up the bot...");
@@ -105,17 +111,16 @@ async fn run() -> Result<(), Error> {
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
-        .token(std::env::var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN environment variable."))
-        .setup(move |ctx, _ready, framework| {
+        .options(poise::FrameworkOptions {
+            commands: commands,
+            ..Default::default()
+        })
+        .token(token)
+        .intents(serenity::GatewayIntents::non_privileged())
+        .setup(|ctx, _ready, framework| {
             Box::pin(async move {
-                ctx.set_activity(serenity::Activity::playing("Discord Brawl Cup"))
-                    .await;
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-
-                Ok(Data {
-                    db_pool,
-                    self_role_messages,
-                })
+                Ok(Data {})
             })
         })
         .initialize_owners(true)
