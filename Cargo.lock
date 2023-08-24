@@ -1587,11 +1587,9 @@ dependencies = [
  "bytes",
  "cfg-if",
  "chrono",
- "command_attr",
  "dashmap",
  "flate2",
  "futures",
- "levenshtein",
  "mime",
  "mime_guess",
  "parking_lot",
@@ -1606,7 +1604,6 @@ dependencies = [
  "tracing",
  "typemap_rev",
  "url",
- "uwl",
 ]
 
 [[package]]
