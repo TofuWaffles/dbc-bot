@@ -33,7 +33,7 @@ async fn main() {
 async fn run() -> Result<(), Error> {
     // The list of commands goes here
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping(), self_role::selfrole()],
+        commands: vec![ping::ping()],
         event_handler: |ctx, event, _framework, data| {
             Box::pin(async move {
                 match event {
