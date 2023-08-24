@@ -23,8 +23,6 @@ pub async fn handle_selfrole_button(
 
     button_interaction.to_owned().member.unwrap().add_role(ctx, role_id).await?;
 
-    println!("button worked");
-
     Ok(())
 }
 
