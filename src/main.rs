@@ -132,7 +132,7 @@ async fn run() -> Result<(), Error> {
     info!("Generating framework...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: commands,
+            commands,
             ..Default::default()
         })
         .token(token)
