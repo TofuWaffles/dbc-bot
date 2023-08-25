@@ -1,0 +1,43 @@
+use serde::{Deserialize, Serialize};
+use mongodb::{Client, bson::doc, options::ClientOptions, options::FindOptions};
+use futures::stream::TryStreamExt;
+use crate::{Context, Error};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SelfRoles {
+    user: String,
+    option: String,
+}
+
+struct DbPooling {
+    client: Client,
+    client_options: ClientOptions,
+}
+
+impl DbPooling {
+    #[tokio::main]
+    pub async fn new(uri: &'static str) -> Result<Client, Box<dyn std::error::Error + Send + Sync>> {
+        let client_options = ClientOptions::parse(&uri).await?;
+        Ok(Client::with_options(client_options)?)
+    }
+}
+
+async fn retrieve_self_roles_data(args: &[&str]) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+
+    let db_uri = std::env::var("DISCORD_TOKEN")
+    .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+
+    let client = DbPooling::new(&db_uri).unwrap();
+
+    let db = client.database("DBC-bot");
+
+    let collection = db.collection::<SelfRoles>("selfroles");
+
+    let filter = doc! { "guildId": args[0] };
+
+    let find_options = FindOptions::builder().sort(doc! { "user": args[1], "option": args[2] }).build();
+
+    let mut cursor = collection.find(filter, find_options).await?;
+
+    todo!()
+}
