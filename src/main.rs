@@ -17,11 +17,11 @@ use poise::{Event, FrameworkError};
 use tracing::{instrument, info, trace, error};
 use tracing_subscriber::{prelude::*, filter};
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
-use mongodb::{Client, bson::doc, options::ClientOptions, options::FindOptions};
+use mongodb::{Client, bson::doc, options::{ClientOptions, ResolverConfig}, options::FindOptions};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    //db_pool: mongodb::Client,
+    client: mongodb::Client,
     //self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -107,9 +107,12 @@ async fn run() -> Result<(), Error> {
     // We want to load the messages into a hashmap for quick lookup in the self_role event handler
     let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
 
+    let db_uri = std::env::var("DATABASE_URL")
+    .expect("DATABASE_URL is not set. Set it as an environment variable.");
+
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::log()];
+    let commands = vec![commands::ping::ping(), commands::player::player(), commands::register::register(), commands::battle_log::log(), commands::db_handler::get_player_data()];
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
@@ -122,7 +125,9 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
+                let options = ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
+                let client = Client::with_options(options)?;
+                Ok(Data {client})
             })
         })
         .initialize_owners(true)

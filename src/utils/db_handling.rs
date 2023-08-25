@@ -16,7 +16,7 @@ struct DbPooling {
 
 impl DbPooling {
     #[tokio::main]
-    pub async fn new(uri: &'static str) -> Result<Client, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn new(uri: String) -> Result<Client, Box<dyn std::error::Error + Send + Sync>> {
         let client_options = ClientOptions::parse(&uri).await?;
         Ok(Client::with_options(client_options)?)
     }
@@ -24,10 +24,10 @@ impl DbPooling {
 
 async fn retrieve_self_roles_data(args: &[&str]) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
 
-    let db_uri = std::env::var("DISCORD_TOKEN")
-    .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+    let db_uri = std::env::var("DATABASE_URL")
+    .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
-    let client = DbPooling::new(&db_uri).unwrap();
+    let client = DbPooling::new(db_uri).unwrap();
 
     let db = client.database("DBC-bot");
 
