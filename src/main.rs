@@ -5,7 +5,6 @@ TODO:
 */
 mod bracket_tournament;
 mod commands;
-mod self_role;
 mod utils;
 
 use dashmap::DashMap;

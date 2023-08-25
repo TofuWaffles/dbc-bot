@@ -2,7 +2,7 @@ use crate::{Context, Error};
 use crate::bracket_tournament::api;
 use crate::utils::mode::get_mode_icon;
 use crate::utils::embed_color::get_color;
-
+use crate::utils::misc::QuoteStripper;
 
 /// Get the latest log of a player
 #[poise::command(slash_command, prefix_command)]
@@ -67,31 +67,3 @@ pub async fn latest_log(
 
 
 
-/// A trait for stripping quotes from a string.
-trait QuoteStripper {
-  /// Strip double quotes from the string and return a new String.
-  fn strip_quote(&self) -> String;
-}
-
-impl QuoteStripper for String {
-  /// Strip double quotes from the string and return a new String.
-  ///
-  /// # Examples
-  ///
-  /// ```
-  /// let s = String::from("\"Hello, world!\"");
-  /// let stripped = s.strip_quote();
-  /// assert_eq!(stripped, "Hello, world!");
-  /// ```
-  fn strip_quote(&self) -> String {
-      let mut result = String::new();
-
-      for c in self.chars() {
-          if c != '"' {
-              result.push(c);
-          }
-      }
-
-      result
-  }
-}

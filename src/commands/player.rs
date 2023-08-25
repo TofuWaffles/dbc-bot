@@ -1,5 +1,6 @@
 use crate::{Context, Error};
 use crate::bracket_tournament::api;
+use crate::utils::misc::QuoteStripper;
 
 /// Get the player's profile
 #[poise::command(slash_command, prefix_command)]
@@ -15,7 +16,7 @@ pub async fn player(
           response
             .allowed_mentions(|a| a.replied_user(false))
             .embed(|e|{
-              e.title(format!("**{}({})**",player["name"], player["tag"]))
+              e.title("**".to_string()+&player["name"].to_string().strip_quote()+"("+&player["id"].to_string().strip_quote()+")**")
                 .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
                 .fields(vec![
                   ("Trophies", player["trophies"].to_string(), true),
