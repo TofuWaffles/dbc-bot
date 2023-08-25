@@ -10,8 +10,8 @@ mod self_role;
 use dashmap::DashMap;
 use poise::serenity_prelude::InteractionType;
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction};
-use poise::Event;
-use tracing::{Level, span, event, instrument, info};
+use poise::{Event, FrameworkError};
+use tracing::{instrument, info, trace, error};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
@@ -35,7 +35,6 @@ async fn main() {
 async fn run() -> Result<(), Error> {
     info!("Setting up the bot...");
 
-    // The list of commands goes here
     info!("Generating options");
     let options = poise::FrameworkOptions {
         commands: vec![ping::ping()],
@@ -43,7 +42,9 @@ async fn run() -> Result<(), Error> {
             Box::pin(async move {
                 match event {
                     Event::Ready { data_about_bot } => {
-                        println!("{} is connected!", data_about_bot.user.name);
+                        let bot_name = data_about_bot.user.name.to_owned();
+                        info!("{username} is online", username = bot_name);
+                        println!("{} is online!", bot_name);
                     }
                     Event::InteractionCreate { interaction } => match interaction {
                         serenity::Interaction::MessageComponent(message_component_interaction) => {
@@ -60,6 +61,19 @@ async fn run() -> Result<(), Error> {
 
                 Ok(())
             })
+        },
+        pre_command: |ctx| {
+            Box::pin(async move {
+                trace!("Executing command: {cmd_name}", cmd_name = ctx.command().qualified_name);
+            })
+        },
+        post_command: |ctx| {
+            Box::pin(async move {
+                trace!("Finished executing command: {cmd_name}", cmd_name = ctx.command().qualified_name);
+            })
+        },
+        on_error: |error| {
+            Box::pin(on_error(error))
         },
         ..Default::default()
     };
@@ -127,4 +141,22 @@ async fn run() -> Result<(), Error> {
     framework.start().await?;
 
     Ok(())
+}
+
+async fn on_error(error: FrameworkError<'_, Data, Error>) {
+    match error {
+        FrameworkError::Setup { error, ..} => {
+            panic!("Failed to start the bot: {:?}", error);
+        },
+        FrameworkError::Command { error, ctx } => {
+            error!("Error executing command {} in guild: {}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, error);
+        },
+        FrameworkError::CommandCheckFailed { error, ctx } => {
+            error!("Error executing the pre-command check for {} in guild {}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, error);
+        },
+        FrameworkError::ArgumentParse { error, input, ctx } => {
+            error!("Error parsing arguments for {} in guild {} with input(s) {:?}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, input, error);
+        },
+        _ => { error!("An unknown error occurred"); }
+    }
 }
