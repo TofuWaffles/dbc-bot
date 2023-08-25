@@ -11,3 +11,4 @@ dotenv = "0.15.0"
 poise = "0.5.5"
 sqlx = { version = "0.7.1", features = ["postgres", "runtime-tokio", "macros"] }
 tokio = { version = "1.30.0", features = ["rt-multi-thread", "signal"] }
+tracing = "0.1.37"

@@ -336,6 +336,7 @@ dependencies = [
  "poise",
  "sqlx",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

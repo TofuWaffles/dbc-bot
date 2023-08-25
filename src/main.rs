@@ -11,6 +11,7 @@ use dashmap::DashMap;
 use poise::serenity_prelude::InteractionType;
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction};
 use poise::Event;
+use tracing::{Level, span, event, instrument, info};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
@@ -30,8 +31,12 @@ async fn main() {
     }
 }
 
+#[instrument]
 async fn run() -> Result<(), Error> {
+    info!("Setting up the bot...");
+
     // The list of commands goes here
+    info!("Generating options");
     let options = poise::FrameworkOptions {
         commands: vec![ping::ping()],
         event_handler: |ctx, event, _framework, data| {
@@ -44,7 +49,7 @@ async fn run() -> Result<(), Error> {
                         serenity::Interaction::MessageComponent(message_component_interaction) => {
                             match message_component_interaction.data.component_type {
                                 // We exhaustively check the specific interaction type so that we don't have to do it inside every function
-                                serenity::ComponentType::Button => todo!(),
+                                serenity::ComponentType::Button => self_role::handle_button::handle_selfrole_button(message_component_interaction, ctx, data).await?,
                                 _ => (),
                             }
                         }
@@ -58,6 +63,7 @@ async fn run() -> Result<(), Error> {
         },
         ..Default::default()
     };
+    info!("Options generated successfully!");
 
     let db_pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(10)
@@ -81,6 +87,7 @@ async fn run() -> Result<(), Error> {
         self_role_messages.insert(msg.message_id, msg);
     }
 
+    info!("Generating framework...");
     let framework = poise::Framework::builder()
         .token(std::env::var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN environment variable."))
         .setup(move |ctx, _ready, framework| {
@@ -104,6 +111,7 @@ async fn run() -> Result<(), Error> {
         )
         .build()
         .await?;
+    info!("Framework generated successfully!");
 
     let shard_manager = framework.shard_manager().clone();
 
@@ -114,6 +122,7 @@ async fn run() -> Result<(), Error> {
         shard_manager.lock().await.shutdown_all().await;
     });
 
+    info!("Bot starting...");
     println!("Starting the bot...");
     framework.start().await?;
 
