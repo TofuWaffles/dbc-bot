@@ -7,11 +7,14 @@ TODO:
 mod ping;
 mod self_role;
 
+use std::fs::File;
+use std::sync::Arc;
 use dashmap::DashMap;
 use poise::serenity_prelude::InteractionType;
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction};
 use poise::{Event, FrameworkError};
 use tracing::{instrument, info, trace, error};
+use tracing_subscriber::{prelude::*, filter};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
@@ -26,8 +29,13 @@ async fn main() {
     // Load the environment variable from the .env file
     dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
 
+    if let Err(e) = create_subscriber() {
+        // Change to a panic!() if you really need logging to work
+        println!("Unable to create subscriber: {}", e);
+    }
+
     if let Err(e) = run().await {
-        println!("Error trying to run the bot: {}", e);
+        panic!("Error trying to run the bot: {}", e);
     }
 }
 
@@ -139,6 +147,23 @@ async fn run() -> Result<(), Error> {
     info!("Bot starting...");
     println!("Starting the bot...");
     framework.start().await?;
+
+    Ok(())
+}
+
+// Create the subscriber to listen to logging events
+fn create_subscriber() -> Result<(), Error> {
+    let stdout_log = tracing_subscriber::fmt::layer().pretty();
+
+    let file = File::create("debug.log")?;
+    let debug_log = tracing_subscriber::fmt::layer().with_writer(Arc::new(file));
+
+    tracing_subscriber::registry()
+        .with(
+            stdout_log
+                .with_filter(filter::LevelFilter::INFO)
+                .and_then(debug_log)
+        ).init();
 
     Ok(())
 }
