@@ -32,6 +32,12 @@ pub struct Player{
   pub club: Club,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PlayerDB {
+  pub username: String,
+  pub tag: String,
+}
+
 impl Player {
   pub async fn new(tag: &str) -> Player {
     let endpoint = api_handlers::get_api_link("player", tag);
