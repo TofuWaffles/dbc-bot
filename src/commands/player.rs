@@ -25,7 +25,7 @@ pub async fn player(
                   ("Solo Victories", player["soloVictories"].to_string(), true),
                   ("Duo Victories", player["duoVictories"].to_string(), true),
                   ("Best Robo Rumble Time", player["bestRoboRumbleTime"].to_string(), true),
-                  ("Club", player["club"]["name"].to_string(), true),
+                  ("Club", player["club"]["name"].to_string().strip_quote(), true),
               ])
               .timestamp(ctx.created_at())
             })
