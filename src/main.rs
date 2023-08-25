@@ -10,12 +10,12 @@ mod utils;
 
 use dashmap::DashMap;
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
-
+use mongodb::{Client, bson::doc, options::ClientOptions, options::FindOptions};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    // db_pool: sqlx::PgPool,
-    // self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+    //db_pool: mongodb::Client,
+    //self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
