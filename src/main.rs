@@ -5,7 +5,6 @@ TODO:
 */
 mod bracket_tournament;
 mod commands;
-mod self_role;
 mod utils;
 
 use poise::serenity_prelude as serenity;
@@ -48,4 +47,3 @@ async fn main() {
     println!("The bot is starting...");
     framework.run().await.unwrap();
 }
-
