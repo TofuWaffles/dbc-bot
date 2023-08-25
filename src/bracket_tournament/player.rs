@@ -1,3 +1,4 @@
+use poise::serenity_prelude::UserId;
 use serde::{Deserialize, Serialize};
 use crate::utils::api::api_handlers;
 
@@ -34,8 +35,18 @@ pub struct Player{
 
 #[derive(Serialize, Deserialize)]
 pub struct PlayerDB {
-  pub username: String,
   pub tag: String,
+  pub name: String,
+  pub id: Option<String>,
+}
+
+impl PlayerDB {
+  pub async fn new(tag: &String, id: &UserId) -> PlayerDB {
+    let endpoint = api_handlers::get_api_link("player", tag);
+    let mut playerdb = api_handlers::request::<PlayerDB>(&endpoint).await.unwrap();
+    playerdb.id = Some(id.to_string());
+    return playerdb;
+  }
 }
 
 impl Player {
