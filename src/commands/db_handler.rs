@@ -4,7 +4,7 @@ use crate::{Context, Error};
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn get_player_data(ctx: Context<'_>, #[description = "Check a player registration status by user ID here" ] id: String) -> Result<(), Error> {
-    let player_data = ctx.data().client.database("DBC-bot").collection("PlayerDB");
+    let player_data = ctx.data().db_client.database("DBC-bot").collection("PlayerDB");
     let individual_player: PlayerDB = player_data.find_one(doc! {
         "id": &id
     }, None).await?.expect(&format!("Missing: {} document.", &id));
