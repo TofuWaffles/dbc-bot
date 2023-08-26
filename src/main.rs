@@ -19,10 +19,19 @@ use tracing_subscriber::{prelude::*, filter};
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
 use mongodb::{Client, bson::doc, options::{ClientOptions, ResolverConfig}, options::FindOptions};
 use futures::stream::TryStreamExt;
+use mongodb::{
+    bson::doc,
+    options::FindOptions,
+    options::{ClientOptions, ResolverConfig},
+    Client,
+};
+use poise::serenity_prelude::{
+    self as serenity, GatewayIntents, InteractionType, MessageComponentInteraction,
+};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    client: mongodb::Client,
+    db_client: mongodb::Client,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -109,11 +118,17 @@ async fn run() -> Result<(), Error> {
     let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
 
     let db_uri = std::env::var("DATABASE_URL")
-    .expect("DATABASE_URL is not set. Set it as an environment variable.");
+        .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![commands::ping::ping(), commands::player::player(), commands::register::register(), commands::battle_log::log(), commands::db_handler::get_player_data()];
+    let commands = vec![
+        commands::ping::ping(),
+        commands::player::player(),
+        commands::register::register(),
+        commands::battle_log::log(),
+        commands::db_handler::get_player_data(),
+    ];
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
@@ -126,14 +141,34 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let options = ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
-                let client = Client::with_options(options)?;
-                let mut self_role_data: mongodb::Collection<self_role::SelfRoleMessage> = client.database("DBC-bot").collection("SelfRoles").find_one(None, None).await?.expect("Self Role data not found.");
-                let mut self_role_messages = DashMap::new();
+                let options = ClientOptions::parse_with_resolver_config(
+                    &db_uri,
+                    ResolverConfig::cloudflare(),
+                )
+                .await?;
+                let db_client = Client::with_options(options)?;
+                let mut self_role_data = db_client
+                    .database("DBC-bot")
+                    .collection::<self_role::SelfRoleMessage>("SelfRoles")
+                    .find(None, None)
+                    .await
+                    .expect("Self Role data not found.");
+                let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
                 while let Some(self_role_individual_data) = self_role_data.try_next().await? {
-                    self_role_messages.insert(self_role_individual_data.message_id, self_role_individual_data.self_role_message)
+                    self_role_messages.insert(
+                        self_role_individual_data.message_id,
+                        self_role::SelfRoleMessage {
+                            message_id: self_role_individual_data.message_id,
+                            guild_id: self_role_individual_data.guild_id,
+                            role_id: self_role_individual_data.role_id,
+                            ping_channel_id: self_role_individual_data.ping_channel_id,
+                        },
+                    );
                 }
-                Ok(Data {client, self_role_messages})
+                Ok(Data {
+                    db_client,
+                    self_role_messages,
+                })
             })
         })
         .initialize_owners(true)
