@@ -11,11 +11,12 @@ mod utils;
 use dashmap::DashMap;
 use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
 use mongodb::{Client, bson::doc, options::{ClientOptions, ResolverConfig}, options::FindOptions};
+use futures::stream::TryStreamExt;
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
     client: mongodb::Client,
-    //self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+    self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -47,7 +48,12 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 let options = ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
                 let client = Client::with_options(options)?;
-                Ok(Data {client})
+                let mut self_role_data: mongodb::Collection<self_role::SelfRoleMessage> = client.database("DBC-bot").collection("SelfRoles").find_one(None, None).await?.expect("Self Role data not found.");
+                let mut self_role_messages = DashMap::new();
+                while let Some(self_role_individual_data) = self_role_data.try_next().await? {
+                    self_role_messages.insert(self_role_individual_data.message_id, self_role_individual_data.self_role_message)
+                }
+                Ok(Data {client, self_role_messages})
             })
         });
 
