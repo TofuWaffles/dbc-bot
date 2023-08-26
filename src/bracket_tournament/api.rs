@@ -1,8 +1,8 @@
 pub mod api_handlers {
     use reqwest;
+    use serde_json;
     use std::error::Error;
     use std::fmt;
-    use serde_json;
 
     // Define a custom error type for your application
     #[derive(Debug)]
@@ -64,8 +64,11 @@ pub mod api_handlers {
     pub fn get_api_link(option: &str, tag: &str) -> String {
         match option {
             "player" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", tag),
-            "battle_log" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog", tag),
-          _ => panic!("Unknown option"),
+            "battle_log" => format!(
+                "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
+                tag
+            ),
+            _ => panic!("Unknown option"),
         }
     }
 
@@ -118,7 +121,9 @@ pub mod api_handlers {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn request(endpoint: &str) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn request(
+        endpoint: &str,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
         let token = std::env::var("BRAWL_STARS_TOKEN").expect("There is no Brawl Stars Token");
         let response = reqwest::Client::new()
             .get(endpoint)
@@ -138,5 +143,4 @@ pub mod api_handlers {
             Err(Box::new(CustomError("Unsuccessful response".to_string())))
         }
     }
-
 }
