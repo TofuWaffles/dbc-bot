@@ -1,7 +1,5 @@
+use mongodb::{bson::doc, options::ClientOptions, options::FindOptions, Client};
 use serde::{Deserialize, Serialize};
-use mongodb::{Client, bson::doc, options::ClientOptions, options::FindOptions};
-use futures::stream::TryStreamExt;
-use crate::{Context, Error};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SelfRoles {
@@ -22,10 +20,11 @@ impl DbPooling {
     }
 }
 
-async fn retrieve_self_roles_data(args: &[&str]) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-
+async fn retrieve_self_roles_data(
+    args: &[&str],
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let db_uri = std::env::var("DATABASE_URL")
-    .expect("DATABASE_URL is not set. Set it as an environment variable.");
+        .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
     let client = DbPooling::new(db_uri).unwrap();
 
@@ -35,7 +34,9 @@ async fn retrieve_self_roles_data(args: &[&str]) -> Result<String, Box<dyn std::
 
     let filter = doc! { "guildId": args[0] };
 
-    let find_options = FindOptions::builder().sort(doc! { "user": args[1], "option": args[2] }).build();
+    let find_options = FindOptions::builder()
+        .sort(doc! { "user": args[1], "option": args[2] })
+        .build();
 
     let mut cursor = collection.find(filter, find_options).await?;
 

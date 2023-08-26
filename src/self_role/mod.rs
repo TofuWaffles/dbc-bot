@@ -1,6 +1,5 @@
-
 pub mod handle_button;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // use crate::{Context, Error};
 // use poise::serenity_prelude::{self as serenity, ButtonStyle, CreateButton, MessageBuilder};
@@ -12,7 +11,7 @@ pub struct SelfRoleMessage {
     pub guild_id: i64,
     pub role_id: i64,
     pub ping_channel_id: i64,
- }
+}
 
 // /// Set up a self-role message in the current room.
 // ///

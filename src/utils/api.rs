@@ -18,14 +18,15 @@ pub mod api_handlers {
     pub fn get_api_link(option: &str, tag: &str) -> String {
         match option {
             "player" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", tag),
-            "battle_log" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog", tag),
-          _ => panic!("Unknown option"),
-      }
-  }
+            "battle_log" => format!(
+                "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
+                tag
+            ),
+            _ => panic!("Unknown option"),
+        }
+    }
 
-    pub async fn request<T>(
-        endpoint: &str
-    ) -> Result<T, Box<dyn std::error::Error + Send + Sync>>
+    pub async fn request<T>(endpoint: &str) -> Result<T, Box<dyn std::error::Error + Send + Sync>>
     where
         T: serde::de::DeserializeOwned, // Deserialize for JSON parsing
     {

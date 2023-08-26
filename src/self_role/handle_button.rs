@@ -1,5 +1,5 @@
 use crate::{Data, Error};
-use poise::serenity_prelude::{self as serenity, Context, RoleId};
+use poise::serenity_prelude::{self as serenity, Context};
 
 pub async fn handle_selfrole_button(
     button_interaction: &serenity::MessageComponentInteraction,
@@ -21,7 +21,12 @@ pub async fn handle_selfrole_button(
 
     let role_id = self_role_message.role_id as u64;
 
-    button_interaction.to_owned().member.unwrap().add_role(ctx, role_id).await?;
+    button_interaction
+        .to_owned()
+        .member
+        .unwrap()
+        .add_role(ctx, role_id)
+        .await?;
 
     Ok(())
 }

@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::utils::api::api_handlers;
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Event {
@@ -52,13 +51,12 @@ pub struct BattleLog {
 }
 
 impl BattleLog {
-  pub async fn new(tag: &str) -> BattleLog {
-      let endpoint = api_handlers::get_api_link("battle_log", tag);
-      let battle_log = api_handlers::request::<BattleLog>(&endpoint).await.unwrap();
-      return battle_log;
-  }
-  pub fn get_latest_log(&self) -> String{
-    return format!("{:?}", self.items[0]);
-  }
+    pub async fn new(tag: &str) -> BattleLog {
+        let endpoint = api_handlers::get_api_link("battle_log", tag);
+        let battle_log = api_handlers::request::<BattleLog>(&endpoint).await.unwrap();
+        return battle_log;
+    }
+    pub fn get_latest_log(&self) -> String {
+        return format!("{:?}", self.items[0]);
+    }
 }
-

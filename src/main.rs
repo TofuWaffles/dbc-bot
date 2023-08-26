@@ -8,26 +8,21 @@ mod commands;
 mod self_role;
 mod utils;
 
-use std::fs::File;
-use std::sync::Arc;
 use dashmap::DashMap;
-use poise::serenity_prelude::InteractionType;
-use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction};
-use poise::{Event, FrameworkError};
-use tracing::{instrument, info, trace, error};
-use tracing_subscriber::{prelude::*, filter};
-use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
-use mongodb::{Client, bson::doc, options::{ClientOptions, ResolverConfig}, options::FindOptions};
-use futures::stream::TryStreamExt;
 use mongodb::{
-    bson::doc,
-    options::FindOptions,
     options::{ClientOptions, ResolverConfig},
     Client,
 };
-use poise::serenity_prelude::{
-    self as serenity, GatewayIntents, InteractionType, MessageComponentInteraction,
+
+use futures::stream::TryStreamExt;
+use poise::{
+    serenity_prelude::{self as serenity, GatewayIntents},
+    Event, FrameworkError,
 };
+use std::fs::File;
+use std::sync::Arc;
+use tracing::{error, info, instrument, trace};
+use tracing_subscriber::{filter, prelude::*};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
@@ -47,23 +42,29 @@ async fn main() {
         println!("Unable to create subscriber: {}", e);
     }
 
-    let token = std::env::var("DISCORD_TOKEN")
-        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
     if let Err(e) = run().await {
         panic!("Error trying to run the bot: {}", e);
     }
 }
 
-    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
-    // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![commands::ping::ping(), commands::player::player(), commands::battle_log::log()];
 #[instrument]
 async fn run() -> Result<(), Error> {
+    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
+    // Might be better to find a more scalable and flexible solution down the line.
+    let commands = vec![
+        commands::ping::ping(),
+        commands::player::player(),
+        commands::battle_log::log(),
+    ];
+
+    let token = std::env::var("DISCORD_TOKEN")
+        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+
     info!("Setting up the bot...");
 
     info!("Generating options");
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping()],
+        commands,
         event_handler: |ctx, event, _framework, data| {
             Box::pin(async move {
                 match event {
@@ -76,13 +77,20 @@ async fn run() -> Result<(), Error> {
                         serenity::Interaction::MessageComponent(message_component_interaction) => {
                             match message_component_interaction.data.component_type {
                                 // We exhaustively check the specific interaction type so that we don't have to do it inside every function
-                                serenity::ComponentType::Button => self_role::handle_button::handle_selfrole_button(message_component_interaction, ctx, data).await?,
+                                serenity::ComponentType::Button => {
+                                    self_role::handle_button::handle_selfrole_button(
+                                        message_component_interaction,
+                                        ctx,
+                                        data,
+                                    )
+                                    .await?
+                                }
                                 _ => (),
                             }
                         }
                         _ => (),
                     },
-                   _ => (),
+                    _ => (),
                 }
 
                 Ok(())
@@ -90,17 +98,21 @@ async fn run() -> Result<(), Error> {
         },
         pre_command: |ctx| {
             Box::pin(async move {
-                trace!("Executing command: {cmd_name}", cmd_name = ctx.command().qualified_name);
+                trace!(
+                    "Executing command: {cmd_name}",
+                    cmd_name = ctx.command().qualified_name
+                );
             })
         },
         post_command: |ctx| {
             Box::pin(async move {
-                trace!("Finished executing command: {cmd_name}", cmd_name = ctx.command().qualified_name);
+                trace!(
+                    "Finished executing command: {cmd_name}",
+                    cmd_name = ctx.command().qualified_name
+                );
             })
         },
-        on_error: |error| {
-            Box::pin(on_error(error))
-        },
+        on_error: |error| Box::pin(on_error(error)),
         ..Default::default()
     };
     info!("Options generated successfully!");
@@ -113,9 +125,6 @@ async fn run() -> Result<(), Error> {
         .await?;
 
     sqlx::migrate!("./migrations").run(&db_pool).await?;
-
-    // We want to load the messages into a hashmap for quick lookup in the self_role event handler
-    let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
 
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
@@ -209,26 +218,45 @@ fn create_subscriber() -> Result<(), Error> {
         .with(
             stdout_log
                 .with_filter(filter::LevelFilter::INFO)
-                .and_then(debug_log)
-        ).init();
+                .and_then(debug_log),
+        )
+        .init();
 
     Ok(())
 }
 
 async fn on_error(error: FrameworkError<'_, Data, Error>) {
     match error {
-        FrameworkError::Setup { error, ..} => {
+        FrameworkError::Setup { error, .. } => {
             panic!("Failed to start the bot: {:?}", error);
-        },
+        }
         FrameworkError::Command { error, ctx } => {
-            error!("Error executing command {} in guild: {}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, error);
-        },
+            error!(
+                "Error executing command {} in guild: {}: {:?}",
+                ctx.command().qualified_name,
+                ctx.guild().unwrap().name,
+                error
+            );
+        }
         FrameworkError::CommandCheckFailed { error, ctx } => {
-            error!("Error executing the pre-command check for {} in guild {}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, error);
-        },
+            error!(
+                "Error executing the pre-command check for {} in guild {}: {:?}",
+                ctx.command().qualified_name,
+                ctx.guild().unwrap().name,
+                error
+            );
+        }
         FrameworkError::ArgumentParse { error, input, ctx } => {
-            error!("Error parsing arguments for {} in guild {} with input(s) {:?}: {:?}", ctx.command().qualified_name, ctx.guild().unwrap().name, input, error);
-        },
-        _ => { error!("An unknown error occurred"); }
+            error!(
+                "Error parsing arguments for {} in guild {} with input(s) {:?}: {:?}",
+                ctx.command().qualified_name,
+                ctx.guild().unwrap().name,
+                input,
+                error
+            );
+        }
+        _ => {
+            error!("An unknown error occurred");
+        }
     }
 }
