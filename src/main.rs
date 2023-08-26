@@ -22,6 +22,7 @@ use std::fs::File;
 use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
+use futures::stream::TryStreamExt;
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
