@@ -123,6 +123,17 @@ async fn run() -> Result<(), Error> {
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
+    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
+    // Might be better to find a more scalable and flexible solution down the line.
+    let commands = vec![
+        commands::ping::ping(),
+        commands::player::player(),
+        commands::register::register(),
+        commands::battle_log::log(),
+        commands::db_handler::get_player_data(),
+        commands::create_self_role_message::create_self_role_message(),
+    ];
+
     info!("Generating framework...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {

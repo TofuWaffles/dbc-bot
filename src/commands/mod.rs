@@ -3,3 +3,4 @@ pub mod db_handler;
 pub mod ping;
 pub mod player;
 pub mod register;
+pub mod create_self_role_message;
