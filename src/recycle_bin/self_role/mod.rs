@@ -1,16 +1,17 @@
-// pub mod handle_button;
+
+pub mod handle_button;
 
 // use crate::{Context, Error};
 // use poise::serenity_prelude::{self as serenity, ButtonStyle, CreateButton, MessageBuilder};
 
 // // The context will hold this type in a dash map indexed by its message_id for convenient searching
-// #[derive(Debug, Clone, Copy)]
-// pub struct SelfRoleMessage {
-//     pub message_id: i64,
-//     pub guild_id: i64,
-//     pub role_id: i64,
-//     pub ping_channel_id: i64,
-// }
+#[derive(Debug, Clone)]
+pub struct SelfRoleMessage {
+    pub message_id: i64,
+    pub guild_id: i64,
+    pub role_id: i64,
+    pub ping_channel_id: i64,
+ }
 
 // /// Set up a self-role message in the current room.
 // ///
