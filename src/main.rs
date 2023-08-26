@@ -35,8 +35,8 @@ use poise::serenity_prelude::{
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    db_client: mongodb::Client,
-    self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+    // db_pool: sqlx::PgPool,
+    // self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -134,9 +134,8 @@ async fn run() -> Result<(), Error> {
     let commands = vec![
         commands::ping::ping(),
         commands::player::player(),
-        commands::register::register(),
-        commands::battle_log::log(),
-        commands::db_handler::get_player_data(),
+        commands::battle_log::latest_log(),
+        commands::register::registry(),
     ];
 
     info!("Generating framework...");
@@ -150,34 +149,7 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let options = ClientOptions::parse_with_resolver_config(
-                    &db_uri,
-                    ResolverConfig::cloudflare(),
-                )
-                .await?;
-                let db_client = Client::with_options(options)?;
-                let mut self_role_data = db_client
-                    .database("DBC-bot")
-                    .collection::<self_role::SelfRoleMessage>("SelfRoles")
-                    .find(None, None)
-                    .await
-                    .expect("Self Role data not found.");
-                let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
-                while let Some(self_role_individual_data) = self_role_data.try_next().await? {
-                    self_role_messages.insert(
-                        self_role_individual_data.message_id,
-                        self_role::SelfRoleMessage {
-                            message_id: self_role_individual_data.message_id,
-                            guild_id: self_role_individual_data.guild_id,
-                            role_id: self_role_individual_data.role_id,
-                            ping_channel_id: self_role_individual_data.ping_channel_id,
-                        },
-                    );
-                }
-                Ok(Data {
-                    db_client,
-                    self_role_messages,
-                })
+                Ok(Data {})
             })
         })
         .initialize_owners(true)

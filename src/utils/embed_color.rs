@@ -35,10 +35,10 @@ use poise::serenity_prelude::Colour;
 /// assert_eq!(unknown_color, Colour::new(0x000000)); // Default (black)
 /// ```
 pub fn get_color(result: String) -> Colour {
-  match result.as_str() {
-      "victory" => Colour::new(u32::from_str_radix("00800",16).unwrap()), // Green
-      "defeat" => Colour::new(u32::from_str_radix("FF0000",16).unwrap()), // Red
-      "draw" => Colour::new(u32::from_str_radix("FFFFFF",16).unwrap()), // White
-      _ => Colour::new(000000),         // Default color (black) for unknown cases
-  }
+    match result.as_str() {
+        "victory" => Colour::new(u32::from_str_radix("00800", 16).unwrap()), // Green
+        "defeat" => Colour::new(u32::from_str_radix("FF0000", 16).unwrap()), // Red
+        "draw" => Colour::new(u32::from_str_radix("FFFFFF", 16).unwrap()),   // White
+        _ => Colour::new(000000), // Default color (black) for unknown cases
+    }
 }
