@@ -23,6 +23,15 @@ use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
 use futures::stream::TryStreamExt;
+use mongodb::{
+    bson::doc,
+    options::FindOptions,
+    options::{ClientOptions, ResolverConfig},
+    Client,
+};
+use poise::serenity_prelude::{
+    self as serenity, GatewayIntents, InteractionType, MessageComponentInteraction,
+};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
