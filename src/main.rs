@@ -54,9 +54,8 @@ async fn run() -> Result<(), Error> {
     let commands = vec![
         commands::ping::ping(),
         commands::player::player(),
-        commands::register::register(),
         commands::battle_log::latest_log(),
-        commands::db_handler::get_player_data(),
+        commands::register::register()
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
