@@ -5,7 +5,6 @@ TODO:
 */
 mod bracket_tournament;
 mod commands;
-<<<<<<< HEAD
 mod self_role;
 mod utils;
 
@@ -29,16 +28,6 @@ use tracing_subscriber::{filter, prelude::*};
 pub struct Data {
     db_client: mongodb::Client,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
-=======
-mod utils;
-
-use poise::serenity_prelude as serenity;
-
-// This data struct is used to pass data (such as the db_pool) to the context object
-pub struct Data {
-    // db_pool: sqlx::PgPool,
-    // self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
->>>>>>> 2d5c082e7aacff1177a61e5b4f144fe1b6cca4e8
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -48,19 +37,16 @@ async fn main() {
     // Load the environment variable from the .env file
     dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
 
-    let token = std::env::var("DISCORD_TOKEN")
-        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+    if let Err(e) = create_subscriber() {
+        // Change to a panic!() if you really need logging to work
+        println!("Unable to create subscriber: {}", e);
+    }
 
-    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
-    // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![
-        commands::ping::ping(),
-        commands::player::player(),
-        commands::battle_log::latest_log(),
-        commands::register::registry(),
-    ];
+    if let Err(e) = run().await {
+        panic!("Error trying to run the bot: {}", e);
+    }
+}
 
-<<<<<<< HEAD
 #[instrument]
 async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
@@ -185,26 +171,33 @@ async fn run() -> Result<(), Error> {
                     self_role_messages,
                 })
             })
-=======
-    let framework = poise::Framework::builder()
-        .options(poise::FrameworkOptions {
-            commands,
-            ..Default::default()
->>>>>>> 2d5c082e7aacff1177a61e5b4f144fe1b6cca4e8
         })
-        .token(token)
-        .intents(serenity::GatewayIntents::non_privileged())
-        .setup(|ctx, _ready, framework| {
-            Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
-            })
-        });
+        .initialize_owners(true)
+        .options(options)
+        .intents(
+            GatewayIntents::non_privileged()
+                | GatewayIntents::MESSAGE_CONTENT
+                | GatewayIntents::GUILD_MEMBERS,
+        )
+        .build()
+        .await?;
+    info!("Framework generated successfully!");
 
-    println!("The bot is starting...");
-    framework.run().await.unwrap();
+    let shard_manager = framework.shard_manager().clone();
+
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Could not register the ctrl+c handler");
+        shard_manager.lock().await.shutdown_all().await;
+    });
+
+    info!("Bot starting...");
+    println!("Starting the bot...");
+    framework.start().await?;
+
+    Ok(())
 }
-<<<<<<< HEAD
 
 // Create the subscriber to listen to logging events
 fn create_subscriber() -> Result<(), Error> {
@@ -259,5 +252,3 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
         }
     }
 }
-=======
->>>>>>> 2d5c082e7aacff1177a61e5b4f144fe1b6cca4e8
