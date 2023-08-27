@@ -31,7 +31,7 @@ async fn main() {
         commands::ping::ping(),
         commands::player::player(),
         commands::battle_log::latest_log(),
-        commands::register::registry(),
+        commands::register::register(),
     ];
 
     let framework = poise::Framework::builder()

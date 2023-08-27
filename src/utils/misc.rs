@@ -102,16 +102,17 @@ pub fn get_mode_icon(event_name: &serde_json::Value) -> &str {
 
     // Match the event_name to known event names and return the corresponding URL as Some(&str)
     match event_link {
-        "brawlBall" => "https://cdn.brawlstats.com/event-icons/event_mode_brawl_ball.png",
+        "brawlBall" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
         "bounty" => "https://cdn.brawlstats.com/event-icons/event_mode_bounty.png",
         "gemGrab" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
-        "wipeout" => "https://cdn.brawlstats.com/event-icons/event_mode_wipe_out.png",
+        "wipeout" => "https://cdn.brawlstats.com/event-icons/event_mode_wipeout.png",
         "heist" => "https://cdn.brawlstats.com/event-icons/event_mode_heist.png",
         "hotZone" => "https://cdn.brawlstats.com/event-icons/event_mode_hot_zone.png",
         "knockout" => "https://cdn.brawlstats.com/event-icons/event_mode_knockout.png",
         "siege" => "https://cdn.brawlstats.com/event-icons/event_mode_siege.png",
-        "soloShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_solo_showdown.png",
-        "duoShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_duo_showdown.png",
+        "raid" => "https://cdn.brawlstats.com/event-icons/event_mode_raid.png",
+        "soloShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_showdown.png",
+        "duoShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_showdown.png",
         _ => {
             "https://cdn.discordapp.com/emojis/1133867752155779173.webp?size=4096&quality=lossless"
         }

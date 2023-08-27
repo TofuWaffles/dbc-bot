@@ -1,8 +1,8 @@
 use crate::bracket_tournament::api;
-use crate::utils::misc::get_difficulty;
-use crate::utils::misc::QuoteStripper;
+use crate::utils::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use poise::serenity_prelude;
+use serde_json;
 
 #[derive(Debug, poise::ChoiceParameter)]
 pub enum Region {
@@ -16,7 +16,7 @@ pub enum Region {
 
 /// Sign up for Discord Brawl Cup Tournament!
 #[poise::command(slash_command, prefix_command, track_edits)]
-pub async fn registry(
+pub async fn register(
     ctx: Context<'_>,
     #[description = "Put your player tag here (without #)"] tag: String,
     #[description = "Put your region here"] region: Region,
@@ -96,23 +96,7 @@ pub async fn registry(
                     let mut confirm_prompt = mci.message.clone();
                     confirm_prompt
                         .edit(ctx, |s| {
-                            s.components(|c| {
-                                c.create_action_row(|a| {
-                                    a.create_button(|b| {
-                                        b.label("Confirm")
-                                            .style(poise::serenity_prelude::ButtonStyle::Success)
-                                            .custom_id(registry_confirm)
-                                            .disabled(true)
-                                    })
-                                    .create_button(|b| {
-                                        b.label("Cancel")
-                                            .style(poise::serenity_prelude::ButtonStyle::Danger)
-                                            .custom_id(registry_cancel)
-                                            .disabled(true)
-                                    })
-                                })
-                            })
-                            .embed(|e| {
+                            s.components(|c| c).embed(|e| {
                                 e.title(format!("**You have successfully registered!**"))
                                     .description(format!(
                                     "Your player tag #{} has been registered with the region {}",
@@ -121,29 +105,21 @@ pub async fn registry(
                             })
                         })
                         .await?;
-                //ADD DATABASE HERE
+                    let data = serde_json::json!({
+                        "tag": tag,
+                        "name": player["name"].to_string().strip_quote(),
+                        "region": format!("{:?}", region),
+                        "id": ctx.author_member().await.unwrap().user.id.to_string(),
+                    });
+                    println!("{}", data);
+                    //Matt please handle this
 
-                // THANKS, MATT
+                    //Thanks
                 } else {
                     let mut cancel_prompt = mci.message.clone();
                     cancel_prompt
                     .edit(ctx, |s| {
-                        s.components(|c|{
-                            c.create_action_row(|a| {
-                                a.create_button(|b| {
-                                    b.label("Confirm")
-                                        .style(poise::serenity_prelude::ButtonStyle::Success)
-                                        .custom_id(registry_confirm)
-                                        .disabled(true)
-                                })
-                                .create_button(|b| {
-                                    b.label("Cancel")
-                                        .style(poise::serenity_prelude::ButtonStyle::Danger)
-                                        .custom_id(registry_cancel)
-                                        .disabled(true)
-                                })
-                            })
-                        })
+                        s.components(|c|{c})
                         .embed(|e| {
                             e.title(format!("**Please try again**"))
                                 .description(format!(
