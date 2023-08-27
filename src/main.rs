@@ -117,15 +117,6 @@ async fn run() -> Result<(), Error> {
     };
     info!("Options generated successfully!");
 
-    let db_pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(10)
-        .connect(
-            &std::env::var("DATABASE_URL").expect("Missing DATABASE_URL environment variable."),
-        )
-        .await?;
-
-    sqlx::migrate!("./migrations").run(&db_pool).await?;
-
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
