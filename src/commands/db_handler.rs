@@ -23,16 +23,17 @@ pub async fn get_player_data(
 
     // Broken since converting to this Document. Will fix later
     // Uncomment from commands list once fixed
-    ctx.channel_id()
-        .send_message(&ctx, |response| {
-            response
-                .allowed_mentions(|a| a.replied_user(true))
-                .embed(|e| {
-                    e.title(format!("**{}**", individual_player.name))
-                        .description(individual_player.tag.to_string())
-                })
-        })
-        .await?;
+
+    // ctx.channel_id()
+    //     .send_message(&ctx, |response| {
+    //         response
+    //             .allowed_mentions(|a| a.replied_user(true))
+    //             .embed(|e| {
+    //                 e.title(format!("**{}**", individual_player.name))
+    //                     .description(individual_player.tag.to_string())
+    //             })
+    //     })
+    //     .await?;
 
     todo!();
 
