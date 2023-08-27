@@ -5,10 +5,10 @@ use crate::utils::api::api_handlers::CustomError;
 #[poise::command(slash_command, prefix_command)]
 pub async fn create_self_role_message(
     ctx: Context<'_>,
-    #[description = "The role ID to assign"] role_id: u64,
+    #[description = "The role ID to assign"] role_id: String,
     #[description = "The content of the self-roles message"] content: String,
-    #[description = "The channel ID to send the self-roles message"] channel_id: u64,
-    #[description = "The channel ID to send the self-roles message"] ping_channel_id: u64,
+    #[description = "The channel ID to send the self-roles message"] channel_id: String,
+    #[description = "The channel ID to send the self-roles message"] ping_channel_id: String,
     #[description = "The custom emoji for the react button"] emoji: String,
 ) -> Result<(), Error> {
 
@@ -16,7 +16,7 @@ pub async fn create_self_role_message(
 
     let emoji_obj = poise::serenity_prelude::parse_emoji(&emoji).ok_or_else(|| CustomError("Invalid emoji provided.".to_owned()))?;
 
-    let message = poise::serenity_prelude::ChannelId(channel_id)
+    let message = poise::serenity_prelude::ChannelId(channel_id.parse::<u64>().unwrap())
         .send_message(&ctx, |m| {
             m.content(content)
                 .components(|c| {
@@ -35,8 +35,8 @@ pub async fn create_self_role_message(
     let self_role_message = SelfRoleMessage {
         message_id: message.id.0 as i64,
         guild_id: guild_id.0 as i64,
-        role_id: role_id as i64,
-        ping_channel_id: ping_channel_id as i64,
+        role_id: role_id.parse::<i64>().unwrap(),
+        ping_channel_id: ping_channel_id.parse::<i64>().unwrap(),
     };
 
     let self_role_messages = ctx
