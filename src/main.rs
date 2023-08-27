@@ -49,6 +49,16 @@ async fn main() {
 
 #[instrument]
 async fn run() -> Result<(), Error> {
+    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
+    // Might be better to find a more scalable and flexible solution down the line.
+    let commands = vec![
+        commands::ping::ping(),
+        commands::player::player(),
+        commands::register::register(),
+        commands::battle_log::latest_log(),
+        commands::db_handler::get_player_data(),
+    ];
+
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
 
@@ -113,20 +123,9 @@ async fn run() -> Result<(), Error> {
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
 
-    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
-    // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![
-        commands::ping::ping(),
-        commands::player::player(),
-        commands::register::register(),
-        commands::battle_log::latest_log(),
-        commands::db_handler::get_player_data(),
-    ];
-
     info!("Generating framework...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: commands,
             ..Default::default()
         })
         .token(token)

@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 
 // use crate::{Context, Error};
@@ -11,7 +10,7 @@ pub struct SelfRoleMessage {
     pub guild_id: i64,
     pub role_id: i64,
     pub ping_channel_id: i64,
- }
+}
 
 // /// Set up a self-role message in the current room.
 // ///
