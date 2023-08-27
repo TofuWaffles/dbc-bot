@@ -1,6 +1,17 @@
 use crate::{Context, Error};
 use crate::self_role::SelfRoleMessage;
-use crate::utils::api::api_handlers::CustomError;
+
+// Define a custom error type for your application
+    #[derive(Debug)]
+    struct CustomError(String);
+
+    impl std::fmt::Display for CustomError {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(f, "CustomError: {}", self.0)
+        }
+    }
+
+    impl std::error::Error for CustomError {}
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn create_self_role_message(
