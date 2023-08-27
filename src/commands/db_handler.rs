@@ -21,21 +21,19 @@ pub async fn get_player_data(
         .await?
         .expect(&format!("Missing: {} document.", &id));
 
-    // Broken since converting to this Document. Will fix later
-    // Uncomment from commands list once fixed
+    let name = individual_player.get("name").and_then(|n| n.as_str()).unwrap_or("Player username not found in database.");
+    let tag = individual_player.get("tag").and_then(|t| t.as_str()).unwrap_or("Player tag not found in database");
 
-    // ctx.channel_id()
-    //     .send_message(&ctx, |response| {
-    //         response
-    //             .allowed_mentions(|a| a.replied_user(true))
-    //             .embed(|e| {
-    //                 e.title(format!("**{}**", individual_player.name))
-    //                     .description(individual_player.tag.to_string())
-    //             })
-    //     })
-    //     .await?;
-
-    todo!();
+    ctx.channel_id()
+        .send_message(&ctx, |response| {
+            response
+                .allowed_mentions(|a| a.replied_user(true))
+                .embed(|e| {
+                    e.title(format!("**{}**", name))
+                        .description(tag)
+                })
+        })
+        .await?;
 
     Ok(())
 }

@@ -81,12 +81,12 @@ async fn run() -> Result<(), Error> {
                             match message_component_interaction.data.component_type {
                                 // We exhaustively check the specific interaction type so that we don't have to do it inside every function
                                 serenity::ComponentType::Button => {
-                                    // self_role::handle_button::handle_selfrole_button(
-                                    //     message_component_interaction,
-                                    //     ctx,
-                                    //     data,
-                                    // )
-                                    // .await?
+                                    self_role::handle_button::handle_selfrole_button(
+                                        message_component_interaction,
+                                        ctx,
+                                        data,
+                                    )
+                                    .await?;
                                     todo!();
                                 }
                                 _ => (),
