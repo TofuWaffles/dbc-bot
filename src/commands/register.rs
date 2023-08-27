@@ -22,8 +22,7 @@ pub async fn registry(
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     ctx.defer().await?;
-    // let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
-    let registry_confirm = ctx.id();
+    let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::api_handlers::get_api_link("player", &tag);
     match api::api_handlers::request(&endpoint).await {
@@ -91,53 +90,69 @@ pub async fn registry(
                 .author_id(ctx.author().id)
                 .channel_id(ctx.channel_id())
                 .timeout(std::time::Duration::from_secs(120))
-                // .filter(move |mci| format!("{}1",mci.data.custom_id) == registry_confirm.to_string())
-                .filter(move |mci| mci.data.custom_id == registry_confirm.to_string())
                 .await
             {
-                let mut confirm_prompt = mci.message.clone();
-                confirm_prompt
-                    .edit(ctx, |s| {
-                        s.embed(|e| {
-                            e.title(format!("**You have successfully registered!**"))
-                                .description(format!(
+                if mci.data.custom_id == registry_confirm.to_string() {
+                    let mut confirm_prompt = mci.message.clone();
+                    confirm_prompt
+                        .edit(ctx, |s| {
+                            s.components(|c| {
+                                c.create_action_row(|a| {
+                                    a.create_button(|b| {
+                                        b.label("Confirm")
+                                            .style(poise::serenity_prelude::ButtonStyle::Success)
+                                            .custom_id(registry_confirm)
+                                            .disabled(true)
+                                    })
+                                    .create_button(|b| {
+                                        b.label("Cancel")
+                                            .style(poise::serenity_prelude::ButtonStyle::Danger)
+                                            .custom_id(registry_cancel)
+                                            .disabled(true)
+                                    })
+                                })
+                            })
+                            .embed(|e| {
+                                e.title(format!("**You have successfully registered!**"))
+                                    .description(format!(
                                     "Your player tag #{} has been registered with the region {}",
                                     tag, region
                                 ))
+                            })
                         })
-                    })
-                    .await?;
+                        .await?;
                 //ADD DATABASE HERE
 
                 // THANKS, MATT
-                mci.create_interaction_response(ctx, |ir| {
-                    ir.kind(serenity_prelude::InteractionResponseType::DeferredUpdateMessage)
-                })
-                .await?;
-            }
-
-            while let Some(mci) = serenity_prelude::CollectComponentInteraction::new(ctx)
-                .author_id(ctx.author().id)
-                .channel_id(ctx.channel_id())
-                .timeout(std::time::Duration::from_secs(120))
-                .filter(move |mci| {
-                    format!("{}0", mci.data.custom_id) == registry_cancel.to_string()
-                })
-                .await
-            {
-                let mut cancel_prompt = mci.message.clone();
-                cancel_prompt
+                } else {
+                    let mut cancel_prompt = mci.message.clone();
+                    cancel_prompt
                     .edit(ctx, |s| {
-                        s.embed(|e| {
-                            e.title(format!("**We have tried very hard to find but...**"))
+                        s.components(|c|{
+                            c.create_action_row(|a| {
+                                a.create_button(|b| {
+                                    b.label("Confirm")
+                                        .style(poise::serenity_prelude::ButtonStyle::Success)
+                                        .custom_id(registry_confirm)
+                                        .disabled(true)
+                                })
+                                .create_button(|b| {
+                                    b.label("Cancel")
+                                        .style(poise::serenity_prelude::ButtonStyle::Danger)
+                                        .custom_id(registry_cancel)
+                                        .disabled(true)
+                                })
+                            })
+                        })
+                        .embed(|e| {
+                            e.title(format!("**Please try again**"))
                                 .description(format!(
-                                    "No player is associated with the tag #{}",
-                                    tag
+                                    "You have cancelled your registration for the tournament! Please try again!"
                                 ))
                         })
                     })
                     .await?;
-
+                }
                 mci.create_interaction_response(ctx, |ir| {
                     ir.kind(serenity_prelude::InteractionResponseType::DeferredUpdateMessage)
                 })
