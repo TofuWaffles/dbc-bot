@@ -6,7 +6,7 @@ pub mod api_handlers {
 
     // Define a custom error type for your application
     #[derive(Debug)]
-    pub(crate) struct CustomError(pub String);
+    pub struct CustomError(pub String);
     /// Implements the `fmt::Display` trait for the `CustomError` struct.
     ///
     /// This implementation allows instances of the `CustomError` struct to be formatted as strings

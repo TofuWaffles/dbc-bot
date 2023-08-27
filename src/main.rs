@@ -24,7 +24,10 @@ use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
 
+// Rest of your code here
+
 // This data struct is used to pass data (such as the db_pool) to the context object
+#[allow(dead_code)]
 pub struct Data {
     db_client: mongodb::Client,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
@@ -48,6 +51,7 @@ async fn main() {
 }
 
 #[instrument]
+#[allow(dead_code)]
 async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
@@ -57,7 +61,8 @@ async fn run() -> Result<(), Error> {
         commands::register::register(),
         commands::battle_log::latest_log(),
         commands::db_handler::get_player_data(),
-        commands::create_self_role_message::create_self_role_message(),
+        commands::create_self_role_message::create_self_role_message(),,
+        commands::submit::submit(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

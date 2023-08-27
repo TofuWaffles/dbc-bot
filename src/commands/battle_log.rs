@@ -10,10 +10,10 @@ pub async fn latest_log(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
 ) -> Result<(), Error> {
-    let endpoint = api::api_handlers::get_api_link("battle_log", &tag);
+    let endpoint = api::api_handlers::get_api_link("battle_log", &tag.to_uppercase());
     match api::api_handlers::request(&endpoint).await {
         Ok(log) => {
-            let player_endpoint = api::api_handlers::get_api_link("player", &tag);
+            let player_endpoint = api::api_handlers::get_api_link("player", &tag.to_uppercase());
             let player = api::api_handlers::request(&player_endpoint).await.unwrap();
             ctx.send(|s| {
                 s.content("".to_string()).reply(true).embed(|e| {
@@ -49,10 +49,12 @@ pub async fn latest_log(
                             ),
                             (
                                 "Duration",
-                                log["items"][0]["battle"]["duration"]
-                                    .to_string()
-                                    .strip_quote()
-                                    + "s",
+                                format!(
+                                    "{}s",
+                                    log["items"][0]["battle"]["duration"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
                                 true,
                             ),
                             (
@@ -69,37 +71,107 @@ pub async fn latest_log(
                             ),
                             ("", "".to_string(), false),
                         ])
-                        .field("===============================".to_string(), "", false)
+                        .field(
+                            "=============================================".to_string(),
+                            "",
+                            false,
+                        )
                         .fields(vec![
                             (
                                 log["items"][0]["battle"]["teams"][0][0]["name"]
                                     .to_string()
                                     .strip_quote(),
-                                "Brawler: ".to_string()
-                                    + &log["items"][0]["battle"]["teams"][0][0]["brawler"]["name"]
-                                        .to_string()
-                                        .strip_quote()
-                                    + "\n"
-                                    + "Power: "
-                                    + &log["items"][0]["battle"]["teams"][0][0]["brawler"]["power"]
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][0][0]["brawler"]["name"]
                                         .to_string()
                                         .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][0]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
                                 true,
                             ),
+                            (
+                                log["items"][0]["battle"]["teams"][0][1]["name"]
+                                    .to_string()
+                                    .strip_quote(),
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][0][1]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][1]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][0][2]["name"]
+                                    .to_string()
+                                    .strip_quote(),
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][0][2]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][2]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                        ])
+                        .fields(vec![
+                            ("".to_string(), "".to_string(), true),
                             ("VS".to_string(), "".to_string(), true),
+                            ("".to_string(), "".to_string(), true),
+                        ])
+                        .fields(vec![
                             (
                                 log["items"][0]["battle"]["teams"][1][0]["name"]
                                     .to_string()
                                     .strip_quote(),
-                                "Brawler: ".to_string()
-                                    + &log["items"][0]["battle"]["teams"][1][0]["brawler"]["name"]
-                                        .to_string()
-                                        .strip_quote()
-                                    + "\n"
-                                    + "Power: "
-                                    + &log["items"][0]["battle"]["teams"][1][0]["brawler"]["power"]
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][1][0]["brawler"]["name"]
                                         .to_string()
                                         .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][0]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][1][1]["name"]
+                                    .to_string()
+                                    .strip_quote(),
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][1][1]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][1]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][1][2]["name"]
+                                    .to_string()
+                                    .strip_quote(),
+                                format!(
+                                    " {}\n {}",
+                                    log["items"][0]["battle"]["teams"][1][2]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][2]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
                                 true,
                             ),
                         ])
@@ -114,7 +186,7 @@ pub async fn latest_log(
                     .ephemeral(false)
                     .embed(|e| {
                         e.title(format!("Error: {:#?}", err))
-                            .description(format!("No player is associated with {}", tag))
+                            .description(format!("No player is associated with {}", tag.to_uppercase()))
                     })
             })
             .await?;

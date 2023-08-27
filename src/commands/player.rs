@@ -8,7 +8,7 @@ pub async fn player(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
 ) -> Result<(), Error> {
-    let endpoint = api::api_handlers::get_api_link("player", &tag);
+    let endpoint = api::api_handlers::get_api_link("player", &tag.to_uppercase());
     match api::api_handlers::request(&endpoint).await {
         Ok(player) => {
             ctx.send(|s| {
@@ -17,13 +17,11 @@ pub async fn player(
                     .ephemeral(false)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
-                            .title(
-                                "**".to_string()
-                                    + &player["name"].to_string().strip_quote()
-                                    + "("
-                                    + &player["tag"].to_string().strip_quote()
-                                    + ")**",
-                            )
+                            .title(format!(
+                                "**{} ({})**",
+                                &player["name"].to_string().strip_quote(),
+                                &player["tag"].to_string().strip_quote()
+                            ))
                             .thumbnail(format!(
                                 "https://cdn-old.brawlify.com/profile-low/{}.png",
                                 player["icon"]["id"]
@@ -62,7 +60,7 @@ pub async fn player(
                     .ephemeral(false)
                     .embed(|e| {
                         e.title(format!("**We have tried very hard to find but...**"))
-                            .description(format!("No player is associated with the tag #{}", tag))
+                            .description(format!("No player is associated with the tag #{}", tag.to_uppercase()))
                     })
             })
             .await?;
