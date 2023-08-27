@@ -7,6 +7,7 @@ struct SelfRoles {
     option: String,
 }
 
+#[allow(dead_code)]
 struct DbPooling {
     client: Client,
     client_options: ClientOptions,
@@ -20,6 +21,7 @@ impl DbPooling {
     }
 }
 
+#[allow(dead_code)]
 async fn retrieve_self_roles_data(
     args: &[&str],
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
