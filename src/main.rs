@@ -130,7 +130,7 @@ async fn run() -> Result<(), Error> {
         commands::ping::ping(),
         commands::player::player(),
         commands::register::register(),
-        commands::battle_log::log(),
+        commands::battle_log::latest_log(),
         commands::db_handler::get_player_data(),
         commands::create_self_role_message::create_self_role_message(),
     ];
