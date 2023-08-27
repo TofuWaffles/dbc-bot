@@ -49,14 +49,6 @@ async fn main() {
 
 #[instrument]
 async fn run() -> Result<(), Error> {
-    // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
-    // Might be better to find a more scalable and flexible solution down the line.
-    let commands = vec![
-        commands::ping::ping(),
-        commands::player::player(),
-        // commands::battle_log::log(),
-    ];
-
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
 
