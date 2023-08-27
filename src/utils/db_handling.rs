@@ -1,5 +1,3 @@
-use crate::{Context, Error};
-use futures::stream::TryStreamExt;
 use mongodb::{bson::doc, options::ClientOptions, options::FindOptions, Client};
 use serde::{Deserialize, Serialize};
 
@@ -40,7 +38,7 @@ async fn retrieve_self_roles_data(
         .sort(doc! { "user": args[1], "option": args[2] })
         .build();
 
-    let mut cursor = collection.find(filter, find_options).await?;
+    let cursor = collection.find(filter, find_options).await?;
 
     todo!()
 }

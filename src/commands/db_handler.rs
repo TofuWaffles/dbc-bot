@@ -1,6 +1,5 @@
-use crate::bracket_tournament::player::PlayerDB;
 use crate::{Context, Error};
-use mongodb::bson::doc;
+use mongodb::bson::{doc, Document};
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn get_player_data(
@@ -12,7 +11,7 @@ pub async fn get_player_data(
         .db_client
         .database("DBC-bot")
         .collection("PlayerDB");
-    let individual_player: PlayerDB = player_data
+    let individual_player: Document = player_data
         .find_one(
             doc! {
                 "id": &id
@@ -22,6 +21,8 @@ pub async fn get_player_data(
         .await?
         .expect(&format!("Missing: {} document.", &id));
 
+    // Broken since converting to this Document. Will fix later
+    // Uncomment from commands list once fixed
     ctx.channel_id()
         .send_message(&ctx, |response| {
             response
@@ -32,5 +33,8 @@ pub async fn get_player_data(
                 })
         })
         .await?;
+
+    todo!();
+
     Ok(())
 }

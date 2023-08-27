@@ -30,13 +30,13 @@ pub async fn handle_selfrole_button(
 //         return Ok(());
 //     }
 
-    let self_role_message = match data
-        .self_role_messages
-        .get(&(button_interaction.message.id.0 as i64))
-    {
-        Some(self_role_message) => self_role_message,
-        None => return Ok(()),
-    };
+//     let self_role_message = match data
+//         .self_role_messages
+//         .get(&(button_interaction.message.id.0 as i64))
+//     {
+//         Some(self_role_message) => self_role_message,
+//         None => return Ok(()),
+//     };
 
-    todo!();
-}
+//     todo!();
+// }

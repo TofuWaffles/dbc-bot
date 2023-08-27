@@ -1,11 +1,11 @@
 
-pub mod handle_button;
+use serde::{Deserialize, Serialize};
 
 // use crate::{Context, Error};
 // use poise::serenity_prelude::{self as serenity, ButtonStyle, CreateButton, MessageBuilder};
 
 // // The context will hold this type in a dash map indexed by its message_id for convenient searching
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SelfRoleMessage {
     pub message_id: i64,
     pub guild_id: i64,
