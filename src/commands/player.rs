@@ -11,7 +11,6 @@ pub async fn player(
     let endpoint = api::api_handlers::get_api_link("player", &tag);
     match api::api_handlers::request(&endpoint).await {
         Ok(player) => {
-            println!("{}", json);
             ctx.send(|s| {
                 s.content("".to_string())
                     .reply(true)
