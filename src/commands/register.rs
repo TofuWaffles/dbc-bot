@@ -109,9 +109,29 @@ pub async fn register(
                         "id": ctx.author_member().await.unwrap().user.id.to_string(),
                     });
                     println!("{}", data);
-                    //Matt please handle this
 
-                    //Thanks
+                    let collection = ctx
+                    .data()
+                    .db_client
+                    .database("DBC-bot")
+                    .collection("PlayerDB");
+                
+                    match collection.insert_one(data, None).await {
+                        Ok(_) => {}
+                        Err(err) => {
+                            match err.kind.as_ref() {
+                                mongodb::error::ErrorKind::Command(code) => {
+                                    eprintln!("Command error: {:?}", code);
+                                }
+                                mongodb::error::ErrorKind::Write(code) => {
+                                    eprintln!("Write error: {:?}", code);
+                                }
+                                _ => {
+                                    eprintln!("Error: {:?}", err);
+                                }
+                            }
+                        }
+                    };
                 } else {
                     let mut cancel_prompt = mci.message.clone();
                     cancel_prompt
