@@ -1,6 +1,5 @@
-// use mongodb::bson::doc;
-// use crate::bracket_tournament::player::PlayerDB;
-// use crate::{Context, Error};
+use mongodb::bson::{doc, Document};
+use crate::{Context, Error};
 
 /// A moderator-only command, using required_permissions
 #[poise::command(
