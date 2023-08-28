@@ -1,9 +1,9 @@
 use crate::bracket_tournament::api;
-use crate::utils::misc::{get_difficulty, QuoteStripper};
+use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use poise::serenity_prelude as serenity;
-use serde_json;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, poise::ChoiceParameter)]
 pub enum Region {
     #[name = "North America & South America"]
@@ -22,13 +22,13 @@ pub async fn register(
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     ctx.defer().await?;
-    
+
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
-    let endpoint = api::api_handlers::get_api_link("player", &tag.to_uppercase());
+    let endpoint = api::get_api_link("player", &tag.to_uppercase());
 
-    match api::api_handlers::request(&endpoint).await {
+    match api::request(&endpoint).await {
         Ok(player) => {
             // let embed = player_embed(&player, &ctx, &region);
             ctx.send(|s| {
@@ -52,31 +52,16 @@ pub async fn register(
                         e.author(|a| a.name(ctx.author().name.clone()))
                         .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
                         .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
-                        .thumbnail(format!(
-                            "https://cdn-old.brawlify.com/profile-low/{}.png",
-                            player["icon"]["id"]
-                        ))
-                        .field("**Region**".to_string(), format!("{:?}", region), true)
+                        .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
                         .fields(vec![
+                            ("**Region**", region.to_string(), true),
                             ("Trophies", player["trophies"].to_string(), true),
-                            (
-                                "Highest Trophies",
-                                player["highestTrophies"].to_string(),
-                                true,
-                            ),
+                            ("Highest Trophies", player["highestTrophies"].to_string(), true),
                             ("3v3 Victories", player["3vs3Victories"].to_string(), true),
                             ("Solo Victories", player["soloVictories"].to_string(), true),
                             ("Duo Victories", player["duoVictories"].to_string(), true),
-                            (
-                                "Best Robo Rumble Time",
-                                get_difficulty(&player["bestRoboRumbleTime"]),
-                                true,
-                            ),
-                            (
-                                "Club",
-                                player["club"]["name"].to_string().strip_quote(),
-                                true,
-                            ),
+                            ("Best Robo Rumble Time", get_difficulty(&player["bestRoboRumbleTime"]),true),
+                            ("Club", player["club"]["name"].to_string().strip_quote(), true),
                         ])
                         .timestamp(ctx.created_at())
                     })
@@ -95,27 +80,24 @@ pub async fn register(
                     confirm_prompt
                         .edit(ctx, |s| {
                             s.components(|c| c).embed(|e| {
-                                e.title(format!("**You have successfully registered!**"))
-                                    .description(format!(
-                                    "We have collected your information!\nYour player tag #{} has been registered with the region {}",
-                                    tag.to_uppercase(), region
-                                ))
+                                e.title("**You have successfully registered!**")
+                                    .description(format!("We have collected your information!\nYour player tag #{} has been registered with the region {}", tag.to_uppercase(), region))
                             })
-                        })
-                        .await?;
-                    let data = serde_json::json!({
-                        "tag": tag.to_uppercase(),
+                        }).await?;
+
+                    let data = serenity::json::json!({
                         "name": player["name"].to_string().strip_quote(),
-                        "region": format!("{:?}", region),
+                        "tag": tag.to_uppercase(),
                         "id": ctx.author_member().await.unwrap().user.id.to_string(),
+                        "region": format!("{:?}", region),
                     });
-                    println!("{}", data);
 
                     let collection = ctx
                         .data()
                         .db_client
-                        .database("DBC-bot")
-                        .collection("PlayerDB");
+                        .database("DBC")
+                        .collection("Player");
+                    println!("Player {}({}) has been registered!", player["name"].to_string().strip_quote(), tag);
 
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}
@@ -155,11 +137,8 @@ pub async fn register(
                     .reply(true)
                     .ephemeral(false)
                     .embed(|e| {
-                        e.title(format!("**We have tried very hard to find but...**"))
-                            .description(format!(
-                                "No player is associated with the tag #{}",
-                                tag.to_uppercase()
-                            ))
+                        e.title("**We have tried very hard to find but...**")
+                            .description(format!("No player is associated with the tag #{}",tag.to_uppercase()))
                             .field("Please try again!".to_string(), "".to_string(), true)
                     })
             })
@@ -169,44 +148,3 @@ pub async fn register(
 
     Ok(())
 }
-
-// fn player_embed<'a>(data: &serde_json::Value, ctx: &Context<'_>, region: &Region) -> &'a mut serenity::CreateEmbed{
-//     let embed = serenity::CreateEmbed::default()
-//         .author(|a| a.name(ctx.author().name.clone()))
-//         .title(
-//             "**".to_string()
-//                 + &data["name"].to_string().strip_quote()
-//                 + "("
-//                 + &data["tag"].to_string().strip_quote()
-//                 + ")**",
-//         )
-//         .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
-//         .thumbnail(format!(
-//             "https://cdn-old.brawlify.com/profile-low/{}.png",
-//             data["icon"]["id"]
-//         ))
-//         .field(format!("**Region**"), format!("{:?}", region), true)
-//         .fields(vec![
-//             ("Trophies", data["trophies"].to_string(), true),
-//             (
-//                 "Highest Trophies",
-//                 data["highestTrophies"].to_string(),
-//                 true,
-//             ),
-//             ("3v3 Victories", data["3vs3Victories"].to_string(), true),
-//             ("Solo Victories", data["soloVictories"].to_string(), true),
-//             ("Duo Victories", data["duoVictories"].to_string(), true),
-//             (
-//                 "Best Robo Rumble Time",
-//                 get_difficulty(&data["bestRoboRumbleTime"]),
-//                 true,
-//             ),
-//             (
-//                 "Club",
-//                 data["club"]["name"].to_string().strip_quote(),
-//                 true,
-//             ),
-//         ])
-//         .timestamp(ctx.created_at());
-//     &mut embed.clone()
-// }

@@ -1,5 +1,5 @@
 use crate::bracket_tournament::api;
-use crate::utils::misc::{get_difficulty, QuoteStripper};
+use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 
 /// Get the player's profile
@@ -8,8 +8,8 @@ pub async fn player(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
 ) -> Result<(), Error> {
-    let endpoint = api::api_handlers::get_api_link("player", &tag.to_uppercase());
-    match api::api_handlers::request(&endpoint).await {
+    let endpoint = api::get_api_link("player", &tag.to_uppercase());
+    match api::request(&endpoint).await {
         Ok(player) => {
             ctx.send(|s| {
                 s.content("".to_string())

@@ -6,7 +6,7 @@ TODO:
 mod bracket_tournament;
 mod commands;
 mod self_role;
-mod utils;
+mod misc;
 
 use dashmap::DashMap;
 use mongodb::{
@@ -80,6 +80,7 @@ async fn run() -> Result<(), Error> {
                         info!("{username} is online", username = bot_name);
                         println!("{} is online!", bot_name);
                     }
+                    
                     Event::InteractionCreate { interaction } => match interaction {
                         serenity::Interaction::MessageComponent(message_component_interaction) => {
                             match message_component_interaction.data.component_type {
@@ -97,6 +98,8 @@ async fn run() -> Result<(), Error> {
                             }
                         }
                         _ => (),
+
+
                     },
                     _ => (),
                 }
@@ -127,6 +130,7 @@ async fn run() -> Result<(), Error> {
 
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
+    trace!("Database is connected successfully!");
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
@@ -145,7 +149,7 @@ async fn run() -> Result<(), Error> {
                 .await?;
                 let db_client = Client::with_options(options)?;
                 let mut self_role_data = db_client
-                    .database("DBC-bot")
+                    .database("DBC")
                     .collection::<self_role::SelfRoleMessage>("SelfRoles")
                     .find(None, None)
                     .await
