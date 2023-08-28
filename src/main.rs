@@ -61,6 +61,8 @@ async fn run() -> Result<(), Error> {
         commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
+        commands::db_handler::get_individual_player_data(),
+        commands::db_handler::get_all_players_data()
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
