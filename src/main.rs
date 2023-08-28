@@ -27,7 +27,6 @@ use tracing_subscriber::{filter, prelude::*};
 // Rest of your code here
 
 // This data struct is used to pass data (such as the db_pool) to the context object
-#[allow(dead_code)]
 pub struct Data {
     db_client: mongodb::Client,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
@@ -60,6 +59,7 @@ async fn run() -> Result<(), Error> {
         commands::player::player(),
         commands::battle_log::latest_log(),
         commands::register::register(),
+        commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
     ];
 
@@ -84,12 +84,12 @@ async fn run() -> Result<(), Error> {
                             match message_component_interaction.data.component_type {
                                 // We exhaustively check the specific interaction type so that we don't have to do it inside every function
                                 serenity::ComponentType::Button => {
-                                    // self_role::handle_button::handle_selfrole_button(
-                                    //     message_component_interaction,
-                                    //     ctx,
-                                    //     data,
-                                    // )
-                                    // .await?
+                                    self_role::handle_button::handle_selfrole_button(
+                                        message_component_interaction,
+                                        ctx,
+                                        data,
+                                    )
+                                    .await?;
                                     todo!();
                                 }
                                 _ => (),
