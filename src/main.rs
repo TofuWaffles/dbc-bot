@@ -61,6 +61,7 @@ async fn run() -> Result<(), Error> {
         commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
+        commands::paginate::paginate(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

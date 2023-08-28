@@ -6,3 +6,4 @@ pub mod player;
 pub mod register;
 pub mod sample_json;
 pub mod submit;
+pub mod paginate;

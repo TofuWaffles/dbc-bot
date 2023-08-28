@@ -21,7 +21,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     println!("Player 2: {}", player2);
     let mut index = 0;
     let mut result = "".to_string();
-    for log_index in 0..=21 {
+    for log_index in 0..=30 {
         let mode = log["items"][log_index]["event"]["mode"]
             .to_string()
             .strip_quote();
@@ -41,6 +41,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
             break;
         }
         index += 1;
+    }
         // println!(
         //     "Battle log {}\nMode: {}\nPlayer 1: {}\nPlayer2: {}",
         //     log_index,
@@ -54,7 +55,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         //         .to_string()
         //         .strip_quote()
         // );
-    }
+
     if index <= 21 {
         ctx.send(|s| {
             s.content("".to_string()).reply(true).embed(|e| {
