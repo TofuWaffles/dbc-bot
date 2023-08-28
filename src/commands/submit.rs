@@ -3,7 +3,9 @@ use crate::commands::sample_json;
 use crate::utils::embed_color::get_color;
 use crate::utils::misc::{get_mode_icon, QuoteStripper};
 use crate::{Context, Error};
+use poise::serenity_prelude::json::Value;
 const MODE: &str = "wipeout";
+
 const MAX_BRAWLER_LEVEL: i32 = 11;
 
 ///Once the match ends, please run this command to update the result.

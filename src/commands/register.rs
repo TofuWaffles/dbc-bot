@@ -22,6 +22,7 @@ pub async fn register(
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     ctx.defer().await?;
+    
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
@@ -110,26 +111,26 @@ pub async fn register(
                     });
                     println!("{}", data);
 
-                    // let collection = ctx
-                    //     .data()
-                    //     .db_client
-                    //     .database("DBC-bot")
-                    //     .collection("PlayerDB");
+                    let collection = ctx
+                        .data()
+                        .db_client
+                        .database("DBC-bot")
+                        .collection("PlayerDB");
 
-                    // match collection.insert_one(data, None).await {
-                    //     Ok(_) => {}
-                    //     Err(err) => match err.kind.as_ref() {
-                    //         mongodb::error::ErrorKind::Command(code) => {
-                    //             eprintln!("Command error: {:?}", code);
-                    //         }
-                    //         mongodb::error::ErrorKind::Write(code) => {
-                    //             eprintln!("Write error: {:?}", code);
-                    //         }
-                    //         _ => {
-                    //             eprintln!("Error: {:?}", err);
-                    // //         }
-                    //     },
-                    // };
+                    match collection.insert_one(data, None).await {
+                        Ok(_) => {}
+                        Err(err) => match err.kind.as_ref() {
+                            mongodb::error::ErrorKind::Command(code) => {
+                                eprintln!("Command error: {:?}", code);
+                            }
+                            mongodb::error::ErrorKind::Write(code) => {
+                                eprintln!("Write error: {:?}", code);
+                            }
+                            _ => {
+                                eprintln!("Error: {:?}", err);
+                             }
+                        },
+                    };
                 } else {
                     let mut cancel_prompt = mci.message.clone();
                     cancel_prompt
@@ -148,7 +149,6 @@ pub async fn register(
                 .await?;
             }
         }
-
         Err(_) => {
             ctx.send(|s| {
                 s.content("".to_string())
