@@ -59,6 +59,7 @@ async fn run() -> Result<(), Error> {
         commands::battle_log::latest_log(),
         commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
+        commands::db_handler:
         commands::submit::submit(),
     ];
 
