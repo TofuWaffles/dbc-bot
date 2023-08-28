@@ -38,10 +38,18 @@ pub async fn handle_selfrole_button(
         None => {
             eprintln!("Error retrieving ping channel");
             return Ok(());
-        },
+        }
     };
 
-    let sent_message = match ping_channel.send_message(&ctx, |m| m.content(format!("<@{}>", member.user.id)).embed(|e| e.description("You have been registered for the tournament!").color(poise::serenity_prelude::Colour::DARK_GREEN))).await {
+    let sent_message = match ping_channel
+        .send_message(&ctx, |m| {
+            m.content(format!("<@{}>", member.user.id)).embed(|e| {
+                e.description("You have been registered for the tournament!")
+                    .color(poise::serenity_prelude::Colour::DARK_GREEN)
+            })
+        })
+        .await
+    {
         Ok(sent_message) => sent_message,
         Err(err) => {
             eprintln!("Error sending ping message: {:?}", err);
@@ -50,7 +58,7 @@ pub async fn handle_selfrole_button(
     };
 
     button_interaction.create_interaction_response(ctx, |c| c.interaction_response_data(|d| d.embed(|e|e.description(format!("Registration was successful, please check the <#{}> channel for more information.", ping_channel_id))).ephemeral(true))).await?;
-    
+
     sleep(Duration::from_secs(15)).await;
 
     if let Err(err) = sent_message.delete(&ctx).await {

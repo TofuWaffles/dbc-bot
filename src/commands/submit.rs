@@ -1,4 +1,4 @@
-use crate::bracket_tournament::api::{self, api_handlers};
+use crate::bracket_tournament::api::api_handlers;
 use crate::commands::sample_json;
 use crate::utils::embed_color::get_color;
 use crate::utils::misc::{get_mode_icon, QuoteStripper};

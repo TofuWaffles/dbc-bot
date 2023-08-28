@@ -61,7 +61,7 @@ async fn run() -> Result<(), Error> {
         commands::register::register(),
         commands::battle_log::latest_log(),
         commands::db_handler::get_player_data(),
-        commands::create_self_role_message::create_self_role_message(),,
+        commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
     ];
 
@@ -128,7 +128,7 @@ async fn run() -> Result<(), Error> {
 
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
-    
+
     info!("Generating framework...");
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {

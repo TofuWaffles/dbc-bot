@@ -1,6 +1,6 @@
-use crate::{Context, Error};
-use crate::self_role::SelfRoleMessage;
 use crate::bracket_tournament::api::api_handlers::CustomError;
+use crate::self_role::SelfRoleMessage;
+use crate::{Context, Error};
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn create_self_role_message(
@@ -11,24 +11,23 @@ pub async fn create_self_role_message(
     #[description = "The channel ID to send the self-roles message"] ping_channel_id: String,
     #[description = "The custom emoji for the react button"] emoji: String,
 ) -> Result<(), Error> {
-
     let guild_id = ctx.guild_id().unwrap();
 
-    let emoji_obj = poise::serenity_prelude::parse_emoji(&emoji).ok_or_else(|| CustomError("Invalid emoji provided.".to_owned()))?;
+    let emoji_obj = poise::serenity_prelude::parse_emoji(&emoji)
+        .ok_or_else(|| CustomError("Invalid emoji provided.".to_owned()))?;
 
     let message = poise::serenity_prelude::ChannelId(channel_id.parse::<u64>().unwrap())
         .send_message(&ctx, |m| {
-            m.content(content)
-                .components(|c| {
-                    c.create_action_row(|a| {
-                        a.create_button(|b| {
-                            b.style(poise::serenity_prelude::ButtonStyle::Success)
-                                .custom_id("register")
-                                .label("Register")
-                                .emoji(emoji_obj)
-                        })
+            m.content(content).components(|c| {
+                c.create_action_row(|a| {
+                    a.create_button(|b| {
+                        b.style(poise::serenity_prelude::ButtonStyle::Success)
+                            .custom_id("register")
+                            .label("Register")
+                            .emoji(emoji_obj)
                     })
                 })
+            })
         })
         .await?;
 
@@ -45,9 +44,15 @@ pub async fn create_self_role_message(
         .database("DBC-bot")
         .collection::<SelfRoleMessage>("SelfRoles");
 
-    self_role_messages.insert_one(self_role_message, None).await?;
+    self_role_messages
+        .insert_one(self_role_message, None)
+        .await?;
 
-    ctx.say(format!("Custom self role message created in <#{}>", channel_id)).await?;
+    ctx.say(format!(
+        "Custom self role message created in <#{}>",
+        channel_id
+    ))
+    .await?;
 
     Ok(())
 }
