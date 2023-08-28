@@ -3,7 +3,7 @@ use crate::utils::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 
 /// Get the player's profile
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn player(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
@@ -60,7 +60,10 @@ pub async fn player(
                     .ephemeral(false)
                     .embed(|e| {
                         e.title(format!("**We have tried very hard to find but...**"))
-                            .description(format!("No player is associated with the tag #{}", tag.to_uppercase()))
+                            .description(format!(
+                                "No player is associated with the tag #{}",
+                                tag.to_uppercase()
+                            ))
                     })
             })
             .await?;
