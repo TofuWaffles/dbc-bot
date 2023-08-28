@@ -15,7 +15,7 @@ pub enum Region {
 }
 
 /// Sign up for Discord Brawl Cup Tournament!
-#[poise::command(slash_command, prefix_command, track_edits)]
+#[poise::command(slash_command, guild_only, track_edits)]
 pub async fn register(
     ctx: Context<'_>,
     #[description = "Put your player tag here (without #)"] tag: String,
@@ -111,26 +111,24 @@ pub async fn register(
                     println!("{}", data);
 
                     let collection = ctx
-                    .data()
-                    .db_client
-                    .database("DBC-bot")
-                    .collection("PlayerDB");
-                
+                        .data()
+                        .db_client
+                        .database("DBC-bot")
+                        .collection("PlayerDB");
+
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}
-                        Err(err) => {
-                            match err.kind.as_ref() {
-                                mongodb::error::ErrorKind::Command(code) => {
-                                    eprintln!("Command error: {:?}", code);
-                                }
-                                mongodb::error::ErrorKind::Write(code) => {
-                                    eprintln!("Write error: {:?}", code);
-                                }
-                                _ => {
-                                    eprintln!("Error: {:?}", err);
-                                }
+                        Err(err) => match err.kind.as_ref() {
+                            mongodb::error::ErrorKind::Command(code) => {
+                                eprintln!("Command error: {:?}", code);
                             }
-                        }
+                            mongodb::error::ErrorKind::Write(code) => {
+                                eprintln!("Write error: {:?}", code);
+                            }
+                            _ => {
+                                eprintln!("Error: {:?}", err);
+                            }
+                        },
                     };
                 } else {
                     let mut cancel_prompt = mci.message.clone();
@@ -171,7 +169,6 @@ pub async fn register(
         }
     }
 
-    
     Ok(())
 }
 

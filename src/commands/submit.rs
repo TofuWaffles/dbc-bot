@@ -7,7 +7,7 @@ const MODE: &str = "wipeout";
 const MAX_BRAWLER_LEVEL: i32 = 11;
 
 ///Once the match ends, please run this command to update the result.
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     let tag = "RR82U9J0".to_string();
     let log = api_handlers::request(&api_handlers::get_api_link("battle_log", &tag))

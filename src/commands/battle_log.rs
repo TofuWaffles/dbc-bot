@@ -5,7 +5,7 @@ use crate::utils::misc::QuoteStripper;
 use crate::{Context, Error};
 
 /// Get the latest log of a player
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn latest_log(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
@@ -185,8 +185,10 @@ pub async fn latest_log(
                     .reply(true)
                     .ephemeral(false)
                     .embed(|e| {
-                        e.title(format!("Error: {:#?}", err))
-                            .description(format!("No player is associated with {}", tag.to_uppercase()))
+                        e.title(format!("Error: {:#?}", err)).description(format!(
+                            "No player is associated with {}",
+                            tag.to_uppercase()
+                        ))
                     })
             })
             .await?;
