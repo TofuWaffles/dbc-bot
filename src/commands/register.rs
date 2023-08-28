@@ -22,6 +22,7 @@ pub async fn register(
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     ctx.defer().await?;
+    
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
@@ -55,7 +56,7 @@ pub async fn register(
                             "https://cdn-old.brawlify.com/profile-low/{}.png",
                             player["icon"]["id"]
                         ))
-                        .field(format!("**Region**"), format!("{:?}", region), true)
+                        .field("**Region**".to_string(), format!("{:?}", region), true)
                         .fields(vec![
                             ("Trophies", player["trophies"].to_string(), true),
                             (
@@ -127,7 +128,7 @@ pub async fn register(
                             }
                             _ => {
                                 eprintln!("Error: {:?}", err);
-                            }
+                             }
                         },
                     };
                 } else {
@@ -136,10 +137,8 @@ pub async fn register(
                     .edit(ctx, |s| {
                         s.components(|c|{c})
                         .embed(|e| {
-                            e.title(format!("**Please try again**"))
-                                .description(format!(
-                                    "You have cancelled your registration for the tournament! Please try again!"
-                                ))
+                            e.title("**Please try again**")
+                                .description("You have cancelled your registration for the tournament! Please try again!")
                         })
                     })
                     .await?;
@@ -150,7 +149,6 @@ pub async fn register(
                 .await?;
             }
         }
-
         Err(_) => {
             ctx.send(|s| {
                 s.content("".to_string())
