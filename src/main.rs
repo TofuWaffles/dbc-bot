@@ -27,7 +27,6 @@ use tracing_subscriber::{filter, prelude::*};
 // Rest of your code here
 
 // This data struct is used to pass data (such as the db_pool) to the context object
-#[allow(dead_code)]
 pub struct Data {
     db_client: mongodb::Client,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
@@ -58,9 +57,8 @@ async fn run() -> Result<(), Error> {
     let commands = vec![
         commands::ping::ping(),
         commands::player::player(),
-        commands::register::register(),
         commands::battle_log::latest_log(),
-        commands::db_handler::get_player_data(),
+        commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
     ];
