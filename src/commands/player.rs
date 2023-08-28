@@ -2,6 +2,9 @@ use crate::bracket_tournament::api;
 use crate::utils::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 
+
+
+
 /// Get the player's profile
 #[poise::command(slash_command, guild_only)]
 pub async fn player(
@@ -71,3 +74,4 @@ pub async fn player(
     }
     Ok(())
 }
+
