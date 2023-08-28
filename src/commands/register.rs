@@ -55,7 +55,7 @@ pub async fn register(
                             "https://cdn-old.brawlify.com/profile-low/{}.png",
                             player["icon"]["id"]
                         ))
-                        .field(format!("**Region**"), format!("{:?}", region), true)
+                        .field("**Region**".to_string(), format!("{:?}", region), true)
                         .fields(vec![
                             ("Trophies", player["trophies"].to_string(), true),
                             (
@@ -110,36 +110,34 @@ pub async fn register(
                     });
                     println!("{}", data);
 
-                    let collection = ctx
-                        .data()
-                        .db_client
-                        .database("DBC-bot")
-                        .collection("PlayerDB");
+                    // let collection = ctx
+                    //     .data()
+                    //     .db_client
+                    //     .database("DBC-bot")
+                    //     .collection("PlayerDB");
 
-                    match collection.insert_one(data, None).await {
-                        Ok(_) => {}
-                        Err(err) => match err.kind.as_ref() {
-                            mongodb::error::ErrorKind::Command(code) => {
-                                eprintln!("Command error: {:?}", code);
-                            }
-                            mongodb::error::ErrorKind::Write(code) => {
-                                eprintln!("Write error: {:?}", code);
-                            }
-                            _ => {
-                                eprintln!("Error: {:?}", err);
-                            }
-                        },
-                    };
+                    // match collection.insert_one(data, None).await {
+                    //     Ok(_) => {}
+                    //     Err(err) => match err.kind.as_ref() {
+                    //         mongodb::error::ErrorKind::Command(code) => {
+                    //             eprintln!("Command error: {:?}", code);
+                    //         }
+                    //         mongodb::error::ErrorKind::Write(code) => {
+                    //             eprintln!("Write error: {:?}", code);
+                    //         }
+                    //         _ => {
+                    //             eprintln!("Error: {:?}", err);
+                    // //         }
+                    //     },
+                    // };
                 } else {
                     let mut cancel_prompt = mci.message.clone();
                     cancel_prompt
                     .edit(ctx, |s| {
                         s.components(|c|{c})
                         .embed(|e| {
-                            e.title(format!("**Please try again**"))
-                                .description(format!(
-                                    "You have cancelled your registration for the tournament! Please try again!"
-                                ))
+                            e.title("**Please try again**")
+                                .description("You have cancelled your registration for the tournament! Please try again!")
                         })
                     })
                     .await?;
