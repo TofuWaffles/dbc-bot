@@ -16,7 +16,7 @@ pub async fn get_individual_player_data(
     ctx: Context<'_>,
     #[description = "Check a player registration status by user ID here"] discord_id: String,
 ) -> Result<(), Error> {
-    let player_data = ctx.data().database.collection("Player");
+    let player_data = ctx.data().database.collection("PlayerDB");
 
     let individual_player: Document = match player_data
         .find_one(

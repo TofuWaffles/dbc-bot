@@ -1,3 +1,8 @@
+use crate::Context;
+use mongodb::{
+    bson::{doc, Document},
+    Collection,
+};
 use poise::serenity_prelude::Colour;
 use std::error::Error;
 use std::fmt;
@@ -200,3 +205,22 @@ impl fmt::Display for CustomError {
 }
 
 impl Error for CustomError {}
+
+pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
+    let invoker_id = ctx.author().id.to_string();
+    let player_data: Collection<Document> = ctx.data().database.collection("PlayerDB");
+
+    match player_data
+        .find_one(
+            doc! {
+                "id": &invoker_id
+            },
+            None,
+        )
+        .await
+    {
+        Ok(Some(player)) => Some(player),
+        Ok(None) => None,
+        Err(_err) => None,
+    }
+}

@@ -1,7 +1,8 @@
 use crate::bracket_tournament::api;
-use crate::misc::{get_difficulty, QuoteStripper};
+use crate::misc::{get_difficulty, is_in_db, QuoteStripper};
 use crate::{Context, Error};
-use poise::serenity_prelude as serenity;
+use mongodb::bson::doc;
+use poise::serenity_prelude::{self as serenity};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, poise::ChoiceParameter)]
@@ -21,7 +22,24 @@ pub async fn register(
     #[description = "Put your player tag here (without #)"] tag: String,
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
+    // ctx.defer_ephemeral().await?;
     ctx.defer().await?;
+    //Check whether a player has registered or not by their Discord id
+    match is_in_db(&ctx).await {
+        None => {
+            ctx.send(|s|{
+            s.reply(true)
+            .ephemeral(true)
+            .embed(|e|{
+                e.title("**You have already registered!**")
+                .description("You have already registered for the tournament!
+                    \n If you want to participate the event with a different account, please /derigster first and run this again!")
+            })
+        }).await?;
+            return Ok(());
+        }
+        Some(_) => {}
+    }
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
@@ -46,7 +64,7 @@ pub async fn register(
                         })
                     })
                     .reply(true)
-                    .ephemeral(false)
+                    .ephemeral(true)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
                         .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
@@ -91,7 +109,7 @@ pub async fn register(
                         "region": format!("{:?}", region),
                     });
 
-                    let collection = ctx.data().database.collection("Player");
+                    let collection = ctx.data().database.collection("PlayerDB");
                     println!(
                         "Player {}({}) has been registered!",
                         player["name"].to_string().strip_quote(),
