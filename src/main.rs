@@ -5,13 +5,13 @@ TODO:
 */
 mod bracket_tournament;
 mod commands;
-mod self_role;
 mod misc;
+mod self_role;
 
 use dashmap::DashMap;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
-    Client,
+    Client, Database,
 };
 
 use futures::stream::TryStreamExt;
@@ -28,7 +28,7 @@ use tracing_subscriber::{filter, prelude::*};
 
 // This data struct is used to pass data (such as the db_pool) to the context object
 pub struct Data {
-    db_client: mongodb::Client,
+    database: mongodb::Database,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -61,7 +61,7 @@ async fn run() -> Result<(), Error> {
         commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
-        commands::db_handler::get_all_players_data()
+        commands::db_handler::get_all_players_data(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -80,7 +80,7 @@ async fn run() -> Result<(), Error> {
                         info!("{username} is online", username = bot_name);
                         println!("{} is online!", bot_name);
                     }
-                    
+
                     Event::InteractionCreate { interaction } => match interaction {
                         serenity::Interaction::MessageComponent(message_component_interaction) => {
                             match message_component_interaction.data.component_type {
@@ -98,8 +98,6 @@ async fn run() -> Result<(), Error> {
                             }
                         }
                         _ => (),
-
-
                     },
                     _ => (),
                 }
@@ -128,9 +126,7 @@ async fn run() -> Result<(), Error> {
     };
     info!("Options generated successfully!");
 
-    let db_uri = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL is not set. Set it as an environment variable.");
-    trace!("Database is connected successfully!");
+    let database = prepare_database().await?;
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
@@ -142,15 +138,8 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let options = ClientOptions::parse_with_resolver_config(
-                    &db_uri,
-                    ResolverConfig::cloudflare(),
-                )
-                .await?;
-                let db_client = Client::with_options(options)?;
-                let mut self_role_data = db_client
-                    .database("DBC")
-                    .collection::<self_role::SelfRoleMessage>("SelfRoles")
+                let mut self_role_data = database 
+                    .collection::<self_role::SelfRoleMessage>("SelfRoleMessage")
                     .find(None, None)
                     .await
                     .expect("Self Role data not found.");
@@ -167,7 +156,7 @@ async fn run() -> Result<(), Error> {
                     );
                 }
                 Ok(Data {
-                    db_client,
+                    database,
                     self_role_messages,
                 })
             })
@@ -197,6 +186,27 @@ async fn run() -> Result<(), Error> {
     framework.start().await?;
 
     Ok(())
+}
+
+#[instrument]
+async fn prepare_database() -> Result<Database, Error> {
+    trace!("Preparing database...");
+
+    let db_uri = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL is not set. Set it as an environment variable.");
+
+    let options =
+        ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
+
+    let database = Client::with_options(options)?.database("DBC");
+
+    // We want to preload the self role messages, which is why we create this collection if it does not exist
+    // Errors if the DB already exists and skips creation
+    database.create_collection("SelfRoleMessage", None).await.unwrap_or_else(|e| {info!("{:?}", e)});
+
+    info!("Database prepared successfully!");
+
+    Ok(database)
 }
 
 // Create the subscriber to listen to logging events
@@ -252,46 +262,3 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
         }
     }
 }
-
-/*
-TODO:
-- Build out self role and new channel alert feature
-- Plan and subsequently build the tournament bracket feature
-*/
-
-// #[tokio::main]
-// async fn main() {
-//     // Load the environment variable from the .env file
-//     dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
-
-//     let token = std::env::var("DISCORD_TOKEN")
-//         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
-
-//     // A list of commands to register. Remember to add the function for  ,the command in this vec, otherwise it won't appear in the command list.
-//     // Might be better to find a more scalable and flexible solution down the line.
-//     let commands = vec![
-//         commands::ping::ping(),
-//         commands::player::player(),
-//         commands::battle_log::latest_log(),
-//         commands::register::register(),
-//         commands::paginate::paginate(),
-//         commands::submit::submit(),
-//     ];
-
-//     let framework = poise::Framework::builder()
-//         .options(poise::FrameworkOptions {
-//             commands: commands,
-//             ..Default::default()
-//         })
-//         .token(token)
-//         .intents(serenity::GatewayIntents::non_privileged())
-//         .setup(|ctx, _ready, framework| {
-//             Box::pin(async move {
-//                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-//                 Ok(Data {})
-//             })
-//         });
-
-//     println!("The bot is starting...");
-//     framework.run().await.unwrap();
-// }

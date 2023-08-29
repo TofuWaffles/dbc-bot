@@ -23,7 +23,6 @@ pub async fn register(
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
-
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
@@ -92,12 +91,12 @@ pub async fn register(
                         "region": format!("{:?}", region),
                     });
 
-                    let collection = ctx
-                        .data()
-                        .db_client
-                        .database("DBC")
-                        .collection("Player");
-                    println!("Player {}({}) has been registered!", player["name"].to_string().strip_quote(), tag);
+                    let collection = ctx.data().database.collection("Player");
+                    println!(
+                        "Player {}({}) has been registered!",
+                        player["name"].to_string().strip_quote(),
+                        tag
+                    );
 
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}
@@ -110,7 +109,7 @@ pub async fn register(
                             }
                             _ => {
                                 eprintln!("Error: {:?}", err);
-                             }
+                            }
                         },
                     };
                 } else {
@@ -138,7 +137,10 @@ pub async fn register(
                     .ephemeral(false)
                     .embed(|e| {
                         e.title("**We have tried very hard to find but...**")
-                            .description(format!("No player is associated with the tag #{}",tag.to_uppercase()))
+                            .description(format!(
+                                "No player is associated with the tag #{}",
+                                tag.to_uppercase()
+                            ))
                             .field("Please try again!".to_string(), "".to_string(), true)
                     })
             })

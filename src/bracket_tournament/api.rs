@@ -1,7 +1,6 @@
-use reqwest;
-use poise::serenity_prelude::json::Value;
 use crate::misc::CustomError;
-
+use poise::serenity_prelude::json::Value;
+use reqwest;
 
 /// Constructs an API link based on the provided option and tag.
 ///
@@ -33,10 +32,13 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
 
     match option {
         "player" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", proper_tag),
-        "battle_log" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog", proper_tag),
+        "battle_log" => format!(
+            "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
+            proper_tag
+        ),
         _ => panic!("Unknown option"),
     }
-}    
+}
 
 /// Makes an asynchronous HTTP GET request to the specified endpoint with authentication.
 ///
@@ -87,9 +89,7 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
 ///     Ok(())
 /// }
 /// ```
-pub async fn request(
-    endpoint: &str,
-) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn request(endpoint: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
     let token = std::env::var("BRAWL_STARS_TOKEN").expect("There is no Brawl Stars Token");
     let response = reqwest::Client::new()
         .get(endpoint)
@@ -108,5 +108,4 @@ pub async fn request(
         eprintln!("API response body: {:?}", response.text().await);
         Err(Box::new(CustomError("Unsuccessful response".to_string())))
     }
-    }
-
+}
