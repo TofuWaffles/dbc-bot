@@ -19,19 +19,18 @@ pub async fn create_self_role_message(
 
     let message = serenity::ChannelId(channel_id.parse::<u64>().unwrap())
         .send_message(&ctx, |m| {
-            m.content(content)
-                .components(|c| {
-                    c.create_action_row(|a| {
-                        a.create_button(|b| {
-                            b.style(serenity::ButtonStyle::Success)
-                                .custom_id("register")
-                                .label("Register")
-                                .emoji(emoji_obj)
-                        })
+            m.content(content).components(|c| {
+                c.create_action_row(|a| {
+                    a.create_button(|b| {
+                        b.style(serenity::ButtonStyle::Success)
+                            .custom_id("register")
+                            .label("Register")
+                            .emoji(emoji_obj)
                     })
                 })
             })
-            .await?;
+        })
+        .await?;
 
     let self_role_message = SelfRoleMessage {
         message_id: message.id.0 as i64,
@@ -42,9 +41,8 @@ pub async fn create_self_role_message(
 
     let self_role_messages = ctx
         .data()
-        .db_client
-        .database("DBC-bot")
-        .collection::<SelfRoleMessage>("SelfRoles");
+        .database
+        .collection::<SelfRoleMessage>("SelfRoleMessage");
 
     self_role_messages
         .insert_one(self_role_message, None)
