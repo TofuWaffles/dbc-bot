@@ -28,7 +28,7 @@ pub async fn draco(ctx: Context<'_>) -> Result<(), Error> {
                 .description("Answer carefully 😏")
         })
     })
-    .await;
+    .await?;
 
     while let Some(mci) = serenity::CollectComponentInteraction::new(ctx)
         .author_id(ctx.author().id)
