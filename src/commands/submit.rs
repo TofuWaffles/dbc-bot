@@ -1,7 +1,8 @@
-use crate::bracket_tournament::api;
+use crate::bracket_tournament::{api, self};
 use crate::commands::sample_json;
 use crate::misc::{CustomError, QuoteStripper};
 use crate::{Context, Error};
+use mongodb::bson::{doc, Document};
 use poise::serenity_prelude::json::Value;
 
 const MODE: &str = "wipeout";
@@ -91,9 +92,32 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 })
             })
             .await?;
-            //Update the database to forward the winnter to next round (use tag)
 
-            //
+            // WRITE CODE TO INSERT ROUND RESULT INTO DB (INCLUDING THE ROUND NUMBER)
+
+            let bracket_data = match ctx
+                .data()
+                .database
+                .collection::<Document>("Bracket")
+                .find_one(
+                    doc! {
+                        "guild_id": &ctx.guild_id().unwrap().to_string()
+                    },
+                    None
+                ).await
+                {
+                    Ok(Some(bracket_data)) => bracket_data,
+                    Ok(None) => {
+                        panic!("Bracket data not found in the database, unable to update bracket results.");
+                    }
+                    Err(err) => {
+                        return Err(Error::from(err));
+                    }
+                };
+
+            // WRITE CODE TO PASS THE ROUND NUMBER TO UPDATE_BRACKET
+            
+            bracket_tournament::bracket_update::update_bracket(bracket_data.get("channel_id").unwrap().to_string(), &ctx).await?;
         } else {
             ctx.send(|s| {
                 s.reply(true).ephemeral(false).embed(|e| {
@@ -105,6 +129,32 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 })
             })
             .await?;
+
+            // WRITE CODE TO INSERT ROUND RESULT INTO DB (INCLUDING THE ROUND NUMBER)
+
+            let bracket_data = match ctx
+                .data()
+                .database
+                .collection::<Document>("Bracket")
+                .find_one(
+                    doc! {
+                        "guild_id": &ctx.guild_id().unwrap().to_string()
+                    },
+                    None
+                ).await
+                {
+                    Ok(Some(bracket_data)) => bracket_data,
+                    Ok(None) => {
+                        panic!("Bracket data not found in the database, unable to update bracket results.");
+                    }
+                    Err(err) => {
+                        return Err(Error::from(err));
+                    }
+                };
+
+            // WRITE CODE TO PASS THE ROUND NUMBER TO UPDATE_BRACKET
+
+            bracket_tournament::bracket_update::update_bracket(bracket_data.get("channel_id").unwrap().to_string(), &ctx).await?;
         }
 
         return Ok(());
