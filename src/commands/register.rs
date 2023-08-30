@@ -1,25 +1,14 @@
-use crate::bracket_tournament::api;
+use crate::bracket_tournament::{api, models};
 use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use poise::serenity_prelude as serenity;
-
-#[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, poise::ChoiceParameter)]
-pub enum Region {
-    #[name = "North America & South America"]
-    NASA,
-    #[name = "Europe"]
-    EU,
-    #[name = "Asia & Oceania"]
-    APAC,
-}
 
 /// Sign up for Discord Brawl Cup Tournament!
 #[poise::command(slash_command, guild_only, track_edits)]
 pub async fn register(
     ctx: Context<'_>,
     #[description = "Put your player tag here (without #)"] tag: String,
-    #[description = "Put your region here"] region: Region,
+    #[description = "Put your region here"] region: models::Region,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 

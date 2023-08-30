@@ -63,6 +63,7 @@ async fn run() -> Result<(), Error> {
         commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
+        commands::start_tournament::start_tournament(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
