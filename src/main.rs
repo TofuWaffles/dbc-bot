@@ -27,6 +27,7 @@ use tracing_subscriber::{filter, prelude::*};
 // Rest of your code here
 
 // This data struct is used to pass data (such as the db_pool) to the context object
+#[derive(Debug)]
 pub struct Data {
     database: mongodb::Database,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
@@ -62,6 +63,9 @@ async fn run() -> Result<(), Error> {
         commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
+        commands::deregister::deregister(),
+        commands::draco::draco(),
+
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -138,7 +142,7 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let mut self_role_data = database 
+                let mut self_role_data = database
                     .collection::<self_role::SelfRoleMessage>("SelfRoleMessage")
                     .find(None, None)
                     .await
@@ -198,11 +202,23 @@ async fn prepare_database() -> Result<Database, Error> {
     let options =
         ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
 
-    let database = Client::with_options(options)?.database("DBC");
+    let database = Client::with_options(options)?.database("DBC-bot");
 
-    // We want to preload the self role messages, which is why we create this collection if it does not exist
+    let required_collections = vec![
+        "Player",
+        "SelfRoleMessage",
+        "TournamentStatus",
+        "BracketPair",
+    ];
+
+    // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the DB already exists and skips creation
-    database.create_collection("SelfRoleMessage", None).await.unwrap_or_else(|e| {info!("{:?}", e)});
+    for collection in required_collections {
+        database
+            .create_collection(collection, None)
+            .await
+            .unwrap_or_else(|e| info!("{:?}", e));
+    }
 
     info!("Database prepared successfully!");
 
