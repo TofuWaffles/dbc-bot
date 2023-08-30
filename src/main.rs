@@ -65,7 +65,6 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::draco::draco(),
-
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -96,7 +95,6 @@ async fn run() -> Result<(), Error> {
                                         data,
                                     )
                                     .await?;
-                                    todo!();
                                 }
                                 _ => (),
                             }

@@ -206,6 +206,50 @@ impl fmt::Display for CustomError {
 
 impl Error for CustomError {}
 
+/// Checks if a player with the given Discord user ID exists in the database.
+///
+/// This function queries the specified MongoDB collection for a document that matches
+/// the Discord user ID of the invoking user in the provided `Context`. If a matching
+/// document is found, it returns the player's data as a `Document`. If no matching
+/// document is found or an error occurs during the query, it returns `None`.
+///
+/// # Parameters
+///
+/// - `ctx`: A reference to the Serenity `Context` containing information about the
+///          current Discord interaction and server context.
+///
+/// # Returns
+///
+/// An `Option<Document>` representing the player's data if found, or `None` if the player
+/// is not in the database or an error occurs.
+///
+/// # Examples
+///
+/// ```rust
+/// use serenity::prelude::*;
+/// use mongodb::Collection;
+/// use mongodb::bson::doc;
+///
+/// struct PlayerDataKey;
+///
+/// impl TypeMapKey for PlayerDataKey {
+///     type Value = Collection<Document>;
+/// }
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let ctx = Context::new().await; // Create a Serenity context (replace with your actual setup).
+///
+///     match is_in_db(&ctx).await {
+///         Some(player) => {
+///             println!("The player exists in the database. Player data: {:?}", player);
+///         }
+///         None => {
+///             println!("The player does not exist in the database.");
+///         }
+///     }
+/// }
+/// ```
 pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
     let invoker_id = ctx.author().id.to_string();
     let player_data: Collection<Document> = ctx.data().database.collection("PlayerDB");
@@ -222,5 +266,14 @@ pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
         Ok(Some(player)) => Some(player),
         Ok(None) => None,
         Err(_err) => None,
+    }
+}
+
+pub fn region_details(region: &str) -> &str {
+    match region {
+        "APAC" => "Asia & Oceania",
+        "EU" => "Europe",
+        "NASA" => "North America & South America",
+        _ => "You are not from Earth, aren't you?",
     }
 }

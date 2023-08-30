@@ -38,15 +38,15 @@ pub async fn draco(ctx: Context<'_>) -> Result<(), Error> {
         .await
     {
         let mut prompt = mci.message.clone();
-        prompt.edit(ctx,|s| {
-            s.components(|s| s)
-              .embed(|e| {
-                e.title("**Correct! Everyone loves Draco (draco6)**")
-                    .description("Here is a cute animation")
-                    .image("https://media.tenor.com/PHzgHGw2SHIAAAAC/dragon-fire.gif")
+        prompt
+            .edit(ctx, |s| {
+                s.components(|s| s).embed(|e| {
+                    e.title("**Correct! Everyone loves Draco (draco6)**")
+                        .description("Here is a cute animation")
+                        .image("https://media.tenor.com/PHzgHGw2SHIAAAAC/dragon-fire.gif")
+                })
             })
-        })
-        .await?;
+            .await?;
     }
     Ok(())
 }

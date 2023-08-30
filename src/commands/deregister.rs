@@ -1,4 +1,4 @@
-use crate::misc::{is_in_db, QuoteStripper};
+use crate::misc::{is_in_db, region_details, QuoteStripper};
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Document},
@@ -17,7 +17,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
                 .ephemeral(true)
                 .embed(|e|{
                     e.title("**You have not registered!**")
-                    .description("You have not registered for the tournament! If you want to register, please use the /register command!")
+                    .description("You have not registered for the tournament! If you want to register, please use the </register:1145363516325376031> command!")
                 })
             }).await?;
             return Ok(());
@@ -46,12 +46,12 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
           .ephemeral(true)
           .embed(|e|{
             e.title("**Are you sure you want to deregister?**")
-            .description(format!("You are about to deregister from the tournament. Below information are what you told us!"))
-            .fields(vec![
-              ("Your account name: ", data.get("name").unwrap().to_string().strip_quote(), true),
-              ("With your respective tag: ", data.get("tag").unwrap().to_string().strip_quote(), true),
-              ("And in the following regional tournament", data.get("region").unwrap().to_string().strip_quote(), true),
-            ])
+            .description(format!("You are about to deregister from the tournament. Below information are what you told us!\n
+                                Your account name: {} \n
+                                With your respective tag: {}\n
+                                And you are in the following region: {}",
+                                data.get("name").unwrap().to_string().strip_quote(), data.get("tag").unwrap().to_string().strip_quote(), region_details(data.get("region").unwrap().to_string().strip_quote().as_str()) 
+                        ))
         })
     }).await?;
 
@@ -66,7 +66,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             player_data
                 .delete_one(doc! {"_id": data.get("_id")}, None)
                 .await?;
-              
+
             let mut confirm_prompt = mci.message.clone();
             confirm_prompt.edit(ctx,|s| {
                 s.components(|c| {c})
@@ -79,15 +79,15 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             .await?;
             break;
         } else if mci.data.custom_id == deregister_cancel.to_string() {
-          let mut cancel_prompt = mci.message.clone();
-            cancel_prompt.edit(ctx,|s| {
-                s.components(|c| c)
-                    .embed(|e| {
-                    e.title("**Deregistration cancelled!**")
-                        .description("Thanks for staying in the tournament!")
+            let mut cancel_prompt = mci.message.clone();
+            cancel_prompt
+                .edit(ctx, |s| {
+                    s.components(|c| c).embed(|e| {
+                        e.title("**Deregistration cancelled!**")
+                            .description("Thanks for staying in the tournament with us!")
+                    })
                 })
-            })
-            .await?;
+                .await?;
             break;
         }
     }

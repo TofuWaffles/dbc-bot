@@ -1,4 +1,4 @@
-use crate::bracket_tournament::{api, self};
+use crate::bracket_tournament::{self, api};
 use crate::commands::sample_json;
 use crate::misc::{CustomError, QuoteStripper};
 use crate::{Context, Error};
@@ -103,21 +103,28 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                     doc! {
                         "guild_id": &ctx.guild_id().unwrap().to_string()
                     },
-                    None
-                ).await
-                {
-                    Ok(Some(bracket_data)) => bracket_data,
-                    Ok(None) => {
-                        panic!("Bracket data not found in the database, unable to update bracket results.");
-                    }
-                    Err(err) => {
-                        return Err(Error::from(err));
-                    }
-                };
+                    None,
+                )
+                .await
+            {
+                Ok(Some(bracket_data)) => bracket_data,
+                Ok(None) => {
+                    panic!(
+                        "Bracket data not found in the database, unable to update bracket results."
+                    );
+                }
+                Err(err) => {
+                    return Err(Error::from(err));
+                }
+            };
 
             // WRITE CODE TO PASS THE ROUND NUMBER TO UPDATE_BRACKET
-            
-            bracket_tournament::bracket_update::update_bracket(bracket_data.get("channel_id").unwrap().to_string(), &ctx).await?;
+
+            bracket_tournament::bracket_update::update_bracket(
+                bracket_data.get("channel_id").unwrap().to_string(),
+                &ctx,
+            )
+            .await?;
         } else {
             ctx.send(|s| {
                 s.reply(true).ephemeral(false).embed(|e| {
@@ -140,21 +147,28 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                     doc! {
                         "guild_id": &ctx.guild_id().unwrap().to_string()
                     },
-                    None
-                ).await
-                {
-                    Ok(Some(bracket_data)) => bracket_data,
-                    Ok(None) => {
-                        panic!("Bracket data not found in the database, unable to update bracket results.");
-                    }
-                    Err(err) => {
-                        return Err(Error::from(err));
-                    }
-                };
+                    None,
+                )
+                .await
+            {
+                Ok(Some(bracket_data)) => bracket_data,
+                Ok(None) => {
+                    panic!(
+                        "Bracket data not found in the database, unable to update bracket results."
+                    );
+                }
+                Err(err) => {
+                    return Err(Error::from(err));
+                }
+            };
 
             // WRITE CODE TO PASS THE ROUND NUMBER TO UPDATE_BRACKET
 
-            bracket_tournament::bracket_update::update_bracket(bracket_data.get("channel_id").unwrap().to_string(), &ctx).await?;
+            bracket_tournament::bracket_update::update_bracket(
+                bracket_data.get("channel_id").unwrap().to_string(),
+                &ctx,
+            )
+            .await?;
         }
 
         return Ok(());
