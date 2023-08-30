@@ -1,7 +1,19 @@
 use crate::bracket_tournament::{api, models};
-use crate::misc::{get_difficulty, QuoteStripper};
+use crate::misc::{get_difficulty, is_in_db, QuoteStripper};
 use crate::{Context, Error};
-use poise::serenity_prelude as serenity;
+use mongodb::bson::doc;
+use poise::serenity_prelude::{self as serenity};
+
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, poise::ChoiceParameter)]
+pub enum Region {
+    #[name = "North America & South America"]
+    NASA,
+    #[name = "Europe"]
+    EU,
+    #[name = "Asia & Oceania"]
+    APAC,
+}
 
 /// Sign up for Discord Brawl Cup Tournament!
 #[poise::command(slash_command, guild_only, track_edits)]
@@ -10,8 +22,24 @@ pub async fn register(
     #[description = "Put your player tag here (without #)"] tag: String,
     #[description = "Put your region here"] region: models::Region,
 ) -> Result<(), Error> {
+    // ctx.defer_ephemeral().await?;
     ctx.defer().await?;
-
+    //Check whether a player has registered or not by their Discord id
+    match is_in_db(&ctx).await {
+        Some(_) => {
+            ctx.send(|s|{
+            s.reply(true)
+            .ephemeral(true)
+            .embed(|e|{
+                e.title("**You have already registered!**")
+                .description("You have already registered for the tournament!
+                    \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
+            })
+        }).await?;
+            return Ok(());
+        }
+        None => {}
+    }
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
@@ -35,7 +63,7 @@ pub async fn register(
                         })
                     })
                     .reply(true)
-                    .ephemeral(false)
+                    .ephemeral(true)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
                         .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
@@ -63,11 +91,12 @@ pub async fn register(
                 .timeout(std::time::Duration::from_secs(120))
                 .await
             {
-                if mci.data.custom_id == registry_confirm.to_string() {
+                if mci.data.custom_id == registry_confirm.to_string(){
                     let mut confirm_prompt = mci.message.clone();
                     confirm_prompt
                         .edit(ctx, |s| {
-                            s.components(|c| c).embed(|e| {
+                            s.components(|c| c)
+                             .embed(|e| {
                                 e.title("**You have successfully registered!**")
                                     .description(format!("We have collected your information!\nYour player tag #{} has been registered with the region {}", tag.to_uppercase(), region))
                             })
@@ -75,16 +104,16 @@ pub async fn register(
 
                     let data = serenity::json::json!({
                         "name": player["name"].to_string().strip_quote(),
-                        "tag": tag.to_uppercase(),
+                        "tag": player["tag"].to_string().strip_quote(),
                         "id": ctx.author_member().await.unwrap().user.id.to_string(),
                         "region": format!("{:?}", region),
                     });
 
-                    let collection = ctx.data().database.collection("Player");
+                    let collection = ctx.data().database.collection("PlayerDB");
                     println!(
                         "Player {}({}) has been registered!",
                         player["name"].to_string().strip_quote(),
-                        tag
+                        player["tag"].to_string().strip_quote()
                     );
 
                     match collection.insert_one(data, None).await {
@@ -117,6 +146,9 @@ pub async fn register(
                     ir.kind(serenity::InteractionResponseType::DeferredUpdateMessage)
                 })
                 .await?;
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                mci.message.delete(ctx).await?;
+
             }
         }
         Err(_) => {
@@ -127,7 +159,7 @@ pub async fn register(
                     .embed(|e| {
                         e.title("**We have tried very hard to find but...**")
                             .description(format!(
-                                "No player is associated with the tag #{}",
+                                "No player is associated with the tag {}",
                                 tag.to_uppercase()
                             ))
                             .field("Please try again!".to_string(), "".to_string(), true)

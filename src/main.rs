@@ -63,6 +63,7 @@ async fn run() -> Result<(), Error> {
         commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
+        commands::deregister::deregister(),
         commands::start_tournament::start_tournament(),
     ];
 
@@ -94,7 +95,6 @@ async fn run() -> Result<(), Error> {
                                         data,
                                     )
                                     .await?;
-                                    todo!();
                                 }
                                 _ => (),
                             }
@@ -200,7 +200,7 @@ async fn prepare_database() -> Result<Database, Error> {
     let options =
         ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
 
-    let database = Client::with_options(options)?.database("DBC");
+    let database = Client::with_options(options)?.database("DBC-bot");
 
     let required_collections = vec![
         "Player",
