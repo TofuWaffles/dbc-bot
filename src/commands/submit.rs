@@ -176,8 +176,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
 
     // Certainly L case
     ctx.send(|s| {
-        s.content("".to_string())
-            .reply(true)
+        s.reply(true)
             .ephemeral(false)
             .embed(|e| {
                 e.title("No battle logs found (yet?)")

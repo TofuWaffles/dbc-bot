@@ -268,12 +268,49 @@ pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
         Err(_err) => None,
     }
 }
-
+/// Get human-readable details for a given region abbreviation.
+///
+/// This function takes a region abbreviation as a string and returns a corresponding
+/// human-readable description of that region. If the abbreviation matches a known region,
+/// it returns the description; otherwise, it provides a humorous response for unknown
+/// or unexpected inputs.
+///
+/// # Parameters
+///
+/// - `region`: A reference to a string representing the region abbreviation.
+///
+/// # Returns
+///
+/// A `&str` containing the human-readable details of the region.
+///
+/// # Examples
+///
+/// ```rust
+/// let region_details = region_details("EU");
+/// assert_eq!(region_details, "Europe");
+///
+/// let unknown_region_details = region_details("Mars");
+/// assert_eq!(unknown_region_details, "You are not from Earth, aren't you?");
+/// ```
+///
+/// # Notes
+///
+/// Known region abbreviations:
+///
+/// - "APAC": Asia & Oceania
+/// - "EU": Europe
+/// - "NASA": North America & South America
+///
+/// Unknown abbreviations will result in the humorous response.
+///
+/// # Panics
+///
+/// This function does not panic under any circumstances and always returns a valid `&str`.
 pub fn region_details(region: &str) -> &str {
-    match region {
+    match region{
         "APAC" => "Asia & Oceania",
         "EU" => "Europe",
         "NASA" => "North America & South America",
-        _ => "You are not from Earth, aren't you?",
+        _ => "You are not from Earth, aren't you?"
     }
 }
