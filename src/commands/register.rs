@@ -14,21 +14,21 @@ pub async fn register(
     // ctx.defer_ephemeral().await?;
     ctx.defer().await?;
     //Check whether a player has registered or not by their Discord id
-    // match is_in_db(&ctx).await {
-    //     Some(_) => {
-    //         ctx.send(|s|{
-    //         s.reply(true)
-    //         .ephemeral(true)
-    //         .embed(|e|{
-    //             e.title("**You have already registered!**")
-    //             .description("You have already registered for the tournament!
-    //                 \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
-    //         })
-    //     }).await?;
-    //         return Ok(());
-    //     }
-    //     None => {}
-    // }
+    match is_in_db(&ctx).await {
+        Some(_) => {
+            ctx.send(|s|{
+            s.reply(true)
+            .ephemeral(true)
+            .embed(|e|{
+                e.title("**You have already registered!**")
+                .description("You have already registered for the tournament!
+                    \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
+            })
+        }).await?;
+            return Ok(());
+        }
+        None => {}
+    }
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
