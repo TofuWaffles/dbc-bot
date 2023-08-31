@@ -17,7 +17,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     let raw_logs = api::request(&endpoint).await.unwrap();
     let logs: &Vec<serde_json::Value> = raw_logs["items"].as_array().unwrap();
     let team = sample_json::match_json();
-    let mut enemy: Value;
+    let enemy: Value;
     let caller = match &tag {
         t if *t == team[0]["tag"].to_string().strip_quote() => {
             enemy = team[1].clone();

@@ -6,6 +6,7 @@ use mongodb::{
 use poise::serenity_prelude::Colour;
 use std::error::Error;
 use std::fmt;
+use strum_macros::EnumIter;
 
 /// A trait for stripping quotes from a string.
 pub trait QuoteStripper {
@@ -307,10 +308,21 @@ pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
 ///
 /// This function does not panic under any circumstances and always returns a valid `&str`.
 pub fn region_details(region: &str) -> &str {
-    match region{
+    match region {
         "APAC" => "Asia & Oceania",
         "EU" => "Europe",
         "NASA" => "North America & South America",
-        _ => "You are not from Earth, aren't you?"
+        _ => "You are not from Earth, aren't you?",
     }
+}
+
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, poise::ChoiceParameter, EnumIter)]
+pub enum Region {
+    #[name = "North America & South America"]
+    NASA,
+    #[name = "Europe"]
+    EU,
+    #[name = "Asia & Oceania"]
+    APAC,
 }

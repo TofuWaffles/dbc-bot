@@ -1,11 +1,13 @@
 pub mod battle_log;
+pub mod club;
 pub mod create_self_role_message;
 pub mod db_handler;
 pub mod deregister;
 pub mod draco;
 pub mod ping;
 pub mod player;
+pub mod region_proportion;
 pub mod register;
 pub mod sample_json;
-pub mod start_tournament;
+pub mod starttournament;
 pub mod submit;

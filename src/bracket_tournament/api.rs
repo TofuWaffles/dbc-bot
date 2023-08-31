@@ -36,6 +36,10 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
             "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
             proper_tag
         ),
+        "club" => format!(
+            "https://bsproxy.royaleapi.dev/v1/clubs/%23{}/members",
+            proper_tag
+        ),
         _ => panic!("Unknown option"),
     }
 }

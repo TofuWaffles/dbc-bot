@@ -1,45 +1,34 @@
-use crate::bracket_tournament::{api, models};
-use crate::misc::{get_difficulty, is_in_db, QuoteStripper};
+use crate::bracket_tournament::api;
+use crate::misc::{get_difficulty, is_in_db, QuoteStripper, Region};
 use crate::{Context, Error};
-use mongodb::bson::doc;
+use mongodb::bson::{doc, Bson::Null};
 use poise::serenity_prelude::{self as serenity};
-
-#[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, poise::ChoiceParameter)]
-pub enum Region {
-    #[name = "North America & South America"]
-    NASA,
-    #[name = "Europe"]
-    EU,
-    #[name = "Asia & Oceania"]
-    APAC,
-}
 
 /// Sign up for Discord Brawl Cup Tournament!
 #[poise::command(slash_command, guild_only, track_edits)]
 pub async fn register(
     ctx: Context<'_>,
     #[description = "Put your player tag here (without #)"] tag: String,
-    #[description = "Put your region here"] region: models::Region,
+    #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     // ctx.defer_ephemeral().await?;
     ctx.defer().await?;
     //Check whether a player has registered or not by their Discord id
-    match is_in_db(&ctx).await {
-        Some(_) => {
-            ctx.send(|s|{
-            s.reply(true)
-            .ephemeral(true)
-            .embed(|e|{
-                e.title("**You have already registered!**")
-                .description("You have already registered for the tournament!
-                    \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
-            })
-        }).await?;
-            return Ok(());
-        }
-        None => {}
-    }
+    // match is_in_db(&ctx).await {
+    //     Some(_) => {
+    //         ctx.send(|s|{
+    //         s.reply(true)
+    //         .ephemeral(true)
+    //         .embed(|e|{
+    //             e.title("**You have already registered!**")
+    //             .description("You have already registered for the tournament!
+    //                 \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
+    //         })
+    //     }).await?;
+    //         return Ok(());
+    //     }
+    //     None => {}
+    // }
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
@@ -85,13 +74,13 @@ pub async fn register(
           )
             .await?;
 
-            while let Some(mci) = serenity::CollectComponentInteraction::new(ctx)
+            if let Some(mci) = serenity::CollectComponentInteraction::new(ctx)
                 .author_id(ctx.author().id)
                 .channel_id(ctx.channel_id())
                 .timeout(std::time::Duration::from_secs(120))
                 .await
             {
-                if mci.data.custom_id == registry_confirm.to_string(){
+                if mci.data.custom_id == registry_confirm.to_string() {
                     let mut confirm_prompt = mci.message.clone();
                     confirm_prompt
                         .edit(ctx, |s| {
@@ -101,20 +90,26 @@ pub async fn register(
                                     .description(format!("We have collected your information!\nYour player tag #{} has been registered with the region {}", tag.to_uppercase(), region))
                             })
                         }).await?;
+                    //Temporarily assign ID based on counter, will re-write IDs once registration start!.
+                    let count: i32 = ctx
+                        .data()
+                        .database
+                        .collection::<i32>("Player")
+                        .count_documents(None, None)
+                        .await?
+                        .try_into()
+                        .unwrap();
 
-                    let data = serenity::json::json!({
+                    let data = doc! {
                         "name": player["name"].to_string().strip_quote(),
                         "tag": player["tag"].to_string().strip_quote(),
                         "id": ctx.author_member().await.unwrap().user.id.to_string(),
                         "region": format!("{:?}", region),
-                    });
+                        "registration_id": count,
+                        "match_id": Null
+                    };
 
-                    let collection = ctx.data().database.collection("PlayerDB");
-                    println!(
-                        "Player {}({}) has been registered!",
-                        player["name"].to_string().strip_quote(),
-                        player["tag"].to_string().strip_quote()
-                    );
+                    let collection = ctx.data().database.collection("Player");
 
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}
@@ -130,7 +125,7 @@ pub async fn register(
                             }
                         },
                     };
-                } else {
+                } else if mci.data.custom_id == registry_cancel.to_string() {
                     let mut cancel_prompt = mci.message.clone();
                     cancel_prompt
                     .edit(ctx, |s| {
@@ -148,7 +143,6 @@ pub async fn register(
                 .await?;
                 std::thread::sleep(std::time::Duration::from_secs(10));
                 mci.message.delete(ctx).await?;
-
             }
         }
         Err(_) => {

@@ -64,7 +64,9 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
-        commands::start_tournament::start_tournament(),
+        commands::starttournament::start_tournament(),
+        commands::club::club(),
+        // commands::region_proportion::region_proportion(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
