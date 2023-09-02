@@ -42,6 +42,7 @@ pub async fn create_self_role_message(
     let self_role_messages = ctx
         .data()
         .database
+        .registration
         .collection::<SelfRoleMessage>("SelfRoleMessage");
 
     self_role_messages

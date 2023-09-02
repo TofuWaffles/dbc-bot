@@ -14,22 +14,28 @@ use mongodb::{
     Client, Database,
 };
 
+use crate::misc::Region;
 use futures::stream::TryStreamExt;
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents},
     Event, FrameworkError,
 };
+use std::collections::HashMap;
 use std::fs::File;
 use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
 
 // Rest of your code here
-
+#[derive(Debug)]
+struct Databases {
+    registration: Database,
+    regional_databases: HashMap<Region, Database>,
+}
 // This data struct is used to pass data (such as the db_pool) to the context object
 #[derive(Debug)]
 pub struct Data {
-    database: mongodb::Database,
+    database: Databases,
     self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -60,13 +66,15 @@ async fn run() -> Result<(), Error> {
         commands::battle_log::latest_log(),
         commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
-        commands::submit::submit(),
+        // commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::starttournament::start_tournament(),
         commands::club::club(),
-        // commands::region_proportion::region_proportion(),
+        commands::region_proportion::region_proportion(),
+        commands::reset_match_id::reset_match_id(),
+        commands::fill_manequins::fill_mannequins(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -130,7 +138,7 @@ async fn run() -> Result<(), Error> {
     };
     info!("Options generated successfully!");
 
-    let database = prepare_database().await?;
+    let database = prepare_databases().await?;
 
     info!("Generating framework...");
     let framework = poise::Framework::builder()
@@ -143,6 +151,7 @@ async fn run() -> Result<(), Error> {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 let mut self_role_data = database
+                    .registration
                     .collection::<self_role::SelfRoleMessage>("SelfRoleMessage")
                     .find(None, None)
                     .await
@@ -193,7 +202,7 @@ async fn run() -> Result<(), Error> {
 }
 
 #[instrument]
-async fn prepare_database() -> Result<Database, Error> {
+async fn prepare_databases() -> Result<Databases, Error> {
     trace!("Preparing database...");
 
     let db_uri = std::env::var("DATABASE_URL")
@@ -202,19 +211,18 @@ async fn prepare_database() -> Result<Database, Error> {
     let options =
         ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
 
-    let database = Client::with_options(options)?.database("DBC-bot");
-
-    let required_collections = vec![
-        "Player",
-        "SelfRoleMessage",
-        "TournamentStatus",
-        "BracketPair",
-    ];
+    let client = Client::with_options(options)?;
+    let registration = client.database("SelfRole");
+    let mut regional_database: HashMap<Region, Database> = HashMap::new();
+    regional_database.insert(Region::APAC, client.database("APAC"));
+    regional_database.insert(Region::EU, client.database("EU"));
+    regional_database.insert(Region::NASA, client.database("NASA"));
+    let required_collections = vec!["Player", "SelfRoleMessage"];
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the DB already exists and skips creation
     for collection in required_collections {
-        database
+        registration
             .create_collection(collection, None)
             .await
             .unwrap_or_else(|e| info!("{:?}", e));
@@ -222,7 +230,10 @@ async fn prepare_database() -> Result<Database, Error> {
 
     info!("Database prepared successfully!");
 
-    Ok(database)
+    Ok(Databases {
+        registration: registration,
+        regional_databases: regional_database,
+    })
 }
 
 // Create the subscriber to listen to logging events

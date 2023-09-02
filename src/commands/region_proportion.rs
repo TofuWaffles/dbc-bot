@@ -1,72 +1,76 @@
-// use crate::{Context, Error};
-// use futures::StreamExt;
-// use mongodb::{
-//     bson::{doc, Document},
-//     options::AggregateOptions,
-//     Collection,
-// };
-// use std::collections::HashMap;
-// /// Get proportion of participants from each region
-// #[poise::command(slash_command)]
-// pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
-//     let collection: Collection<Document> = ctx.data().database.collection("Player");
-//     let pipeline = vec![
-//         doc! {
-//             "$group": {
-//                 "_id": "$region",
-//                 "count": { "$sum": 1 }
-//             }
-//         },
-//         doc! {
-//             "$project": {
-//                 "_id": 0,
-//                 "region": "$_id",
-//                 "count": 1
-//             }
-//         },
-//     ];
+use crate::misc::Region;
+use crate::{Context, Error};
+use mongodb::bson::{doc, Document};
 
-//     let mut cursor = collection
-//         .aggregate(
-//             pipeline,
-//             AggregateOptions::builder().allow_disk_use(true).build(),
-//         )
-//         .await?;
+use strum::IntoEnumIterator;
+/// Get proportion of participants from each region
+struct RegionStats {
+    region: Region,
+    count: i32,
+    percentage: Option<f64>,
+}
 
-//     let mut total_count = 0;
-//     let mut region_counts: HashMap<String, i32> = HashMap::new();
-//     while let Some(Ok(document)) = cursor.next().await {
-//         let region = document.get_str("region").unwrap();
-//         let count = document.get_i32("count").unwrap();
-//         total_count += count;
-//         region_counts.insert(region.to_string(), count);
-//     }
+#[poise::command(slash_command)]
+pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
+    let filter: Document = doc! { "name": { "$ne": "Mannequin" } }; //Filter out mannequins $ne = not equal
+    let mut data: Vec<RegionStats> = vec![];
+    for region in Region::iter() {
+        let database = ctx.data().database.regional_databases.get(&region).unwrap();
+        let count: i32 = database
+            .collection::<i32>("Player")
+            .count_documents(filter.clone(), None)
+            .await
+            .unwrap()
+            .try_into()
+            .unwrap();
+        data.push(RegionStats {
+            region,
+            count,
+            percentage: None,
+        });
+    }
+    let total: i32 = data.iter().map(|x| x.count).sum();
+    for region in data.iter_mut() {
+        region.percentage = Some(region.count as f64 / total as f64 * 100.0);
+    }
 
-//     let mut data: Vec<Vec<RegionStats>> = vec![];
-//     let live = region_counts.clone();
-//     for (region, count) in live{
-//         let proportion = (count as f64 / total_count as f64) * 100.0;
-//         data.push(vec![RegionStats::Region(&region), RegionStats::Count(count), RegionStats::Proportion(proportion)]);
-//     }
-//     println!("{:?}", region_counts);    
-//     ctx.send(|s|{
-//       s.reply(true)
-//         .ephemeral(false)
-//         .embed(|e|{
-//           e.title("Region Proportion")
-//             .description("The following statistics is collected from the registered participants.")
-//             .fields(vec![("Region",format!("{:?}\n{:?}\n{:?}",data[0][0],data[1][0], data[2][0]),true),
-//                         ("Count",format!("{:?}\n{:?}\n{:?}",data[0][1],data[1][1], data[2][1]),true),
-//                         ("Proportion",format!("{:?}\n{:?}\n{:?}",data[0][1],data[1][1], data[2][1]),true)
-//                         ])
-//         })
-//     }).await?;
-//     Ok(())
-// }
-
-// #[derive(Debug)]
-// enum RegionStats {
-//   Region(&'static str),
-//   Count(i32),
-//   Proportion(f64),
-// }
+    ctx.send(|s| {
+        s.reply(true).ephemeral(false).embed(|e| {
+            e.title("Region Proportion")
+                .description(
+                    "The following statistics is collected from the registered participants.",
+                )
+                .fields(vec![
+                    (
+                        format!("{:?}", data[0].region),
+                        format!(
+                            "{} players \n{:.2}%",
+                            data[0].count,
+                            data[0].percentage.unwrap()
+                        ),
+                        true,
+                    ),
+                    (
+                        format!("{:?}", data[1].region),
+                        format!(
+                            "{} players\n{:.2}%",
+                            data[1].count,
+                            data[1].percentage.unwrap()
+                        ),
+                        true,
+                    ),
+                    (
+                        format!("{:?}", data[2].region),
+                        format!(
+                            "{} players\n{:.2}%",
+                            data[2].count,
+                            data[2].percentage.unwrap()
+                        ),
+                        true,
+                    ),
+                ])
+        })
+    })
+    .await?;
+    Ok(())
+}

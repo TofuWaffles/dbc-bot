@@ -12,23 +12,20 @@ pub async fn register(
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
     // ctx.defer_ephemeral().await?;
-    ctx.defer().await?;
     //Check whether a player has registered or not by their Discord id
-    match is_in_db(&ctx).await {
-        Some(_) => {
-            ctx.send(|s|{
+    if (is_in_db(&ctx, None).await).is_some() {
+        ctx.send(|s|{
             s.reply(true)
             .ephemeral(true)
             .embed(|e|{
                 e.title("**You have already registered!**")
                 .description("You have already registered for the tournament!
-                    \n If you want to participate the event with a different account, please </derigster:1146092020843155496> first and run this again!")
+                    \n If you want to participate the event with a different account, please </deregister:1146092020843155496> first and run this again!")
             })
         }).await?;
-            return Ok(());
-        }
-        None => {}
+        return Ok(());
     }
+
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
@@ -52,7 +49,7 @@ pub async fn register(
                         })
                     })
                     .reply(true)
-                    .ephemeral(true)
+                    .ephemeral(false)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
                         .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
@@ -90,26 +87,17 @@ pub async fn register(
                                     .description(format!("We have collected your information!\nYour player tag #{} has been registered with the region {}", tag.to_uppercase(), region))
                             })
                         }).await?;
-                    //Temporarily assign ID based on counter, will re-write IDs once registration start!.
-                    let count: i32 = ctx
-                        .data()
-                        .database
-                        .collection::<i32>("Player")
-                        .count_documents(None, None)
-                        .await?
-                        .try_into()
-                        .unwrap();
 
                     let data = doc! {
                         "name": player["name"].to_string().strip_quote(),
                         "tag": player["tag"].to_string().strip_quote(),
-                        "id": ctx.author_member().await.unwrap().user.id.to_string(),
+                        "discord_id": ctx.author_member().await.unwrap().user.id.to_string(),
                         "region": format!("{:?}", region),
-                        "registration_id": count,
                         "match_id": Null
                     };
 
-                    let collection = ctx.data().database.collection("Player");
+                    let collection =
+                        ctx.data().database.regional_databases[&region].collection("Player");
 
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}

@@ -6,6 +6,7 @@ use mongodb::{
 use poise::serenity_prelude::Colour;
 use std::error::Error;
 use std::fmt;
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 /// A trait for stripping quotes from a string.
@@ -251,23 +252,42 @@ impl Error for CustomError {}
 ///     }
 /// }
 /// ```
-pub async fn is_in_db(ctx: &Context<'_>) -> Option<Document> {
-    let invoker_id = ctx.author().id.to_string();
-    let player_data: Collection<Document> = ctx.data().database.collection("PlayerDB");
+pub async fn is_in_db(ctx: &Context<'_>, discord_id: Option<String>) -> Option<Document> {
+    let invoker_id = match discord_id {
+        Some(id) => id,
+        None => ctx.author().id.to_string(),
+    };
+    // Define a variable to hold the result
+    let mut result: Option<Document> = None;
 
-    match player_data
-        .find_one(
-            doc! {
-                "id": &invoker_id
-            },
-            None,
-        )
-        .await
-    {
-        Ok(Some(player)) => Some(player),
-        Ok(None) => None,
-        Err(_err) => None,
+    // Iterate through the regions and check each database
+    for region in Region::iter() {
+        let player_data: Collection<Document> = ctx
+            .data()
+            .database
+            .regional_databases
+            .get(&region)
+            .unwrap()
+            .collection("Player");
+        match player_data
+            .find_one(doc! { "discord_id": &invoker_id.strip_quote()}, None)
+            .await
+        {
+            Ok(Some(player)) => {
+                result = Some(player);
+                break; // Exit the loop when a match is found
+            }
+            Ok(None) => {
+                continue;
+            }
+            Err(err) => {
+                eprintln!("Error while querying database: {:?}", err);
+                result = None;
+                break;
+            }
+        }
     }
+    result
 }
 /// Get human-readable details for a given region abbreviation.
 ///
@@ -316,8 +336,9 @@ pub fn region_details(region: &str) -> &str {
     }
 }
 
+/// Define an enum called `Region` to represent geographical regions.
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, poise::ChoiceParameter, EnumIter)]
+#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]
 pub enum Region {
     #[name = "North America & South America"]
     NASA,
@@ -325,4 +346,39 @@ pub enum Region {
     EU,
     #[name = "Asia & Oceania"]
     APAC,
+}
+
+impl Region {
+    /// Custom function to find a variant by its associated name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - A string containing the associated name of the variant to find.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(Region)` - The enum variant if found.
+    /// * `None` - If no variant is found for the given name.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use my_module::Region;
+    ///
+    /// let name_to_find = "Europe";
+    ///
+    /// if let Some(region) = Region::find_key(name_to_find) {
+    ///     println!("Found variant: {:?}", region);
+    /// } else {
+    ///     println!("Variant not found for name: {}", name_to_find);
+    /// }
+    /// ```
+    pub fn find_key(name: &str) -> Option<Region> {
+        match name {
+            "NASA" => Some(Region::NASA),
+            "EU" => Some(Region::EU),
+            "APAC" => Some(Region::APAC),
+            _ => None,
+        }
+    }
 }

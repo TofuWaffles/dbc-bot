@@ -1,3 +1,4 @@
+use crate::misc::Region;
 use crate::misc::{is_in_db, region_details, QuoteStripper};
 use crate::{Context, Error};
 use mongodb::{
@@ -10,7 +11,7 @@ use poise::serenity_prelude::{self as serenity};
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
-    let data = match is_in_db(&ctx).await {
+    let data = match is_in_db(&ctx, None).await {
         None => {
             ctx.send(|s|{
                 s.reply(true)
@@ -62,7 +63,14 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         .await
     {
         if mci.data.custom_id == deregister_confirm.to_string() {
-            let player_data: Collection<Document> = ctx.data().database.collection("PlayerDB");
+            let region = Region::find_key(&data.get("region").unwrap().to_string().strip_quote());
+            let player_data: Collection<Document> = ctx
+                .data()
+                .database
+                .regional_databases
+                .get(&region.unwrap())
+                .unwrap()
+                .collection("Player");
             player_data
                 .delete_one(doc! {"_id": data.get("_id")}, None)
                 .await?;
@@ -72,7 +80,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
                 s.components(|c| {c})
                     .embed(|e| {
                         e.title("**Deregistration is successful**").description(
-                            "Seriously, you are leaving us? We hope to see you in the next tournament!",
+                            "Seriously, are you leaving us? We hope to see you in the next tournament!",
                         )
                   })
             })
