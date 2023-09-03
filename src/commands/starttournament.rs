@@ -1,5 +1,5 @@
-use crate::bracket_tournament::*;
-use crate::misc::Region;
+use crate::bracket_tournament::{region::Region, *};
+
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Document},
@@ -55,8 +55,10 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
         }
         assign_match_id::assign_match_id(&region, &database, byes).await?;
         //Create rounds collection for each databases
-        for round in 1..=rounds{
-            database.create_collection(format!("Round {}",round), None);
+        for round in 1..=rounds {
+            database
+                .create_collection(format!("Round {}", round), None)
+                .await?;
         }
     }
     ctx.channel_id()

@@ -1,7 +1,7 @@
-use crate::bracket_tournament::api;
-use crate::misc::{get_difficulty, is_in_db, QuoteStripper, Region};
+use crate::bracket_tournament::{api, region::Region};
+use crate::database_utils::find_discord_id::find_discord_id;
+use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
-use futures::io::Cursor;
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use poise::serenity_prelude::json::Value;
@@ -18,7 +18,7 @@ pub async fn get_individual_player_data(
     ctx: Context<'_>,
     #[description = "Check a player registration status by user ID here"] discord_id: String,
 ) -> Result<(), Error> {
-    let data = match is_in_db(&ctx, Some(discord_id)).await {
+    let data = match find_discord_id(&ctx, Some(discord_id)).await {
         Some(data) => data,
         None => {
             ctx.say("User not found in database").await?;
@@ -134,9 +134,11 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
                 .as_slice(),
         )
         .await?;
-        ctx.channel_id().send_message(ctx, |s|{
-            s.content(format!("Reading players information in {}...", region))
-        }).await?;
+        ctx.channel_id()
+            .send_message(ctx, |s| {
+                s.content(format!("Reading players information in {}...", region))
+            })
+            .await?;
     }
 
     Ok(())

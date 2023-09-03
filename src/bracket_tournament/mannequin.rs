@@ -1,6 +1,6 @@
 use mongodb::bson::{doc, Bson::Null, Document};
 
-use crate::misc::Region;
+use super::region::Region;
 
 pub fn add_mannequin(
     region: &Region,

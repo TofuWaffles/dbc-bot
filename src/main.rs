@@ -5,6 +5,7 @@ TODO:
 */
 mod bracket_tournament;
 mod commands;
+mod database_utils;
 mod misc;
 mod self_role;
 
@@ -14,7 +15,7 @@ use mongodb::{
     Client, Database,
 };
 
-use crate::misc::Region;
+use crate::bracket_tournament::region::Region;
 use futures::stream::TryStreamExt;
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents},
@@ -29,7 +30,7 @@ use tracing_subscriber::{filter, prelude::*};
 // Rest of your code here
 #[derive(Debug)]
 struct Databases {
-    registration: Database,
+    general: Database,
     regional_databases: HashMap<Region, Database>,
 }
 // This data struct is used to pass data (such as the db_pool) to the context object
@@ -66,7 +67,7 @@ async fn run() -> Result<(), Error> {
         commands::battle_log::latest_log(),
         commands::register::register(),
         commands::create_self_role_message::create_self_role_message(),
-        // commands::submit::submit(),
+        commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
@@ -151,7 +152,7 @@ async fn run() -> Result<(), Error> {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 let mut self_role_data = database
-                    .registration
+                    .general
                     .collection::<self_role::SelfRoleMessage>("SelfRoleMessage")
                     .find(None, None)
                     .await
@@ -212,7 +213,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
         ClientOptions::parse_with_resolver_config(&db_uri, ResolverConfig::cloudflare()).await?;
 
     let client = Client::with_options(options)?;
-    let registration = client.database("SelfRole");
+    let general = client.database("General");
     let mut regional_database: HashMap<Region, Database> = HashMap::new();
     regional_database.insert(Region::APAC, client.database("APAC"));
     regional_database.insert(Region::EU, client.database("EU"));
@@ -222,7 +223,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the DB already exists and skips creation
     for collection in required_collections {
-        registration
+        general
             .create_collection(collection, None)
             .await
             .unwrap_or_else(|e| info!("{:?}", e));
@@ -231,7 +232,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     info!("Database prepared successfully!");
 
     Ok(Databases {
-        registration: registration,
+        general: general,
         regional_databases: regional_database,
     })
 }

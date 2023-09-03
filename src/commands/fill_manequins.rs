@@ -1,5 +1,5 @@
-use crate::bracket_tournament::mannequin::add_mannequin;
-use crate::misc::Region;
+use crate::bracket_tournament::{mannequin::add_mannequin, region::Region};
+
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Document},

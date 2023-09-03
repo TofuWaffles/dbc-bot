@@ -1,4 +1,4 @@
-use crate::misc::Region;
+use crate::bracket_tournament::region::Region;
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Document},

@@ -1,5 +1,6 @@
-use crate::misc::Region;
-use crate::misc::{is_in_db, region_details, QuoteStripper};
+use crate::bracket_tournament::region::Region;
+use crate::database_utils::find_discord_id::find_discord_id;
+use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Document},
@@ -11,7 +12,7 @@ use poise::serenity_prelude::{self as serenity};
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
-    let data = match is_in_db(&ctx, None).await {
+    let data = match find_discord_id(&ctx, None).await {
         None => {
             ctx.send(|s|{
                 s.reply(true)
@@ -50,9 +51,9 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             .description(format!("You are about to deregister from the tournament. Below information are what you told us!\n
                                 Your account name: {} \n
                                 With your respective tag: {}\n
-                                And you are in the following region: {}",
-                                data.get("name").unwrap().to_string().strip_quote(), data.get("tag").unwrap().to_string().strip_quote(), region_details(data.get("region").unwrap().to_string().strip_quote().as_str()) 
-                        ))
+                                And you are in the following region: {}", 
+                                data.get("name").unwrap().to_string().strip_quote(), data.get("tag").unwrap().to_string().strip_quote(), format!("{:?}", Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str()))) 
+                        )
         })
     }).await?;
 

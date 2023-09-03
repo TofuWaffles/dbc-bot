@@ -1,5 +1,6 @@
-use crate::bracket_tournament::api;
-use crate::misc::{get_difficulty, is_in_db, QuoteStripper, Region};
+use crate::bracket_tournament::{api, region::Region};
+use crate::database_utils::find_discord_id::find_discord_id;
+use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use mongodb::bson::{doc, Bson::Null};
 use poise::serenity_prelude::{self as serenity};
@@ -13,7 +14,7 @@ pub async fn register(
 ) -> Result<(), Error> {
     // ctx.defer_ephemeral().await?;
     //Check whether a player has registered or not by their Discord id
-    if (is_in_db(&ctx, None).await).is_some() {
+    if (find_discord_id(&ctx, None).await).is_some() {
         ctx.send(|s|{
             s.reply(true)
             .ephemeral(true)
