@@ -14,6 +14,7 @@ use mongodb::{
     options::{ClientOptions, ResolverConfig},
     Client, Database,
 };
+use strum::IntoEnumIterator;
 
 use crate::bracket_tournament::region::Region;
 use futures::stream::TryStreamExt;
@@ -72,10 +73,10 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::starttournament::start_tournament(),
-        commands::club::club(),
         commands::region_proportion::region_proportion(),
-        commands::reset_match_id::reset_match_id(),
+        commands::reset::reset(),
         commands::fill_manequins::fill_mannequins(),
+        commands::set_round::set_round(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -214,11 +215,13 @@ async fn prepare_databases() -> Result<Databases, Error> {
 
     let client = Client::with_options(options)?;
     let general = client.database("General");
+
     let mut regional_database: HashMap<Region, Database> = HashMap::new();
     regional_database.insert(Region::APAC, client.database("APAC"));
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
     let required_collections = vec!["Player", "SelfRoleMessage"];
+    let required_regional_collections = bracket_tournament::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the DB already exists and skips creation
@@ -227,6 +230,21 @@ async fn prepare_databases() -> Result<Databases, Error> {
             .create_collection(collection, None)
             .await
             .unwrap_or_else(|e| info!("{:?}", e));
+    }
+
+    for region in Region::iter() {
+        let database = regional_database.get(&region).unwrap();
+        let collection_names = database.list_collection_names(None).await?;
+        if !collection_names.contains(&"Config".to_string()) {
+            database.create_collection("Config", None).await?;
+            let collection = database.collection("Config");
+            collection
+                .insert_one(required_regional_collections.clone(), None)
+                .await?;
+            info!("Config collection created for {}", region);
+        } else {
+            info!("Config already exists in {}", region);
+        }
     }
 
     info!("Database prepared successfully!");

@@ -1,3 +1,4 @@
+use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::misc::{get_difficulty, QuoteStripper};
@@ -12,7 +13,20 @@ pub async fn register(
     #[description = "Put your player tag here (without #)"] tag: String,
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
-    // ctx.defer_ephemeral().await?;
+    //Check whether registation has already closed
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
+
+    if !(config.get("registration").unwrap()).as_bool().unwrap() {
+        ctx.send(|s| {
+            s.reply(true).ephemeral(true).embed(|e| {
+                e.title("**Registration has already closed!**")
+                    .description("Sorry, registration has already closed!")
+            })
+        })
+        .await?;
+        return Ok(());
+    }
     //Check whether a player has registered or not by their Discord id
     if (find_discord_id(&ctx, None).await).is_some() {
         ctx.send(|s|{
@@ -94,7 +108,8 @@ pub async fn register(
                         "tag": player["tag"].to_string().strip_quote(),
                         "discord_id": ctx.author_member().await.unwrap().user.id.to_string(),
                         "region": format!("{:?}", region),
-                        "match_id": Null
+                        "match_id": Null,
+                        "battle": false
                     };
 
                     let collection =

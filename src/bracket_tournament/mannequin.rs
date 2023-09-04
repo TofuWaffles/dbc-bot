@@ -21,6 +21,7 @@ pub fn add_mannequin(
       "discord_id:": discord_id,
       "region": format!("{:?}", *region),
       "match_id": match_id,
+      "battle": false
     };
     mannequin
 }

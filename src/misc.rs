@@ -2,7 +2,6 @@ use poise::serenity_prelude::Colour;
 use std::error::Error;
 use std::fmt;
 
-
 /// A trait for stripping quotes from a string.
 pub trait QuoteStripper {
     /// Strip double quotes from the string and return a new String.
@@ -201,7 +200,3 @@ impl fmt::Display for CustomError {
 }
 
 impl Error for CustomError {}
-
-
-
-

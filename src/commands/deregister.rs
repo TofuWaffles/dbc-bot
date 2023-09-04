@@ -1,3 +1,4 @@
+use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::region::Region;
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::misc::QuoteStripper;
@@ -12,6 +13,7 @@ use poise::serenity_prelude::{self as serenity};
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
+
     let data = match find_discord_id(&ctx, None).await {
         None => {
             ctx.send(|s|{
@@ -26,6 +28,21 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         }
         Some(data) => data,
     };
+    let region = Region::find_key(data.get("region").unwrap().as_str().unwrap()).unwrap();
+    //Check whether registation has already closed
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
+
+    if !(config.get("registration").unwrap()).as_bool().unwrap() {
+        ctx.send(|s| {
+            s.reply(true).ephemeral(true).embed(|e| {
+                e.title("**Registration has already closed!**")
+                    .description("Sorry, registration has already closed!")
+            })
+        })
+        .await?;
+        return Ok(());
+    }
 
     let deregister_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap();
     let deregister_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap();

@@ -10,8 +10,8 @@ use strum::IntoEnumIterator;
     slash_command,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
-pub async fn reset_match_id(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.say("Resetting match id and removing mannequins...")
+pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.say("Resetting match id, and removing mannequins and rounds...")
         .await?;
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -30,6 +30,19 @@ pub async fn reset_match_id(ctx: Context<'_>) -> Result<(), Error> {
         ctx.channel_id()
             .send_message(ctx, |s| {
                 s.content(format!("All mannequins in {} are removed!", region))
+            })
+            .await?;
+        let collections = database.list_collection_names(None).await?;
+        for collection in collections {
+            if collection.starts_with("Round") {
+                database.collection::<Document>(&collection)
+                    .drop(None)
+                    .await?;
+            }
+        }
+        ctx.channel_id()
+            .send_message(ctx, |s| {
+                s.content(format!("All rounds in {} are removed!", region))
             })
             .await?;
     }

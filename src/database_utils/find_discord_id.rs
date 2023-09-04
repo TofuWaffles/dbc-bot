@@ -1,4 +1,4 @@
-use crate::bracket_tournament::region::Region;
+use crate::bracket_tournament::{config::get_config, region::Region};
 use crate::misc::QuoteStripper;
 use crate::Context;
 use mongodb::{
@@ -61,13 +61,8 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
 
     // Iterate through the regions and check each database
     for region in Region::iter() {
-        let player_data: Collection<Document> = ctx
-            .data()
-            .database
-            .regional_databases
-            .get(&region)
-            .unwrap()
-            .collection("Player");
+        let database = ctx.data().database.regional_databases.get(&region).unwrap();
+        let player_data: Collection<Document> = database.collection(format!("Player").as_str());
         match player_data
             .find_one(doc! { "discord_id": &invoker_id.strip_quote()}, None)
             .await

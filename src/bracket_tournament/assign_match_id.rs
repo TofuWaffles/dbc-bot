@@ -46,9 +46,10 @@ pub async fn assign_match_id(
     Ok(())
 }
 
-pub fn update_match_id(mut player: Document) -> Document{
+pub fn update_match_id(mut player: Document) -> Document {
     let old_match_id = player.get_i32("match_id").unwrap();
-    let new_match_id = (old_match_id+1)/2;
+    let new_match_id = (old_match_id + 1) / 2;
     player.insert("match_id", new_match_id);
+    println!("Match id is updated!");
     player
 }

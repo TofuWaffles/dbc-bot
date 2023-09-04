@@ -1,5 +1,4 @@
 pub mod battle_log;
-pub mod club;
 pub mod create_self_role_message;
 pub mod db_handler;
 pub mod deregister;
@@ -9,6 +8,7 @@ pub mod ping;
 pub mod player;
 pub mod region_proportion;
 pub mod register;
-pub mod reset_match_id;
+pub mod reset;
+pub mod set_round;
 pub mod starttournament;
 pub mod submit;
