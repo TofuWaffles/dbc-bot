@@ -303,8 +303,113 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
                 error
             );
         }
+        FrameworkError::EventHandler {
+            error,
+            ctx: _,
+            event: _,
+            framework: _,
+        } => {
+            error!("Error executing event handler: {:?}", error);
+        }
+        FrameworkError::CommandPanic { payload, ctx } => {
+            error!(
+                "A command has panicked: {:?} in guild: {}",
+                payload.unwrap_or_else(|| "Failed to get panic message.".to_string()),
+                ctx.guild().unwrap().name,
+            );
+            ctx.say(
+                "The command has panicked, please contact the bot operators if the issue persists.",
+            )
+            .await
+            .unwrap();
+        }
+        FrameworkError::CommandStructureMismatch { description, ctx } => {
+            error!(
+                "The command's structure had a mismatch: {}.\n Most likely the command was updated but not reregistered on Discord. Try reregistering the command and try again",
+                description
+            );
+        }
+        FrameworkError::CooldownHit {
+            remaining_cooldown,
+            ctx,
+        } => {
+            ctx.say(format!(
+                "This command is still on cooldown. Try again in {} seconds",
+                remaining_cooldown.as_secs().to_string()
+            ))
+            .await
+            .unwrap();
+        }
+        FrameworkError::MissingBotPermissions {
+            missing_permissions,
+            ctx,
+        } => {
+            error!(
+                "The bot lacks the following permissions to complete the task: {:?}",
+                missing_permissions
+            );
+            ctx.say("I do not have the required permissions to do this, sorry :(")
+                .await
+                .unwrap();
+        }
+        FrameworkError::MissingUserPermissions {
+            missing_permissions,
+            ctx,
+        } => {
+            info!(
+                "The user requires the following permissions to complete the task: {:?}",
+                missing_permissions
+            );
+            ctx.say("You do not have the required permissions to do this, sorry :(")
+                .await
+                .unwrap();
+        }
+        FrameworkError::NotAnOwner { ctx } => {
+            ctx.say("This command is only available to the bot owners.")
+                .await
+                .unwrap();
+        }
+        FrameworkError::GuildOnly { ctx } => {
+            ctx.say("This command is only available in a Discord server.")
+                .await
+                .unwrap();
+        }
+        FrameworkError::DmOnly { ctx } => {
+            ctx.say("This command is only available in a DM.")
+                .await
+                .unwrap();
+        }
+        FrameworkError::NsfwOnly { ctx } => {
+            ctx.say("This command is only available in a NSFW channel.")
+                .await
+                .unwrap();
+        }
+        FrameworkError::DynamicPrefix { error, ctx, msg } => {
+            error!("A dynamic prefix error occured: {:?}", error);
+        }
+        FrameworkError::UnknownCommand {
+            ctx: _,
+            msg: _,
+            prefix,
+            msg_content,
+            framework: _,
+            invocation_data: _,
+            trigger: _,
+        } => {
+            info!("A user tried to trigger an unknown command with the bot's prefix of {} with the message: {}", prefix, msg_content);
+        }
+        FrameworkError::UnknownInteraction {
+            ctx: _,
+            framework: _,
+            interaction,
+        } => {
+            error!(
+                "An interaction occured that was unspecified: {:?}",
+                interaction
+            );
+        }
         _ => {
-            error!("An unknown error occurred");
+            error!("An unknown error occurred!");
         }
     }
 }
