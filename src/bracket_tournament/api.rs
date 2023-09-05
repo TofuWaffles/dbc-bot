@@ -1,7 +1,4 @@
-use crate::{
-    misc::CustomError,
-    Error
-};
+use crate::misc::CustomError;
 use poise::serenity_prelude::json::Value;
 use reqwest;
 use tracing::error;

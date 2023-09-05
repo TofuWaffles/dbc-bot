@@ -1,9 +1,5 @@
 use crate::{
     bracket_tournament::{
-        api::{
-            get_api_link, 
-            request
-        },
         assign_match_id::update_match_id,
         config::get_config,
         region,
@@ -21,10 +17,13 @@ use mongodb::{
     bson::{doc, Document},
     Collection,
 };
+use tracing::{instrument, info};
 
 /// View your opponent
+#[instrument]
 #[poise::command(slash_command, guild_only)]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
+    info!("Getting opponent for user {}", ctx.author().tag());
     let caller = match find_discord_id(&ctx, None).await {
         Some(caller) => caller,
         None => {
