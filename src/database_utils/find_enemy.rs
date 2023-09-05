@@ -5,7 +5,9 @@ use mongodb::{
     bson::{doc, Bson, Document},
     Collection,
 };
+use tracing::{error, info, instrument};
 
+#[instrument]
 pub async fn find_enemy(
     ctx: &Context<'_>,
     region: &Region,
@@ -15,14 +17,14 @@ pub async fn find_enemy(
 ) -> Option<Document> {
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection(format!("Round {}", round).as_str());
-    println!("{}", match_id);
+    info!("Searching opponent for match {}", match_id);
     let filter = doc! {
         "match_id": match_id,
         "tag": {
            "$ne": other_tag
         }
     };
-    println!("Filter: {:?}", filter);
+    info!("Using filter: {:?}", filter);
     match collection.find_one(filter, None).await {
         Ok(Some(enemy)) => {
             println!("Found enemy!");
@@ -33,7 +35,7 @@ pub async fn find_enemy(
             None
         }
         Err(err) => {
-            eprintln!("Error while querying database: {:?}", err);
+            error!("Error while querying database: {:?}", err);
             None
         }
     }

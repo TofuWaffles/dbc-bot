@@ -72,7 +72,7 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
-        commands::starttournament::start_tournament(),
+        commands::start_tournament::start_tournament(),
         commands::region_proportion::region_proportion(),
         commands::reset::reset(),
         commands::fill_manequins::fill_mannequins(),
@@ -205,7 +205,7 @@ async fn run() -> Result<(), Error> {
 
 #[instrument]
 async fn prepare_databases() -> Result<Databases, Error> {
-    trace!("Preparing database...");
+    info!("Preparing database...");
 
     let db_uri = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not set. Set it as an environment variable.");
@@ -247,7 +247,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
         }
     }
 
-    info!("Database prepared successfully!");
+    info!("Databases prepared successfully!");
 
     Ok(Databases {
         general: general,
@@ -313,17 +313,19 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
         }
         FrameworkError::CommandPanic { payload, ctx } => {
             error!(
-                "A command has panicked: {:?} in guild: {}",
+                "A command has panicked: {:?}",
                 payload.unwrap_or_else(|| "Failed to get panic message.".to_string()),
-                ctx.guild().unwrap().name,
             );
             ctx.say(
-                "The command has panicked, please contact the bot operators if the issue persists.",
+                "The command has failed, please contact the bot operators if the issue persists.",
             )
             .await
             .unwrap();
         }
-        FrameworkError::CommandStructureMismatch { description, ctx } => {
+        FrameworkError::CommandStructureMismatch {
+            description,
+            ctx: _,
+        } => {
             error!(
                 "The command's structure had a mismatch: {}.\n Most likely the command was updated but not reregistered on Discord. Try reregistering the command and try again",
                 description
@@ -384,8 +386,11 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
                 .await
                 .unwrap();
         }
-        FrameworkError::DynamicPrefix { error, ctx, msg } => {
-            error!("A dynamic prefix error occured: {:?}", error);
+        FrameworkError::DynamicPrefix { error, ctx: _, msg } => {
+            error!(
+                "A dynamic prefix error occured for message \"{:?}\": {:?}",
+                msg, error
+            );
         }
         FrameworkError::UnknownCommand {
             ctx: _,

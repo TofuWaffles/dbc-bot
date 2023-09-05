@@ -1,6 +1,7 @@
 use crate::misc::CustomError;
 use poise::serenity_prelude::json::Value;
 use reqwest;
+use tracing::error;
 
 /// Constructs an API link based on the provided option and tag.
 ///
@@ -86,7 +87,7 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
 ///         }
 ///         Err(err) => {
 ///             // Handle the error
-///             eprintln!("Error: {}", err);
+///             error!("Error: {}", err);
 ///         }
 ///     }
 ///
@@ -94,7 +95,7 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
 /// }
 /// ```
 pub async fn request(endpoint: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    let token = std::env::var("BRAWL_STARS_TOKEN").expect("There is no Brawl Stars Token");
+    let token = std::env::var("BRAWL_STARS_TOKEN").expect("Brawl Stars API token not found.");
     let response = reqwest::Client::new()
         .get(endpoint)
         .header("Authorization", format!("Bearer {}", token))
@@ -105,11 +106,11 @@ pub async fn request(endpoint: &str) -> Result<Value, Box<dyn std::error::Error 
         let data: Value = response.json().await?;
         Ok(data)
     } else {
-        eprintln!(
+        error!(
             "API responded with an unsuccessful status code: {}",
             response.status()
         );
-        eprintln!("API response body: {:?}", response.text().await);
+        error!("API response body: {:?}", response.text().await);
         Err(Box::new(CustomError("Unsuccessful response".to_string())))
     }
 }

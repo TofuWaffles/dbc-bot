@@ -1,6 +1,7 @@
 use crate::{Data, Error};
 use poise::serenity_prelude::{self as serenity, Context};
 use tokio::time::{sleep, Duration};
+use tracing::error;
 
 pub async fn handle_selfrole_button(
     button_interaction: &serenity::MessageComponentInteraction,
@@ -28,7 +29,7 @@ pub async fn handle_selfrole_button(
 
     if let Some(role) = roles.get(&poise::serenity_prelude::RoleId(role_id)) {
         if let Err(err) = member.add_role(&ctx, role.id).await {
-            eprintln!("Error adding role to member: {:?}", err);
+            error!("Error adding role to member: {:?}", err);
             return Ok(());
         }
     }
@@ -36,7 +37,7 @@ pub async fn handle_selfrole_button(
     let ping_channel = match ctx.cache.guild_channel(ping_channel_id) {
         Some(ping_channel) => ping_channel,
         None => {
-            eprintln!("Error retrieving ping channel");
+            error!("Error retrieving ping channel");
             return Ok(());
         }
     };
@@ -52,7 +53,7 @@ pub async fn handle_selfrole_button(
     {
         Ok(sent_message) => sent_message,
         Err(err) => {
-            eprintln!("Error sending ping message: {:?}", err);
+            error!("Error sending ping message: {:?}", err);
             return Ok(());
         }
     };
@@ -62,7 +63,7 @@ pub async fn handle_selfrole_button(
     sleep(Duration::from_secs(15)).await;
 
     if let Err(err) = sent_message.delete(&ctx).await {
-        eprintln!("Error deleting ping message: {:?}", err);
+        error!("Error deleting ping message: {:?}", err);
         return Ok(());
     }
 

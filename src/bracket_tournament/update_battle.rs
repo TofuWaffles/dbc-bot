@@ -1,9 +1,15 @@
-use mongodb::{Database, bson::{Document, doc}, Collection};
+use mongodb::{
+    bson::{doc, Document},
+    Collection, Database,
+};
 
-
-
-pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Result<(),Box<dyn std::error::Error + Send + Sync>>{
-    let current_round: Collection<Document> = database.collection(format!("Round {}", round).as_str());
+pub async fn update_battle(
+    database: &Database,
+    round: i32,
+    match_id: i32,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let current_round: Collection<Document> =
+        database.collection(format!("Round {}", round).as_str());
     let filter = doc! {
         "match_id": match_id
     };
@@ -14,6 +20,6 @@ pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Re
     };
     current_round.update_many(filter, update, None).await?;
     println!("Battle is updated!");
-    
+
     Ok(())
 }

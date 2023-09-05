@@ -1,14 +1,18 @@
+use tracing::{error, info, instrument};
+
 use crate::bracket_tournament::api;
 use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 
-/// Get the player's profile
+/// Get a player's in-game profile
+#[instrument]
 #[poise::command(slash_command, guild_only)]
 pub async fn player(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
 ) -> Result<(), Error> {
     let endpoint = api::get_api_link("player", &tag.to_uppercase());
+    info!("Getting player information from the API...");
     match api::request(&endpoint).await {
         Ok(player) => {
             ctx.send(|s| {
@@ -53,7 +57,8 @@ pub async fn player(
             .await?;
         }
 
-        Err(_) => {
+        Err(e) => {
+            error!("Player profile lookup failed: {}", e);
             ctx.send(|s| {
                 s.content("".to_string())
                     .reply(true)

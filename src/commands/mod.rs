@@ -10,5 +10,5 @@ pub mod region_proportion;
 pub mod register;
 pub mod reset;
 pub mod set_round;
-pub mod starttournament;
+pub mod start_tournament;
 pub mod submit;

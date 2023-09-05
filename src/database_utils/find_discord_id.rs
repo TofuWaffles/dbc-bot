@@ -1,4 +1,4 @@
-use crate::bracket_tournament::{config::get_config, region::Region};
+use crate::bracket_tournament::region::Region;
 use crate::misc::QuoteStripper;
 use crate::Context;
 use mongodb::{
@@ -6,6 +6,7 @@ use mongodb::{
     Collection,
 };
 use strum::IntoEnumIterator;
+use tracing::{error, info, instrument};
 
 /// Checks if a player with the given Discord user ID exists in the database.
 ///
@@ -51,6 +52,7 @@ use strum::IntoEnumIterator;
 ///     }
 /// }
 /// ```
+#[instrument]
 pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> Option<Document> {
     let invoker_id = match discord_id {
         Some(id) => id,
@@ -59,8 +61,10 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
     // Define a variable to hold the result
     let mut result: Option<Document> = None;
 
+    info!("Iterating through and checking the database for each region");
     // Iterate through the regions and check each database
     for region in Region::iter() {
+        info!("Checking database for region: {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let player_data: Collection<Document> = database.collection(format!("Player").as_str());
         match player_data
@@ -75,7 +79,7 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
                 continue;
             }
             Err(err) => {
-                eprintln!("Error while querying database: {:?}", err);
+                error!("Error while querying database: {:?}", err);
                 result = None;
                 break;
             }

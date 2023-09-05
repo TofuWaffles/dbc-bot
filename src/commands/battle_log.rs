@@ -2,16 +2,20 @@ use crate::bracket_tournament::api;
 use crate::misc::{get_color, get_mode_icon, QuoteStripper};
 use crate::{Context, Error};
 use poise::serenity_prelude::json::Value;
+use tracing::{error, info, instrument};
 
 /// Get the latest log of a player
+#[instrument]
 #[poise::command(slash_command, guild_only)]
 pub async fn latest_log(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] tag: String,
 ) -> Result<(), Error> {
+    info!("Getting the battle log for {}", ctx.author().name);
     let endpoint = api::get_api_link("battle_log", &tag.to_uppercase());
     match api::request(&endpoint).await {
         Ok(log) => {
+            info!("Successfully retrived player data from the API");
             let player_endpoint = api::get_api_link("player", &tag.to_uppercase());
             let player: Value = api::request(&player_endpoint).await.unwrap();
             ctx.send(|s| {
@@ -177,8 +181,10 @@ pub async fn latest_log(
                 })
             })
             .await?;
+            info!("Successfully send the battle log to the user");
         }
         Err(err) => {
+            error!("Unable to retrive the battle log from the API");
             ctx.send(|s| {
                 s.content("".to_string())
                     .reply(true)

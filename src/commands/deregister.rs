@@ -8,12 +8,15 @@ use mongodb::{
     Collection,
 };
 use poise::serenity_prelude::{self as serenity};
+use tracing::{info, instrument};
 
 /// Remove your registration from Discord Brawl Cup.
+#[instrument]
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
+    info!("Attempted to deregister user {}", ctx.author().tag());
     let data = match find_discord_id(&ctx, None).await {
         None => {
             ctx.send(|s|{

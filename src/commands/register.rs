@@ -5,14 +5,17 @@ use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use mongodb::bson::{doc, Bson::Null};
 use poise::serenity_prelude::{self as serenity};
+use tracing::{error, info, instrument};
 
 /// Sign up for Discord Brawl Cup Tournament!
+#[instrument]
 #[poise::command(slash_command, guild_only, track_edits)]
 pub async fn register(
     ctx: Context<'_>,
     #[description = "Put your player tag here (without #)"] tag: String,
     #[description = "Put your region here"] region: Region,
 ) -> Result<(), Error> {
+    info!("Attempting to register {}", ctx.author().tag());
     //Check whether registation has already closed
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
@@ -119,13 +122,13 @@ pub async fn register(
                         Ok(_) => {}
                         Err(err) => match err.kind.as_ref() {
                             mongodb::error::ErrorKind::Command(code) => {
-                                eprintln!("Command error: {:?}", code);
+                                error!("Command error: {:?}", code);
                             }
                             mongodb::error::ErrorKind::Write(code) => {
-                                eprintln!("Write error: {:?}", code);
+                                error!("Write error: {:?}", code);
                             }
                             _ => {
-                                eprintln!("Error: {:?}", err);
+                                error!("Error: {:?}", err);
                             }
                         },
                     };
