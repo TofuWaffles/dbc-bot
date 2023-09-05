@@ -1,34 +1,29 @@
-/*
-TODO:
-- Build out self role and new channel alert feature
-- Plan and subsequently build the tournament bracket feature
-*/
 mod bracket_tournament;
 mod commands;
 mod database_utils;
 mod misc;
 mod self_role;
-
 use dashmap::DashMap;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
     Client, Database,
 };
 use strum::IntoEnumIterator;
-
-use crate::bracket_tournament::region::Region;
 use futures::stream::TryStreamExt;
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents},
     Event, FrameworkError,
 };
-use std::collections::HashMap;
-use std::fs::File;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    fs::File,
+    sync::Arc
+};
+
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
+use crate::bracket_tournament::region::Region;
 
-// Rest of your code here
 #[derive(Debug)]
 struct Databases {
     general: Database,
@@ -67,7 +62,6 @@ async fn run() -> Result<(), Error> {
         commands::player::player(),
         commands::battle_log::latest_log(),
         commands::register::register(),
-        commands::create_self_role_message::create_self_role_message(),
         commands::submit::submit(),
         commands::db_handler::get_individual_player_data(),
         commands::db_handler::get_all_players_data(),
@@ -77,6 +71,15 @@ async fn run() -> Result<(), Error> {
         commands::reset::reset(),
         commands::fill_manequins::fill_mannequins(),
         commands::set_round::set_round(),
+        commands::view_opponent::view_opponent(),
+        
+        commands::manager_only::config::config(),
+        commands::manager_only::create_self_role_message::create_self_role_message(),
+        commands::manager_only::starttournament::start_tournament(),
+        commands::manager_only::region_proportion::region_proportion(),
+        commands::manager_only::reset::reset(),
+        commands::manager_only::fill_manequins::fill_mannequins(),
+        commands::manager_only::set_round::set_round(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

@@ -1,23 +1,22 @@
-use crate::bracket_tournament::region::Region;
-use crate::{Context, Error};
+use crate::{
+    Context,
+    Error,
+    bracket_tournament::region::Region
+};
 use mongodb::{
     bson::{doc, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
-use tracing::{info, instrument};
-///Reset all match_id of players and remove mannequins
-#[instrument]
+///Reset tournament set up, but still keeps list of real players.
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
-    info!("Attempting to reset the tournament(s)");
     ctx.say("Resetting match id, and removing mannequins and rounds...")
         .await?;
     for region in Region::iter() {
-        info!("Resetting for tournament region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let collection: Collection<Document> = database.collection("Player");
         collection
@@ -51,7 +50,6 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
             })
             .await?;
     }
-    info!("Finished resetting tournament(s)");
     ctx.channel_id()
         .send_message(ctx, |s| s.content("Complete!"))
         .await?;

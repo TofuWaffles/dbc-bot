@@ -46,3 +46,25 @@ impl Region {
         }
     }
 }
+
+
+#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum Mode {
+    #[name = "Wipeout"]
+    wipeout,
+    #[name = "Brawl Ball"]
+    brawlBall,
+    #[name = "Gem Grab"]
+    gemGrab,
+    #[name = "Heist"]
+    heist,
+    #[name = "Hot Zone"]
+    hotZone,
+    #[name = "Knockout"]
+    knockout,
+    #[name = "Siege"]
+    siege,
+    #[name = "Bounty"]
+    bounty,
+}

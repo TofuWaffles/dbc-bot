@@ -11,8 +11,8 @@ use tracing::{info, instrument};
 /// Checks a player registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    slash_command,
-    // Multiple permissions can be OR-ed together with `|` to make them all required
+    slash_command, 
+    guild_only,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
     rename="participant"
 )]

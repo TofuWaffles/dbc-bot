@@ -1,8 +1,13 @@
-use crate::bracket_tournament::region::Region;
-use crate::misc::QuoteStripper;
-use crate::Context;
+use crate::{
+    Context,
+    misc::QuoteStripper,
+    bracket_tournament::region::Region
+};
 use mongodb::{
-    bson::{doc, Document},
+    bson::{
+        doc,
+        Document
+    },
     Collection,
 };
 use strum::IntoEnumIterator;
@@ -19,7 +24,8 @@ use tracing::{error, info, instrument};
 ///
 /// - `ctx`: A reference to the Serenity `Context` containing information about the
 ///          current Discord interaction and server context.
-///
+/// - `discord_id`: An optional `String` containing the Discord user ID of the player. If this is not given, Discord ID will be retrieve
+/// from `ctx.author().id`
 /// # Returns
 ///
 /// An `Option<Document>` representing the player's data if found, or `None` if the player

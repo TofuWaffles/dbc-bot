@@ -46,7 +46,7 @@ impl QuoteStripper for String {
 /// # Examples
 ///
 /// ```
-/// use serde_json::json;
+/// use poise::serenity_prelude::json::json;
 ///
 /// let num = json!(3);
 /// let difficulty = get_difficulty(&num);

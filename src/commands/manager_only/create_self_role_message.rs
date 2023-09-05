@@ -1,11 +1,17 @@
-use crate::misc::CustomError;
-use crate::self_role::SelfRoleMessage;
-use crate::{Context, Error};
+use crate::{
+    misc::CustomError,
+    self_role::SelfRoleMessage,
+    Context, 
+    Error
+};
 use poise::serenity_prelude as serenity;
-use tracing::{error, info, instrument};
 
-#[instrument]
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command, 
+    guild_only,
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
+)]
+
 pub async fn create_self_role_message(
     ctx: Context<'_>,
     #[description = "The role ID to assign"] role_id: String,
@@ -14,13 +20,10 @@ pub async fn create_self_role_message(
     #[description = "The channel ID to send the self-roles message"] ping_channel_id: String,
     #[description = "The custom emoji for the react button"] emoji: String,
 ) -> Result<(), Error> {
-    info!("Starting to create a self role message");
     let guild_id = ctx.guild_id().unwrap();
 
-    let emoji_obj = serenity::parse_emoji(&emoji).ok_or_else(|| {
-        error!("Invalid emoji provided: {}", emoji);
-        CustomError("Invalid emoji provided.".to_owned())
-    })?;
+    let emoji_obj = serenity::parse_emoji(&emoji)
+        .ok_or_else(|| CustomError("Invalid emoji provided.".to_owned()))?;
 
     let message = serenity::ChannelId(channel_id.parse::<u64>().unwrap())
         .send_message(&ctx, |m| {
@@ -60,6 +63,5 @@ pub async fn create_self_role_message(
     ))
     .await?;
 
-    info!("The self role message was created and is now active.");
     Ok(())
 }

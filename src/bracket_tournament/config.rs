@@ -1,12 +1,27 @@
 use mongodb::{
-    bson::{doc, Document},
+    bson::{doc, Bson::Null, Document},
     Collection, Database,
 };
+
+use crate::bracket_tournament::region::Mode;
+
 
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,
-      "round": 1
+      "round": 1,
+      "mode": Null,
+      "map": Null
+    };
+    config
+}
+
+pub fn set_config(mode: &Mode, map: &String) -> Document {
+    let config = doc! {
+      "$set": {
+        "mode": format!("{:?}", mode),
+        "map": map
+      }
     };
     config
 }

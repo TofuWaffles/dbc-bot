@@ -39,15 +39,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
-    let region = region::Region::find_key(
-        caller
-            .get("region")
-            .unwrap()
-            .to_string()
-            .strip_quote()
-            .as_str(),
-    )
-    .unwrap();
+    let region = region::Region::find_key(caller.get("region").unwrap().to_string().strip_quote().as_str()).unwrap();
+
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let round = get_config(database)
@@ -99,12 +92,10 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
     };
 
-    let enemy = find_enemy(&ctx, &region, &round, &match_id, &caller_tag)
-        .await
-        .unwrap();
-    if is_mannequin(&enemy) {
-        let round2 = database.collection("Round 2");
-        round2.insert_one(update_match_id(caller), None).await?;
+    let enemy = find_enemy(&ctx, &region, &round ,&match_id, &caller_tag).await.unwrap();
+    if is_mannequin(&enemy){
+        let next_round = database.collection(format!("Round {}", round + 1).as_str());
+        next_round.insert_one(update_match_id(caller), None).await?;
         ctx.send(|s| {
             s.reply(true).ephemeral(false).embed(|e| {
                 e.title("Bye! See you next... round!").description(
