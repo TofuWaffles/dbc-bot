@@ -73,12 +73,16 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
         //Create rounds collection for each databases
         for round in 1..=rounds {
             let collection_names = format!("Round {}", round);
-            if !database.list_collection_names(None).await.unwrap().contains(&collection_names){
-                 database
-                .create_collection(format!("Round {}", round), None)
-                .await?;
+            if !database
+                .list_collection_names(None)
+                .await
+                .unwrap()
+                .contains(&collection_names)
+            {
+                database
+                    .create_collection(format!("Round {}", round), None)
+                    .await?;
             }
-           
         }
 
         //Clone and sort all player data to round 1

@@ -1,7 +1,7 @@
 use crate::misc::CustomError;
+use crate::Error;
 use poise::serenity_prelude::json::Value;
 use reqwest;
-
 /// Constructs an API link based on the provided option and tag.
 ///
 /// # Arguments
@@ -93,7 +93,7 @@ pub fn get_api_link(option: &str, tag: &str) -> String {
 ///     Ok(())
 /// }
 /// ```
-pub async fn request(endpoint: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn request(endpoint: &str) -> Result<Value, Error> {
     let token = std::env::var("BRAWL_STARS_TOKEN").expect("There is no Brawl Stars Token");
     let response = reqwest::Client::new()
         .get(endpoint)

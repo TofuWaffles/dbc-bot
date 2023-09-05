@@ -1,14 +1,10 @@
 pub mod battle_log;
-pub mod create_self_role_message;
 pub mod db_handler;
 pub mod deregister;
 pub mod draco;
-pub mod fill_manequins;
+pub mod manager_only;
 pub mod ping;
 pub mod player;
-pub mod region_proportion;
 pub mod register;
-pub mod reset;
-pub mod set_round;
-pub mod starttournament;
 pub mod submit;
+pub mod view_opponent;

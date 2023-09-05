@@ -1,16 +1,13 @@
 use super::mannequin::add_mannequin;
 use super::region::Region;
+use crate::Error;
 use futures::TryStreamExt;
 use mongodb::{
     bson::{doc, Document},
     Collection, Database,
 };
 
-pub async fn assign_match_id(
-    region: &Region,
-    database: &Database,
-    byes: i32,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn assign_match_id(region: &Region, database: &Database, byes: i32) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Player");
     let mut player_cursor = collection.find(doc! {"match_id": null}, None).await?;
     let mut double_match_id: i32 = 2;

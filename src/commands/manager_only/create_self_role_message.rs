@@ -3,7 +3,12 @@ use crate::self_role::SelfRoleMessage;
 use crate::{Context, Error};
 use poise::serenity_prelude as serenity;
 
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command, 
+    guild_only,
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
+)]
+
 pub async fn create_self_role_message(
     ctx: Context<'_>,
     #[description = "The role ID to assign"] role_id: String,

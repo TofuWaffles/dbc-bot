@@ -10,7 +10,12 @@ struct RegionStats {
     percentage: Option<f64>,
 }
 
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command, 
+    guild_only,
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
+)]
+
 pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
     let filter: Document = doc! { "name": { "$ne": "Mannequin" } }; //Filter out mannequins $ne = not equal
     let mut data: Vec<RegionStats> = vec![];

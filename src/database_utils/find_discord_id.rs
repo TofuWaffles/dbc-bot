@@ -18,7 +18,8 @@ use strum::IntoEnumIterator;
 ///
 /// - `ctx`: A reference to the Serenity `Context` containing information about the
 ///          current Discord interaction and server context.
-///
+/// - `discord_id`: An optional `String` containing the Discord user ID of the player. If this is not given, Discord ID will be retrieve
+/// from `ctx.author().id`
 /// # Returns
 ///
 /// An `Option<Document>` representing the player's data if found, or `None` if the player

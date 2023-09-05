@@ -5,7 +5,7 @@ use mongodb::{
     Collection,
 };
 use strum::IntoEnumIterator;
-///Reset all match_id of players and remove mannequins
+///Reset tournament set up, but still keeps list of real players.
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
@@ -35,7 +35,8 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
         let collections = database.list_collection_names(None).await?;
         for collection in collections {
             if collection.starts_with("Round") {
-                database.collection::<Document>(&collection)
+                database
+                    .collection::<Document>(&collection)
                     .drop(None)
                     .await?;
             }
