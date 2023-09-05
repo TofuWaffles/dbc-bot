@@ -1,16 +1,20 @@
-use crate::bracket_tournament::{
-    assign_match_id::update_match_id,
-    config::get_config,
-    api,
-    region,
-    update_battle::update_battle,
+use crate::{
+    bracket_tournament::{
+        assign_match_id::update_match_id,
+        config::get_config,
+        api,
+        region,
+        update_battle::update_battle,
+    },
+    database_utils::{
+        find_enemy::{find_enemy,is_mannequin},
+        find_discord_id::find_discord_id
+    },
+    misc::QuoteStripper,
+    Context, 
+    Error
 };
-use crate::database_utils::{
-    find_enemy::{find_enemy,is_mannequin},
-    find_discord_id::find_discord_id
-};
-use crate::misc:: QuoteStripper;
-use crate::{Context, Error};
+
 use mongodb::{ Collection,
     bson::{doc, Document}
 };

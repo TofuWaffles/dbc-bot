@@ -28,6 +28,7 @@ pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> 
         .update_one(config, update_round(round), None)
         .await
         .unwrap();
-    ctx.say("Round is set!").await?;
+    let post_config = get_config(database).await;
+    ctx.say(format!("Round is set! We are at round {}", post_config.get("round").unwrap())).await?;
     Ok(())
 }
