@@ -14,7 +14,10 @@ use mongodb::{
 };
 
 /// Set config for the tournament
-#[poise::command(slash_command, guild_only)]
+#[poise::command(slash_command, 
+  guild_only,
+  required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
+)]
 pub async fn config(ctx: Context<'_>, region: Region, mode: Mode, map: String) -> Result<(), Error> {
   let database = ctx.data().database.regional_databases.get(&region).unwrap();
   let collection: Collection<Document> = database.collection("Config");
