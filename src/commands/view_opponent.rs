@@ -1,6 +1,9 @@
 use crate::{
     bracket_tournament::{
-        api::{get_api_link, request},
+        api::{
+            get_api_link, 
+            request
+        },
         assign_match_id::update_match_id,
         config::get_config,
         region,

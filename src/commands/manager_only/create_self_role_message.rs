@@ -1,6 +1,9 @@
-use crate::misc::CustomError;
-use crate::self_role::SelfRoleMessage;
-use crate::{Context, Error};
+use crate::{
+    misc::CustomError,
+    self_role::SelfRoleMessage,
+    Context, 
+    Error
+};
 use poise::serenity_prelude as serenity;
 
 #[poise::command(

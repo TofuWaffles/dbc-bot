@@ -1,7 +1,12 @@
-use crate::bracket_tournament::region::Region;
-use crate::{Context, Error};
-use mongodb::bson::{doc, Document};
-
+use crate::{
+    Context, 
+    Error,
+    bracket_tournament::region::Region
+};
+use mongodb::bson::{
+    doc, 
+    Document
+};
 use strum::IntoEnumIterator;
 /// Get proportion of participants from each region
 struct RegionStats {

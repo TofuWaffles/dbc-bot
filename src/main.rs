@@ -1,34 +1,29 @@
-/*
-TODO:
-- Build out self role and new channel alert feature
-- Plan and subsequently build the tournament bracket feature
-*/
 mod bracket_tournament;
 mod commands;
 mod database_utils;
 mod misc;
 mod self_role;
-
 use dashmap::DashMap;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
     Client, Database,
 };
 use strum::IntoEnumIterator;
-
-use crate::bracket_tournament::region::Region;
 use futures::stream::TryStreamExt;
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents},
     Event, FrameworkError,
 };
-use std::collections::HashMap;
-use std::fs::File;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    fs::File,
+    sync::Arc
+};
+
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
+use crate::bracket_tournament::region::Region;
 
-// Rest of your code here
 #[derive(Debug)]
 struct Databases {
     general: Database,

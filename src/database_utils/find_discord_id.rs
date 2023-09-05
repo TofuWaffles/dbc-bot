@@ -1,8 +1,13 @@
-use crate::bracket_tournament::{config::get_config, region::Region};
-use crate::misc::QuoteStripper;
-use crate::Context;
+use crate::{
+    Context,
+    misc::QuoteStripper,
+    bracket_tournament::region::Region
+};
 use mongodb::{
-    bson::{doc, Document},
+    bson::{
+        doc,
+        Document
+    },
     Collection,
 };
 use strum::IntoEnumIterator;

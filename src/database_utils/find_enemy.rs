@@ -1,8 +1,12 @@
-extern crate mongodb;
-use crate::bracket_tournament::region::Region;
-use crate::Context;
+use crate::{
+    bracket_tournament::region::Region,
+    Context
+};
 use mongodb::{
-    bson::{doc, Bson, Document},
+    bson::{
+        doc,
+        Bson,
+        Document},
     Collection,
 };
 

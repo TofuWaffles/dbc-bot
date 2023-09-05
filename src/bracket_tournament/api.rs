@@ -1,5 +1,7 @@
-use crate::misc::CustomError;
-use crate::Error;
+use crate::{
+    misc::CustomError,
+    Error
+};
 use poise::serenity_prelude::json::Value;
 use reqwest;
 /// Constructs an API link based on the provided option and tag.

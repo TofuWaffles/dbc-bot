@@ -1,5 +1,8 @@
-use crate::bracket_tournament::region::Region;
-use crate::{Context, Error};
+use crate::{
+    Context,
+    Error,
+    bracket_tournament::region::Region
+};
 use mongodb::{
     bson::{doc, Document},
     Collection,

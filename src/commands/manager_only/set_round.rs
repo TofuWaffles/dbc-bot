@@ -1,7 +1,18 @@
-use crate::bracket_tournament::config::{get_config, update_round};
-use crate::bracket_tournament::region::Region;
-use crate::{Context, Error};
-use mongodb::bson::{doc, Document};
+use crate::{
+    Context, 
+    Error,
+    bracket_tournament::{
+        region::Region,
+        config::{
+            get_config, 
+            update_round
+        }
+    }};
+use mongodb::bson::{
+    doc, 
+    Document
+};
+
 /// Which round are we at now?
 #[poise::command(
     slash_command, 
