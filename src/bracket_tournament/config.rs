@@ -9,6 +9,7 @@ use crate::bracket_tournament::region::Mode;
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,
+      "tournamet_started": false,
       "round": 1,
       "mode": Null,
       "map": Null
@@ -16,7 +17,7 @@ pub fn make_config() -> Document {
     config
 }
 
-pub fn set_config(mode: &Mode, map: &String) -> Document {
+pub fn set_config(mode: &Mode, map: Option<&String>) -> Document {
     let config = doc! {
       "$set": {
         "mode": format!("{:?}", mode),
@@ -32,6 +33,7 @@ pub async fn get_config(db: &Database) -> Document {
     config
 }
 
+#[allow(dead_code)]
 pub fn disable_registration() -> Document {
     let config = doc! {
       "$set": {
@@ -41,6 +43,17 @@ pub fn disable_registration() -> Document {
     config
 }
 
+pub fn start_tournament_config() -> Document {
+    let config = doc! {
+      "$set": {
+        "tournament_started": true,
+        "registration": false
+      }
+    };
+    config
+}
+
+#[allow(dead_code)]
 pub fn enable_registration() -> Document {
     let config = doc! {
       "$set": {

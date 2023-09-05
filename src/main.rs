@@ -6,7 +6,7 @@ mod self_role;
 use dashmap::DashMap;
 use mongodb::{
     options::{ClientOptions, ResolverConfig},
-    Client, Database,
+    Client, Database, Collection, bson::Document,
 };
 use strum::IntoEnumIterator;
 use futures::stream::TryStreamExt;
@@ -233,7 +233,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     for region in Region::iter() {
         let database = regional_database.get(&region).unwrap();
         let collection_names = database.list_collection_names(None).await?;
-        if !collection_names.contains(&"Config".to_string()) {
+        if !collection_names.iter().any(|s| s == "Config") {
             database.create_collection("Config", None).await?;
             let collection = database.collection("Config");
             collection
@@ -241,6 +241,12 @@ async fn prepare_databases() -> Result<Databases, Error> {
                 .await?;
             info!("Config collection created for {}", region);
         } else {
+            let collection: Collection<Document> = database.collection("Config");
+            if collection.count_documents(None, None).await? == 0{
+                collection.insert_one(required_regional_collections.clone(), None)
+                .await?;
+                info!("Config document is created successfully in the database of {}", region);
+            }
             info!("Config already exists in {}", region);
         }
     }

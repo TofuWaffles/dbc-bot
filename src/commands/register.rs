@@ -1,6 +1,7 @@
 use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::find_discord_id::find_discord_id;
+use crate::database_utils::find_tag::find_tag;
 use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use mongodb::bson::{doc, Bson::Null};
@@ -37,8 +38,23 @@ pub async fn register(
             .ephemeral(true)
             .embed(|e|{
                 e.title("**You have already registered!**")
-                .description("You have already registered for the tournament!
-                    \n If you want to participate the event with a different account, please </deregister:1146092020843155496> first and run this again!")
+                .description("If you want to participate the event with a different account, please </deregister:1146092020843155496> first and run this again!")
+            })
+        }).await?;
+        return Ok(());
+    }
+    //Check if an account is registered by any earlier player
+    if let Some(someone) = find_tag(&ctx, &(tag.to_uppercase())).await{
+        ctx.send(|s|{
+            s.reply(true)
+            .ephemeral(true)
+            .embed(|e|{
+                e.title("**This account has been registered by some player already!**")
+                .description(format!("**{}** ({}) has already been registered with <@{}>.",
+                someone.get("name").unwrap().to_string().strip_quote(),
+                someone.get("tag").unwrap().to_string().strip_quote(),
+                someone.get("discord_id").unwrap().to_string().strip_quote()
+                ))
             })
         }).await?;
         return Ok(());

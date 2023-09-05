@@ -1,7 +1,7 @@
 use crate::{
     Context,
     Error,
-    bracket_tournament::region::Region
+    bracket_tournament::{region::Region, config::enable_registration}
 };
 use mongodb::{
     bson::{doc, Document},
@@ -43,12 +43,20 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
                     .drop(None)
                     .await?;
             }
+            if collection.starts_with("Config"){
+                let config = enable_registration();
+                database
+                    .collection::<Document>(&collection)
+                    .update_one(doc!{}, config, None)
+                    .await?;
+            }
         }
         ctx.channel_id()
             .send_message(ctx, |s| {
                 s.content(format!("All rounds in {} are removed!", region))
             })
             .await?;
+
     }
     ctx.channel_id()
         .send_message(ctx, |s| s.content("Complete!"))

@@ -1,9 +1,7 @@
 use crate::{
     bracket_tournament::{
-        assign_match_id::update_match_id,
         config::get_config,
         region,
-        update_battle::update_battle,
     },
     database_utils::{
         find_discord_id::find_discord_id,
@@ -90,18 +88,14 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         .await
         .unwrap();
     if is_mannequin(&enemy) {
-        let next_round: Collection<Document> =
-            database.collection(format!("Round {}", round + 1).as_str());
-        next_round.insert_one(update_match_id(caller), None).await?;
         ctx.send(|s| {
             s.reply(true).ephemeral(false).embed(|e| {
-                e.title("Bye! See you next... round!").description(
-                    "You have been automatically advanced to the next round due to bye!",
+                e.title("Congratulation! You are the bye player for this round!").description(
+                    "Please run </submit-result:1148650981555441894> to be in next round!",
                 )
             })
         })
         .await?;
-        update_battle(database, round, match_id).await?;
         return Ok(());
     }
     let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();

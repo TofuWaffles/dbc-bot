@@ -1,8 +1,9 @@
-use crate::bracket_tournament::config::disable_registration;
+use crate::bracket_tournament::config::start_tournament_config;
 use crate::bracket_tournament::{region::Region, *};
+use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::{
-    bson::{doc, Document},
+    bson::{doc, Document, Bson::Null},
     options::AggregateOptions,
     Collection,
 };
@@ -33,9 +34,12 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
             .find_one(None, None)
             .await?
             .unwrap();
+        if !is_config_ok(&ctx, &config, &region).await?{
+            continue;
+        }
         database
             .collection::<Document>("Config")
-            .update_one(config, disable_registration(), None)
+            .update_one(config, start_tournament_config(), None)
             .await?;
 
         // Counting players in a region
@@ -131,4 +135,24 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
             .await?;
     }
     Ok(())
+}
+
+async fn is_config_ok(ctx: &Context<'_>, config: &Document, region: &Region) -> Result<bool, Error> {
+    if let Some(mode) = config.get("mode") {
+        if mode == &Null {
+            ctx.say(format!("Please set the mode for {} first in </config:1148650981555441897>!", region)).await?;
+            return Ok(false);
+        }
+    }
+
+    if let Some(started) = config.get("tournament_started") {
+        if started.as_bool().is_some() {
+            ctx.say(format!("Tournament for {} has already started!", region)).await?;
+            return Ok(false);
+        }
+    }
+
+    // Handle other cases here if needed.
+
+    Ok(true)
 }

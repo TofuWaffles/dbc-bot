@@ -1,5 +1,5 @@
 use crate::bracket_tournament::{
-    api, assign_match_id::update_match_id, config::get_config, region, update_battle::update_battle,
+    api, assign_match_id::update_match_id, config::get_config, region, update_battle::update_battle, region::Mode
 };
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_enemy::{find_enemy, is_mannequin};
@@ -10,7 +10,7 @@ use mongodb::Collection;
 use poise::serenity_prelude::json::Value;
 use tracing::{info, instrument};
 
-const MODE: &str = "wipeout";
+
 
 /// If you are a participant, run this command once you have finished your match round.
 ///
@@ -18,6 +18,7 @@ const MODE: &str = "wipeout";
 #[instrument]
 #[poise::command(slash_command, guild_only, rename = "submit-result")]
 pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
+    
     info!("Checking user {}'s match result", ctx.author().tag());
 
     //Check if the user is in the tournament
@@ -43,6 +44,9 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
 
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
+    let mode = config.get("mode").unwrap().to_string().strip_quote();
+    let map = config.get("map").unwrap().to_string().strip_quote();
     let round = get_config(database)
         .await
         .get("round")
@@ -108,7 +112,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     }
 
-    match get_result(caller, enemy).await {
+    match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
             let next_round: Collection<Document> =
                 database.collection(format!("Round {}", round + 1).as_str());
@@ -143,7 +147,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     };
 }
 
-async fn get_result(caller: Document, enemy: Document) -> Option<Document> {
+async fn get_result(mode: String, _map: String, caller: Document, enemy: Document) -> Option<Document> {
+    
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
     let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();
     let endpoint = api::get_api_link("battle_log", &caller_tag);
@@ -152,14 +157,14 @@ async fn get_result(caller: Document, enemy: Document) -> Option<Document> {
     let mut results: Vec<String> = vec![];
 
     for log in logs.clone() {
-        let mode = log["event"]["mode"].to_string().strip_quote();
+        let mode_log = log["event"]["mode"].to_string().strip_quote();
         let player1 = log["battle"]["teams"][0][0]["tag"]
             .to_string()
             .strip_quote();
         let player2 = log["battle"]["teams"][1][0]["tag"]
             .to_string()
             .strip_quote();
-        if mode == *MODE
+        if mode_log == mode.strip_quote()
             && (caller_tag == player1 || caller_tag == player2)
             && (enemy_tag == player1 || enemy_tag == player2)
         {
