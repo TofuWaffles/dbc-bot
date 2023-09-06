@@ -11,10 +11,10 @@ use tracing::{info, instrument};
 /// Checks a player registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    slash_command, 
+    slash_command,
     guild_only,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
-    rename="participant"
+    rename = "participant"
 )]
 pub async fn get_individual_player_data(
     ctx: Context<'_>,
@@ -95,11 +95,16 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting all participants' data");
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let mut player_data = database
+        let mut player_data = match database
             .collection::<Document>("Player")
             .find(None, None)
-            .await
-            .unwrap();
+            .await{
+                Ok(player_data) => player_data,
+                Err(_) => {
+                    ctx.say(format!("Error occurred while finding player data for {}", region)).await?;
+                    continue;
+                }
+            };
 
         let player_data_pages = dashmap::DashMap::<String, Document>::new();
 

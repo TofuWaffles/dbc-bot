@@ -1,12 +1,5 @@
-use crate::{
-    Context, 
-    Error,
-    bracket_tournament::region::Region
-};
-use mongodb::bson::{
-    doc, 
-    Document
-};
+use crate::{bracket_tournament::region::Region, Context, Error};
+use mongodb::bson::{doc, Document};
 use strum::IntoEnumIterator;
 /// Get proportion of participants from each region
 struct RegionStats {
@@ -16,9 +9,9 @@ struct RegionStats {
 }
 
 #[poise::command(
-    slash_command, 
+    slash_command,
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 
 pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
@@ -26,13 +19,21 @@ pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
     let mut data: Vec<RegionStats> = vec![];
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let count: i32 = database
+        let count: i32 = match database
             .collection::<i32>("Player")
             .count_documents(filter.clone(), None)
             .await
-            .unwrap()
-            .try_into()
-            .unwrap();
+        {
+            Ok(result) => result.try_into().unwrap_or_else(|_err| {
+                // The _ to shut up warning lol
+                let _ = ctx.say("There are way too many documents so it is unable to convert from u64 to i32 due to overflow.");
+                0
+            }),
+            Err(err) => {
+                ctx.say(format!("{}",err)).await?;
+                0
+            }
+        };
         data.push(RegionStats {
             region,
             count,
