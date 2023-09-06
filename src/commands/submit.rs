@@ -1,5 +1,5 @@
 use crate::bracket_tournament::{
-    api, assign_match_id::update_match_id, config::get_config, region, update_battle::update_battle, region::Mode
+    api, assign_match_id::update_match_id, config::get_config, region, update_battle::update_battle,
 };
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_enemy::{find_enemy, is_mannequin};
@@ -10,15 +10,12 @@ use mongodb::Collection;
 use poise::serenity_prelude::json::Value;
 use tracing::{info, instrument};
 
-
-
 /// If you are a participant, run this command once you have finished your match round.
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
 #[instrument]
 #[poise::command(slash_command, guild_only, rename = "submit-result")]
 pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
-    
     info!("Checking user {}'s match result", ctx.author().tag());
 
     //Check if the user is in the tournament
@@ -40,7 +37,15 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
-    let region = region::Region::find_key(caller.get("region").unwrap().to_string().strip_quote().as_str()).unwrap();
+    let region = region::Region::find_key(
+        caller
+            .get("region")
+            .unwrap()
+            .to_string()
+            .strip_quote()
+            .as_str(),
+    )
+    .unwrap();
 
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -96,8 +101,10 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
     };
 
-    let enemy = find_enemy(&ctx, &region, &round ,&match_id, &caller_tag).await.unwrap();
-    if is_mannequin(&enemy){
+    let enemy = find_enemy(&ctx, &region, &round, &match_id, &caller_tag)
+        .await
+        .unwrap();
+    if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round.insert_one(update_match_id(caller), None).await?;
         ctx.send(|s| {
@@ -130,7 +137,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 })
             })
             .await?;
-            return Ok(());
+            Ok(())
         }
         None => {
             ctx.send(|s| {
@@ -142,13 +149,17 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                     })
             })
             .await?;
-            return Ok(());
+            Ok(())
         }
-    };
+    }
 }
 
-async fn get_result(mode: String, _map: String, caller: Document, enemy: Document) -> Option<Document> {
-    
+async fn get_result(
+    mode: String,
+    _map: String,
+    caller: Document,
+    enemy: Document,
+) -> Option<Document> {
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
     let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();
     let endpoint = api::get_api_link("battle_log", &caller_tag);

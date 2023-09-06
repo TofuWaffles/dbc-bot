@@ -1,13 +1,7 @@
-use crate::{
-  Context,
-  bracket_tournament::region::Region
-};
+use crate::{bracket_tournament::region::Region, Context};
 use mongodb::{
-  bson::{
-      doc,
-      Document
-  },
-  Collection,
+    bson::{doc, Document},
+    Collection,
 };
 use strum::IntoEnumIterator;
 use tracing::{error, info, instrument};
@@ -38,37 +32,36 @@ use tracing::{error, info, instrument};
 /// ```
 #[instrument]
 pub async fn find_tag(ctx: &Context<'_>, tag: &String) -> Option<Document> {
+    let mut result: Option<Document> = None;
+    info!("Iterating through and checking the database for each region");
+    let proper_tag = match tag.starts_with('#') {
+        true => &tag[1..],
+        false => tag,
+    };
+    for region in Region::iter() {
+        info!("Checking database for region: {}", region);
 
-  let mut result: Option<Document> = None;
-  info!("Iterating through and checking the database for each region");
-  let proper_tag = match tag.starts_with('#') {
-    true => &tag[1..],
-    false => tag,
-  };
-  for region in Region::iter() {
-      info!("Checking database for region: {}", region);
+        let database = ctx.data().database.regional_databases.get(&region).unwrap();
+        let player_data: Collection<Document> = database.collection("Player");
 
-      let database = ctx.data().database.regional_databases.get(&region).unwrap();
-      let player_data: Collection<Document> = database.collection(format!("Player").as_str());
-
-      match player_data
-          .find_one(doc! { "tag": format!("#{}",&proper_tag)}, None)
-          .await
-      {
-          Ok(Some(player)) => {
-              result = Some(player);
-              break;
-          }
-          Ok(None) => {
-              continue;
-          }
-          Err(err) => {
-              error!("Error while querying database: {:?}", err);
-              result = None;
-              break;
-          }
-      }
-  }
-  // Return the result
-  result
+        match player_data
+            .find_one(doc! { "tag": format!("#{}",&proper_tag)}, None)
+            .await
+        {
+            Ok(Some(player)) => {
+                result = Some(player);
+                break;
+            }
+            Ok(None) => {
+                continue;
+            }
+            Err(err) => {
+                error!("Error while querying database: {:?}", err);
+                result = None;
+                break;
+            }
+        }
+    }
+    // Return the result
+    result
 }

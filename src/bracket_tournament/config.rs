@@ -5,7 +5,6 @@ use mongodb::{
 
 use crate::bracket_tournament::region::Mode;
 
-
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,

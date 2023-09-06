@@ -1,8 +1,5 @@
 use crate::{
-    bracket_tournament::{
-        config::get_config,
-        region,
-    },
+    bracket_tournament::{config::get_config, region},
     database_utils::{
         find_discord_id::find_discord_id,
         find_enemy::{find_enemy, is_mannequin},
@@ -15,7 +12,7 @@ use mongodb::{
     bson::{doc, Document},
     Collection,
 };
-use tracing::{instrument, info};
+use tracing::{info, instrument};
 
 /// View your opponent
 #[instrument]
@@ -84,20 +81,34 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
-    let enemy = find_enemy(&ctx, &region, &round, &match_id, &caller_tag)
-        .await
-        .unwrap();
-    if is_mannequin(&enemy) {
-        ctx.send(|s| {
-            s.reply(true).ephemeral(false).embed(|e| {
-                e.title("Congratulation! You are the bye player for this round!").description(
-                    "Please run </submit-result:1148650981555441894> to be in next round!",
-                )
+    let enemy = match find_enemy(&ctx, &region, &round, &match_id, &caller_tag).await {
+        Some(enemy) => {
+            if is_mannequin(&enemy) {
+                ctx.send(|s| {
+                    s.reply(true).ephemeral(false).embed(|e| {
+                        e.title("Congratulation! You are the bye player for this round!").description(
+                            "Please run </submit-result:1148650981555441894> to be in next round!",
+                        )
             })
         })
         .await?;
-        return Ok(());
-    }
+                return Ok(());
+            } else {
+                enemy
+            }
+        }
+        None => {
+            ctx.send(|s| {
+                s.reply(true).ephemeral(false).embed(|e| {
+                    e.title("An error pops up!")
+                        .description("Please run this command later!")
+                })
+            })
+            .await?;
+            return Ok(());
+        }
+    };
+
     let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();
 
     // let player1 = request(get_api_link("player", &caller_tag).as_str()).await?;

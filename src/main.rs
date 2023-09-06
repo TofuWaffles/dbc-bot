@@ -4,25 +4,22 @@ mod database_utils;
 mod misc;
 mod self_role;
 use dashmap::DashMap;
-use mongodb::{
-    options::{ClientOptions, ResolverConfig},
-    Client, Database, Collection, bson::Document,
-};
-use strum::IntoEnumIterator;
 use futures::stream::TryStreamExt;
+use mongodb::{
+    bson::Document,
+    options::{ClientOptions, ResolverConfig},
+    Client, Collection, Database,
+};
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents},
     Event, FrameworkError,
 };
-use std::{
-    collections::HashMap,
-    fs::File,
-    sync::Arc
-};
+use std::{collections::HashMap, fs::File, sync::Arc};
+use strum::IntoEnumIterator;
 
+use crate::bracket_tournament::region::Region;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
-use crate::bracket_tournament::region::Region;
 
 #[derive(Debug)]
 struct Databases {
@@ -67,7 +64,6 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::view_opponent::view_opponent(),
-        
         commands::manager_only::config::config(),
         commands::manager_only::create_self_role_message::create_self_role_message(),
         commands::manager_only::start_tournament::start_tournament(),
@@ -242,10 +238,14 @@ async fn prepare_databases() -> Result<Databases, Error> {
             info!("Config collection created for {}", region);
         } else {
             let collection: Collection<Document> = database.collection("Config");
-            if collection.count_documents(None, None).await? == 0{
-                collection.insert_one(required_regional_collections.clone(), None)
-                .await?;
-                info!("Config document is created successfully in the database of {}", region);
+            if collection.count_documents(None, None).await? == 0 {
+                collection
+                    .insert_one(required_regional_collections.clone(), None)
+                    .await?;
+                info!(
+                    "Config document is created successfully in the database of {}",
+                    region
+                );
             }
             info!("Config already exists in {}", region);
         }
@@ -254,7 +254,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     info!("Databases prepared successfully!");
 
     Ok(Databases {
-        general: general,
+        general,
         regional_databases: regional_database,
     })
 }
@@ -341,7 +341,7 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
         } => {
             ctx.say(format!(
                 "This command is still on cooldown. Try again in {} seconds",
-                remaining_cooldown.as_secs().to_string()
+                remaining_cooldown.as_secs()
             ))
             .await
             .unwrap();

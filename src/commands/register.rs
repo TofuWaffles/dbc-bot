@@ -44,19 +44,19 @@ pub async fn register(
         return Ok(());
     }
     //Check if an account is registered by any earlier player
-    if let Some(someone) = find_tag(&ctx, &(tag.to_uppercase())).await{
-        ctx.send(|s|{
-            s.reply(true)
-            .ephemeral(true)
-            .embed(|e|{
+    if let Some(someone) = find_tag(&ctx, &(tag.to_uppercase())).await {
+        ctx.send(|s| {
+            s.reply(true).ephemeral(true).embed(|e| {
                 e.title("**This account has been registered by some player already!**")
-                .description(format!("**{}** ({}) has already been registered with <@{}>.",
-                someone.get("name").unwrap().to_string().strip_quote(),
-                someone.get("tag").unwrap().to_string().strip_quote(),
-                someone.get("discord_id").unwrap().to_string().strip_quote()
-                ))
+                    .description(format!(
+                        "**{}** ({}) has already been registered with <@{}>.",
+                        someone.get("name").unwrap().to_string().strip_quote(),
+                        someone.get("tag").unwrap().to_string().strip_quote(),
+                        someone.get("discord_id").unwrap().to_string().strip_quote()
+                    ))
             })
-        }).await?;
+        })
+        .await?;
         return Ok(());
     }
 

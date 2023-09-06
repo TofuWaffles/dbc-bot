@@ -63,6 +63,5 @@ pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Re
     current_round.update_many(filter, update, None).await?;
     println!("Battle is updated!");
 
-
     Ok(())
 }

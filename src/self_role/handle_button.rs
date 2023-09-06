@@ -1,7 +1,4 @@
-use crate::{
-    Data,
-    Error
-};
+use crate::{Data, Error};
 use poise::serenity_prelude::{self as serenity, Context};
 use tokio::time::{sleep, Duration};
 use tracing::error;

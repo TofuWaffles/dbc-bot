@@ -1,15 +1,10 @@
-use crate::{
-    misc::CustomError,
-    self_role::SelfRoleMessage,
-    Context, 
-    Error
-};
+use crate::{misc::CustomError, self_role::SelfRoleMessage, Context, Error};
 use poise::serenity_prelude as serenity;
 
 #[poise::command(
-    slash_command, 
+    slash_command,
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 
 pub async fn create_self_role_message(
@@ -20,7 +15,14 @@ pub async fn create_self_role_message(
     #[description = "The channel ID to send the self-roles message"] ping_channel_id: String,
     #[description = "The custom emoji for the react button"] emoji: String,
 ) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().unwrap();
+    let guild_id = match ctx.guild_id() {
+        Some(guild_id) => guild_id,
+        None => {
+            ctx.say("Discord is so trash bro. They cannot even provide the server ID lol")
+                .await?;
+            return Ok(());
+        }
+    };
 
     let emoji_obj = serenity::parse_emoji(&emoji)
         .ok_or_else(|| CustomError("Invalid emoji provided.".to_owned()))?;

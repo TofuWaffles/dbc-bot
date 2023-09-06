@@ -1,9 +1,8 @@
 use crate::bracket_tournament::config::start_tournament_config;
 use crate::bracket_tournament::{region::Region, *};
-use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::{
-    bson::{doc, Document, Bson::Null},
+    bson::{doc, Bson::Null, Document},
     options::AggregateOptions,
     Collection,
 };
@@ -29,12 +28,21 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
 
         // Disable registration
-        let config = database
+        let config = match database
             .collection::<Document>("Config")
             .find_one(None, None)
-            .await?
-            .unwrap();
-        if !is_config_ok(&ctx, &config, &region).await?{
+            .await{
+                Ok(Some(config)) => config,
+                Ok(None) => {
+                    ctx.say(format!("Config for {} not found", region)).await?;
+                    continue;
+                }
+                Err(_) => {
+                    ctx.say(format!("Error occurred while finding config for {}", region)).await?;
+                    continue;
+                }
+            };
+        if !is_config_ok(&ctx, &config, &region).await? {
             continue;
         }
         database
@@ -80,7 +88,7 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
                 }
             }
         }
-        assign_match_id::assign_match_id(&region, &database, byes).await?;
+        assign_match_id::assign_match_id(&region, database, byes).await?;
         //Create rounds collection for each databases
         info!("Writing round collections to the databases");
         for round in 1..=rounds {
@@ -137,17 +145,26 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn is_config_ok(ctx: &Context<'_>, config: &Document, region: &Region) -> Result<bool, Error> {
+async fn is_config_ok(
+    ctx: &Context<'_>,
+    config: &Document,
+    region: &Region,
+) -> Result<bool, Error> {
     if let Some(mode) = config.get("mode") {
         if mode == &Null {
-            ctx.say(format!("Please set the mode for {} first in </config:1148650981555441897>!", region)).await?;
+            ctx.say(format!(
+                "Please set the mode for {} first in </config:1148650981555441897>!",
+                region
+            ))
+            .await?;
             return Ok(false);
         }
     }
 
     if let Some(started) = config.get("tournament_started") {
         if started.as_bool().is_some() {
-            ctx.say(format!("Tournament for {} has already started!", region)).await?;
+            ctx.say(format!("Tournament for {} has already started!", region))
+                .await?;
             return Ok(false);
         }
     }

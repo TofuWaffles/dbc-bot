@@ -1,13 +1,6 @@
-use crate::{
-    Context,
-    misc::QuoteStripper,
-    bracket_tournament::region::Region
-};
+use crate::{bracket_tournament::region::Region, misc::QuoteStripper, Context};
 use mongodb::{
-    bson::{
-        doc,
-        Document
-    },
+    bson::{doc, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
@@ -72,7 +65,7 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
     for region in Region::iter() {
         info!("Checking database for region: {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let player_data: Collection<Document> = database.collection(format!("Player").as_str());
+        let player_data: Collection<Document> = database.collection("Player");
         match player_data
             .find_one(doc! { "discord_id": &invoker_id.strip_quote()}, None)
             .await

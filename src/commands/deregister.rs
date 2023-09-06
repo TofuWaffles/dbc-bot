@@ -71,8 +71,10 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             .description(format!("You are about to deregister from the tournament. Below information are what you told us!\n
                                 Your account name: {} \n
                                 With your respective tag: {}\n
-                                And you are in the following region: {}", 
-                                data.get("name").unwrap().to_string().strip_quote(), data.get("tag").unwrap().to_string().strip_quote(), format!("{:?}", Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str()))) 
+                                And you are in the following region: {:?}", 
+                                data.get("name").unwrap().to_string().strip_quote(), 
+                                data.get("tag").unwrap().to_string().strip_quote(), 
+                                Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str())) 
                         )
         })
     }).await?;

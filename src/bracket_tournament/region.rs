@@ -47,7 +47,6 @@ impl Region {
     }
 }
 
-
 #[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum Mode {

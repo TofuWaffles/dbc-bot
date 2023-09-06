@@ -1,16 +1,9 @@
 use crate::{
-    Context, 
-    Error,
-    bracket_tournament::{
-        mannequin::add_mannequin, 
-        region::Region
-    }
+    bracket_tournament::{mannequin::add_mannequin, region::Region},
+    Context, Error,
 };
 use mongodb::{
-    bson::{
-        doc, 
-        Document
-    },
+    bson::{doc, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
