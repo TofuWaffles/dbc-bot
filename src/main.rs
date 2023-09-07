@@ -218,7 +218,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     let required_regional_collections = bracket_tournament::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
-    // Errors if the DB already exists and skips creation
+    // Errors if the collection already exists and skips creation
     for collection in required_collections {
         general
             .create_collection(collection, None)
@@ -249,6 +249,10 @@ async fn prepare_databases() -> Result<Databases, Error> {
             }
             info!("Config already exists in {}", region);
         }
+        database
+            .create_collection("Player", None)
+            .await
+            .unwrap_or_else(|e| info!("{:?}", e));
     }
 
     info!("Databases prepared successfully!");
