@@ -31,17 +31,22 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
         let config = match database
             .collection::<Document>("Config")
             .find_one(None, None)
-            .await{
-                Ok(Some(config)) => config,
-                Ok(None) => {
-                    ctx.say(format!("Config for {} not found", region)).await?;
-                    continue;
-                }
-                Err(_) => {
-                    ctx.say(format!("Error occurred while finding config for {}", region)).await?;
-                    continue;
-                }
-            };
+            .await
+        {
+            Ok(Some(config)) => config,
+            Ok(None) => {
+                ctx.say(format!("Config for {} not found", region)).await?;
+                continue;
+            }
+            Err(_) => {
+                ctx.say(format!(
+                    "Error occurred while finding config for {}",
+                    region
+                ))
+                .await?;
+                continue;
+            }
+        };
         if !is_config_ok(&ctx, &config, &region).await? {
             continue;
         }

@@ -98,13 +98,18 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
         let mut player_data = match database
             .collection::<Document>("Player")
             .find(None, None)
-            .await{
-                Ok(player_data) => player_data,
-                Err(_) => {
-                    ctx.say(format!("Error occurred while finding player data for {}", region)).await?;
-                    continue;
-                }
-            };
+            .await
+        {
+            Ok(player_data) => player_data,
+            Err(_) => {
+                ctx.say(format!(
+                    "Error occurred while finding player data for {}",
+                    region
+                ))
+                .await?;
+                continue;
+            }
+        };
 
         let player_data_pages = dashmap::DashMap::<String, Document>::new();
 
