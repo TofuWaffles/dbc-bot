@@ -7,7 +7,6 @@ use mongodb::{
     bson::{doc, Document},
     Collection,
 };
-use poise::ReplyHandle;
 use poise::serenity_prelude::{self as serenity};
 use tracing::{info, instrument};
 

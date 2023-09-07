@@ -64,6 +64,7 @@ async fn run() -> Result<(), Error> {
         commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::view_opponent::view_opponent(),
+        commands::draco::draco(),
         commands::manager_only::config::config(),
         commands::manager_only::create_self_role_message::create_self_role_message(),
         commands::manager_only::start_tournament::start_tournament(),
