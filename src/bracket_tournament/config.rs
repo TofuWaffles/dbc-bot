@@ -8,7 +8,7 @@ use crate::bracket_tournament::region::Mode;
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,
-      "tournamet_started": false,
+      "tournament_started": false,
       "round": 1,
       "mode": Null,
       "map": Null

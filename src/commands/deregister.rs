@@ -68,18 +68,15 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
           .ephemeral(true)
           .embed(|e|{
             e.title("**Are you sure you want to deregister?**")
-            .description(format!("You are about to deregister from the tournament. Below information are what you told us!\n
-                                Your account name: {} \n
-                                With your respective tag: {}\n
-                                And you are in the following region: {:?}", 
+            .description(format!("You are about to deregister from the tournament. Below information are what you told us!\nYour account name: **{}**\nWith your respective tag: **{}**\nAnd you are in the following region: **{}**", 
                                 data.get("name").unwrap().to_string().strip_quote(), 
                                 data.get("tag").unwrap().to_string().strip_quote(), 
-                                Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str())) 
+                                Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
                         )
         })
     }).await?;
 
-    while let Some(mci) = serenity::CollectComponentInteraction::new(ctx)
+    if let Some(mci) = serenity::CollectComponentInteraction::new(ctx)
         .author_id(ctx.author().id)
         .channel_id(ctx.channel_id())
         .timeout(std::time::Duration::from_secs(120))
@@ -102,25 +99,27 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             confirm_prompt.edit(ctx,|s| {
                 s.components(|c| {c})
                     .embed(|e| {
-                        e.title("**Deregistration is successful**").description(
+                        e.title("**Deregistration is successful**")
+                            .description(
                             "Seriously, are you leaving us? We hope to see you in the next tournament!",
                         )
                   })
             })
             .await?;
-            break;
         } else if mci.data.custom_id == deregister_cancel.to_string() {
             let mut cancel_prompt = mci.message.clone();
             cancel_prompt
                 .edit(ctx, |s| {
-                    s.components(|c| c).embed(|e| {
-                        e.title("**Deregistration cancelled!**")
-                            .description("Thanks for staying in the tournament with us!")
+                    s.components(|c| c)
+                        .embed(|e| {
+                            e.title("**Deregistration cancelled!**")
+                                .description("Thanks for staying in the tournament with us!")
                     })
                 })
                 .await?;
-            break;
         }
-    }
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        mci.message.delete(ctx).await?;
+    } 
     Ok(())
 }
