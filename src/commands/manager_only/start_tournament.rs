@@ -47,9 +47,9 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
                 continue;
             }
         };
-        if !is_config_ok(&ctx, &config, &region).await? {
-            continue;
-        }
+        // if !is_config_ok(&ctx, &config, &region).await? {
+        //     continue;
+        // }
         database
             .collection::<Document>("Config")
             .update_one(config, start_tournament_config(), None)
@@ -98,7 +98,7 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
         info!("Writing round collections to the databases");
         for round in 1..=rounds {
             let collection_names = format!("Round {}", round);
-            if !database
+            if database
                 .list_collection_names(None)
                 .await
                 .unwrap()
@@ -129,6 +129,7 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
             .await?;
 
         started_tournaments.push(region);
+        
     }
 
     if started_tournaments.is_empty() {
@@ -170,7 +171,7 @@ async fn is_config_ok(
         if started.as_bool().is_some() {
             ctx.say(format!("Tournament for {} has already started!", region))
                 .await?;
-            return Ok(false);
+            return Ok(true);
         }
     }
 

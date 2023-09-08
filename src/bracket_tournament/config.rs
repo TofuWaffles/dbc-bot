@@ -9,7 +9,7 @@ pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,
       "tournament_started": false,
-      "round": 1,
+      "round": 0,
       "mode": Null,
       "map": Null
     };

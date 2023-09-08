@@ -32,6 +32,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
+
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
