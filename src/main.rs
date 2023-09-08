@@ -72,6 +72,7 @@ async fn run() -> Result<(), Error> {
         commands::manager_only::reset::reset(),
         commands::manager_only::fill_manequins::fill_mannequins(),
         commands::manager_only::set_round::set_round(),
+        commands::manager_only::disqualify::disqualify(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

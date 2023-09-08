@@ -1,5 +1,8 @@
 use crate::{
-    bracket_tournament::{config::enable_registration, region::Region},
+    bracket_tournament::{
+        config::reset_config,
+        region::Region,
+    },
     Context, Error,
 };
 use mongodb::{
@@ -43,7 +46,7 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
                     .await?;
             }
             if collection.starts_with("Config") {
-                let config = enable_registration();
+                let config = reset_config();
                 database
                     .collection::<Document>(&collection)
                     .update_one(doc! {}, config, None)

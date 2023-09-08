@@ -1,5 +1,5 @@
 use crate::bracket_tournament::{
-    api, assign_match_id::update_match_id, config::get_config, region, update_battle::update_battle,
+    api, config::get_config, match_id::update_match_id, region, update_battle::update_battle,
 };
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_enemy::{find_enemy, is_mannequin};
@@ -195,19 +195,19 @@ async fn get_result(
                 "victory" => count_victory += 1,
                 _ => {} // Handle other cases if needed
             }
-        
+
             if count_defeat == 2 && count_victory < 2 {
                 is_victory = Some(false);
                 break;
-            } else if count_victory == 2{
+            } else if count_victory == 2 {
                 is_victory = Some(true);
                 break;
             }
         }
-        match is_victory{
+        match is_victory {
             Some(true) => Some(caller),
             Some(false) => Some(enemy),
-            None => None
+            None => None,
         }
     } else {
         None

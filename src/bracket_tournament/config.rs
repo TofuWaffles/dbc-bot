@@ -82,3 +82,16 @@ pub fn update_round(round: Option<i32>) -> Document {
         }
     }
 }
+
+pub fn reset_config() -> Document{
+    let config = doc! {
+        "$set": {
+            "registration": true,
+            "tournament_started": false,
+            "round": 0,
+            "mode": Null,
+            "map": Null
+        }
+    };
+    config
+}

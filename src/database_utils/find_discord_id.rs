@@ -1,6 +1,10 @@
-use crate::{bracket_tournament::{region::Region, config::get_config}, misc::QuoteStripper, Context};
+use crate::{
+    bracket_tournament::{config::get_config, region::Region},
+    misc::QuoteStripper,
+    Context,
+};
 use mongodb::{
-    bson::{doc, Document, Bson},
+    bson::{doc, Bson, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
@@ -59,7 +63,6 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
     };
     // Define a variable to hold the result
     let mut result: Option<Document> = None;
-
     info!("Iterating through and checking the database for each region");
     // Iterate through the regions and check each database
     for region in Region::iter() {
@@ -73,7 +76,7 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
                 } else {
                     format!("Round {}", round.as_i32().unwrap())
                 }
-            },
+            }
             None => {
                 error!("Error while getting round from config");
                 return None;
