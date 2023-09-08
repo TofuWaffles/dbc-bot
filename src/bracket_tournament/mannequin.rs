@@ -26,7 +26,7 @@ pub fn add_mannequin(
     mannequin
 }
 
-pub fn update_mannequin(match_id: i32) -> Document{
+pub fn update_mannequin(match_id: i32) -> Document {
     let mannequin = doc! {
         "$set": {
             "match_id": match_id

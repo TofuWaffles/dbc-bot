@@ -12,12 +12,16 @@ pub async fn assign_match_id(_region: &Region, database: &Database) -> Result<()
     let mut byes_counter = collection
         .count_documents(doc! {"name": "Mannequin"}, None)
         .await?;
-    print!("{}",byes_counter);
-    let mut player_cursor = collection.find(
-        doc! {
-                "name": { "$ne": "Mannequin" },
-                "match_id": null
-        }, None).await?;
+    print!("{}", byes_counter);
+    let mut player_cursor = collection
+        .find(
+            doc! {
+                    "name": { "$ne": "Mannequin" },
+                    "match_id": null
+            },
+            None,
+        )
+        .await?;
     let mut double_match_id: i32 = 2;
     //So here is the math behind this:
     //We want 2 consecutive players to be assigned with the same match_id
@@ -31,20 +35,18 @@ pub async fn assign_match_id(_region: &Region, database: &Database) -> Result<()
         };
         player.insert("match_id", match_id);
         collection
-            .update_one(
-                doc! { "_id": player.get_object_id("_id")? },
-                update,
-                None,
-            )
+            .update_one(doc! { "_id": player.get_object_id("_id")? }, update, None)
             .await?;
 
         //not a while loop here because we need to assign match_id to mannequin after assign an id to player
         if byes_counter > 0 {
-            collection.update_one(
-                doc!{"match_id": null, "name": "Mannequin"},  
-                update_mannequin(match_id),
-                None)
-            .await?;
+            collection
+                .update_one(
+                    doc! {"match_id": null, "name": "Mannequin"},
+                    update_mannequin(match_id),
+                    None,
+                )
+                .await?;
             byes_counter -= 1;
             double_match_id += 1;
         }

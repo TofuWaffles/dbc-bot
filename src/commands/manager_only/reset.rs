@@ -1,8 +1,5 @@
 use crate::{
-    bracket_tournament::{
-        config::reset_config,
-        region::Region,
-    },
+    bracket_tournament::{config::reset_config, region::Region},
     Context, Error,
 };
 use mongodb::{

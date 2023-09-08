@@ -97,13 +97,14 @@ async fn config_prerequisite(
             Bson::String(_) => {}
             Bson::Null => {
                 ctx.send(|s| {
-                    s.reply(true)
-                        .ephemeral(true)
-                        .embed(|e| {
-                            e.title(format!("Mode has not been set for {}", region))
-                                .description("Please set the mode first at </config:1148650981555441897>")
-                        })
-                    }).await?;
+                    s.reply(true).ephemeral(true).embed(|e| {
+                        e.title(format!("Mode has not been set for {}", region))
+                            .description(
+                                "Please set the mode first at </config:1148650981555441897>",
+                            )
+                    })
+                })
+                .await?;
                 return Ok(false);
             }
             _ => {

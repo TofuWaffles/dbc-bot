@@ -61,21 +61,19 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         .await
     {
         Ok(Some(player)) => {
-            if player.get("battle").unwrap().as_bool().unwrap(){
+            if player.get("battle").unwrap().as_bool().unwrap() {
                 ctx.send(|s| {
-                    s.reply(true)
-                        .ephemeral(false)
-                        .embed(|e| {
-                            e.title("You have already submitted the result!")
-                                .description("Please wait for your opponent to submit the result!")
-                        })
+                    s.reply(true).ephemeral(false).embed(|e| {
+                        e.title("You have already submitted the result!")
+                            .description("Please wait for your opponent to submit the result!")
+                    })
                 })
                 .await?;
                 return Ok(());
-            }
-            else{
+            } else {
                 player
-            }},
+            }
+        }
         Ok(None) => {
             ctx.send(|s| {
                 s.reply(true).ephemeral(false).embed(|e| {
