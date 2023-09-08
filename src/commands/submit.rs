@@ -144,7 +144,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 s.reply(true)
                     .ephemeral(false)
                     .embed(|e| {
-                        e.title("No battle logs found (yet?)")
+                        e.title("There are not enough results yet!")
                             .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 minutes for a new battle to appear in the battlelog")
                     })
             })
@@ -185,7 +185,7 @@ async fn get_result(
     }
     //If there are more than 1 result (best of 2), then we need to check the time
     if results.len() > 1 {
-        let mut is_victory = true;
+        let mut is_victory: Option<bool> = None;
         let mut count_victory = 0;
         let mut count_defeat = 0;
 
@@ -197,16 +197,17 @@ async fn get_result(
             }
         
             if count_defeat == 2 && count_victory < 2 {
-                is_victory = false;
+                is_victory = Some(false);
                 break;
             } else if count_victory == 2{
+                is_victory = Some(true);
                 break;
             }
         }
-        if is_victory {
-            Some(caller)
-        } else {
-            Some(enemy)
+        match is_victory{
+            Some(true) => Some(caller),
+            Some(false) => Some(enemy),
+            None => None
         }
     } else {
         None
