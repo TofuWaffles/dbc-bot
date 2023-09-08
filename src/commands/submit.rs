@@ -190,24 +190,17 @@ async fn get_result(
         let mut count_defeat = 0;
 
         for result in results.iter().rev() {
-            match (*result).strip_quote().as_str() {
-                "defeat" => {
-                    count_defeat += 1;
-                    if count_defeat == 2 || count_victory < 2 {
-                        is_victory = false;
-                        println!("is_victory = false");
-                        break;
-                    }
-                }
-                "victory" => {
-                    count_victory += 1;
-                    if count_defeat == 2 || count_victory < 2 {
-                        println!("is_victory = false");
-                        is_victory = false;
-                        break;
-                    }
-                }
+            match result.strip_quote().as_str() {
+                "defeat" => count_defeat += 1,
+                "victory" => count_victory += 1,
                 _ => {} // Handle other cases if needed
+            }
+        
+            if count_defeat == 2 && count_victory < 2 {
+                is_victory = false;
+                break;
+            } else if count_victory == 2{
+                break;
             }
         }
         if is_victory {
