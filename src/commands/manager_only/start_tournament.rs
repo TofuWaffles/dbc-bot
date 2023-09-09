@@ -72,11 +72,11 @@ async fn config_prerequisite(
     database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
-    let collection = database.collection("Config");
-    let config: Document = match collection.find_one(None, None).await {
+    let config_collection = database.collection("Config");
+    let config: Document = match config_collection.find_one(None, None).await {
         Ok(None) => {
             let config = make_config();
-            collection.insert_one(config.clone(), None).await?;
+            config_collection.insert_one(config.clone(), None).await?;
             return Ok(false);
         }
         Ok(Some(config)) => config,
@@ -156,11 +156,12 @@ async fn make_rounds(
         if !database
             .list_collection_names(None)
             .await?
-            .contains(&collection_name){
-                database.create_collection(&collection_name, None).await?;
-            }
+            .contains(&collection_name)
+        {
+            database.create_collection(&collection_name, None).await?;
+        }
     }
-    
+
     let config = database.collection::<Document>("Config");
     config
         .update_one(doc! {}, start_tournament_config(&rounds), None)

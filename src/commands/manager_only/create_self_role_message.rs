@@ -18,12 +18,12 @@ pub async fn create_self_role_message(
     let guild_id = match ctx.guild_id() {
         Some(guild_id) => guild_id,
         None => {
-            ctx.send(|s|
+            ctx.send(|s| {
                 s.content("Discord is so trash bro. They cannot even provide the server ID lol")
-                .ephemeral(true)
-                .reply(true)
-            )
-                .await?;
+                    .ephemeral(true)
+                    .reply(true)
+            })
+            .await?;
             return Ok(());
         }
     };

@@ -23,7 +23,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         Some(caller) => caller,
         None => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("Sorry, you are not in the tournament!")
                         .description("You have to be in a tournament to use this command!")
                 })
@@ -67,7 +67,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         Ok(Some(player)) => {
             if player.get("battle").unwrap().as_bool().unwrap() {
                 ctx.send(|s| {
-                    s.reply(true).ephemeral(false).embed(|e| {
+                    s.reply(true).ephemeral(true).embed(|e| {
                         e.title("You have already submitted the result!")
                             .description("Please wait for the next round to start!")
                     })
@@ -80,7 +80,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
         Ok(None) => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true)
+                .ephemeral(true).embed(|e| {
                     e.title("You are not in this round!")
                         .description("Oops! Better luck next time")
                 })
@@ -90,9 +91,11 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
         Err(_) => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true)
+                .ephemeral(true)
+                .embed(|e| {
                     e.title("An error pops up!")
-                        .description("Please run this command later!")
+                    .description("Please run this command later!")
                 })
             })
             .await?;
@@ -107,7 +110,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round.insert_one(update_match_id(caller), None).await?;
         ctx.send(|s| {
-            s.reply(true).ephemeral(false).embed(|e| {
+            s.reply(true).ephemeral(true).embed(|e| {
                 e.title("Bye! See you next... round!").description(
                     "You have been automatically advanced to the next round due to bye!",
                 )
@@ -127,7 +130,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 .await?;
             update_battle(database, round, match_id).await?;
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true)
+                .ephemeral(true).embed(|e| {
                     e.title("Result is here!").description(format!(
                         "{}({}) has won this round! You are going to next round!",
                         winner.get("name").unwrap().to_string().strip_quote(),
@@ -141,7 +145,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         None => {
             ctx.send(|s| {
                 s.reply(true)
-                    .ephemeral(false)
+                .ephemeral(true)
                     .embed(|e| {
                         e.title("There are not enough results yet!")
                             .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 minutes for a new battle to appear in the battlelog")
