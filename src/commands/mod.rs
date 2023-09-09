@@ -1,5 +1,5 @@
 pub mod battle_log;
-pub mod db_handler;
+
 pub mod deregister;
 pub mod draco;
 pub mod manager_only;

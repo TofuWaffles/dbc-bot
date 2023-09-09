@@ -16,7 +16,10 @@ use tracing::{info, instrument};
 
 /// View your opponent
 #[instrument]
-#[poise::command(slash_command, guild_only)]
+#[poise::command(
+    slash_command, 
+    guild_only,
+    rename = "view-opponent")]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting opponent for user {}", ctx.author().tag());
     let caller = match find_discord_id(&ctx, None).await {
@@ -65,7 +68,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
                 ctx.send(|s| {
                     s.reply(true).ephemeral(false).embed(|e| {
                         e.title("You have already submitted the result!")
-                            .description("Please wait for your opponent to submit the result!")
+                            .description("Please wait until next round begins!")
                     })
                 })
                 .await?;

@@ -13,6 +13,7 @@ use tracing::{info, instrument};
 #[instrument]
 #[poise::command(
     slash_command,
+    rename = "fill-mannequins",
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn fill_mannequins(

@@ -5,22 +5,22 @@ use crate::{Context, Error};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use poise::serenity_prelude::json::Value;
-use strum::IntoEnumIterator;
+use poise::serenity_prelude as serenity;
 use tracing::{info, instrument};
 
 /// Checks a player registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    slash_command,
+    context_menu_command = "Player information",
     guild_only,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
-    rename = "participant"
 )]
 pub async fn get_individual_player_data(
     ctx: Context<'_>,
-    #[description = "Check a player registration status by user ID here"] discord_id: String,
+    #[description = "Check a player registration status by user ID here"] user: serenity::User,
 ) -> Result<(), Error> {
     info!("Getting participant data");
+    let discord_id = user.id.to_string();
     let data = match find_discord_id(&ctx, Some(discord_id)).await {
         Some(data) => data,
         None => {
@@ -85,15 +85,13 @@ pub async fn get_individual_player_data(
 /// Checks all players' registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    prefix_command,
     slash_command,
     // Multiple permissions can be OR-ed together with `|` to make them all required
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
     rename="all_participants"
 )]
-pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn get_all_players_data(ctx: Context<'_>, region: Region) -> Result<(), Error> {
     info!("Getting all participants' data");
-    for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let mut player_data = match database
             .collection::<Document>("Player")
@@ -107,7 +105,7 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
                     region
                 ))
                 .await?;
-                continue;
+                return Ok(());
             }
         };
 
@@ -135,7 +133,7 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
                     .and_then(|r| r.as_str())
                     .unwrap_or("Region not found.");
                 let id = data
-                    .get("id")
+                    .get("discord_id")
                     .and_then(|i| i.as_str())
                     .unwrap_or("ID not found.");
                 format!(
@@ -159,7 +157,6 @@ pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
                 s.content(format!("Reading players information in {}...", region))
             })
             .await?;
-    }
 
     info!("Successfully retrieved all participants' data");
 

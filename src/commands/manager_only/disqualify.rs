@@ -3,7 +3,7 @@ use tracing::{info, instrument};
 
 use crate::bracket_tournament::{mannequin::add_mannequin, region::Region};
 use crate::{Context, Error};
-
+use poise::serenity_prelude as serenity;
 #[instrument]
 #[poise::command(
     slash_command,
@@ -12,18 +12,28 @@ use crate::{Context, Error};
 )]
 pub async fn disqualify(
     ctx: Context<'_>,
-    #[description = "The ID of the user to disqualify"] user_id: u64,
+    #[description = "The ID of the user to disqualify"] player: serenity::User,
     region: Region,
 ) -> Result<(), Error> {
+    let user_id = player.id;
     info!("Attempting to disqualify player");
-    let collection = ctx
-        .data()
-        .database
-        .regional_databases
-        .get(&region)
-        .unwrap()
-        .collection::<Document>("Player");
-
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config: Document = database.collection("Config").find_one(None, None).await.unwrap().unwrap();
+    let round = match config.get("round").unwrap().to_string().parse::<i32>(){
+        Ok(round) => {
+            if round == 0{
+                "Player".to_string()
+            }
+            else{
+                format!("Round {}", round)
+            }
+        }
+        Err(e) => {
+            ctx.say(format!("Error occurred while parsing round number: {}", e)).await?;
+            return Ok(());
+        }
+    };
+    let collection = database.collection::<Document>(round.as_str());
     let player = collection
         .find_one(doc! {"discord_id": user_id.to_string()}, None)
         .await?;
@@ -37,18 +47,17 @@ pub async fn disqualify(
                 .parse::<i32>()
                 .unwrap();
             let mannequin = add_mannequin(&region, Some(match_id), None);
-            let collection = ctx
-                .data()
-                .database
-                .regional_databases
-                .get(&region)
-                .unwrap()
-                .collection::<Document>("Player");
             collection
                 .delete_one(doc! {"discord_id": user_id.to_string()}, None)
                 .await?;
-            collection.insert_one(mannequin, None).await?;
-            ctx.say(format!("Successfully disqualified user")).await?;
+            collection
+                .insert_one(mannequin, None)
+                .await?;
+            ctx.send(|s|{
+                s.ephemeral(true)
+                .reply(true)
+                .content(format!("Sucessfully disqualified player {}", user_id))
+            }).await?;
 
             info!("Sucessfully disqualified player {}", user_id);
             return Ok(());

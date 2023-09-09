@@ -71,7 +71,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                         .ephemeral(false)
                         .embed(|e| {
                             e.title("You have already submitted the result!")
-                                .description("You have already submitted the result! If you think this is a mistake, please contact the moderators!")
+                                .description("Please wait for the next round to start!")
                         })
                 }).await?;
                 return Ok(());
