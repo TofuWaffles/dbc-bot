@@ -2,6 +2,7 @@ use mongodb::bson::{doc, Document};
 use tracing::{info, instrument};
 
 use crate::bracket_tournament::{mannequin::add_mannequin, region::Region};
+use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use poise::serenity_prelude as serenity;
 #[instrument]
@@ -59,7 +60,11 @@ pub async fn disqualify(
             ctx.send(|s| {
                 s.ephemeral(true)
                     .reply(true)
-                    .content(format!("Sucessfully disqualified player {}", user_id))
+                    .content(format!("Sucessfully disqualified player: {}({}) with respective Discord <@{}> at round {}", 
+                    player.get("name").unwrap().to_string().strip_quote(), 
+                    player.get("tag").unwrap().to_string().strip_quote(),
+                    user_id.to_string(),
+                    round))
             })
             .await?;
 
@@ -67,7 +72,11 @@ pub async fn disqualify(
             return Ok(());
         }
         None => {
-            ctx.say("No user was found for this ID!").await?;
+            ctx.send(|s|{
+                s.content(format!("No player is found for this ID at round {}", round))
+                .reply(true)
+                .ephemeral(true)
+            }).await?;
             return Ok(());
         }
     }
