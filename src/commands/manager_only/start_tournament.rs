@@ -112,9 +112,6 @@ async fn config_prerequisite(
             }
         }
     }
-    collection
-        .update_one(doc! {}, start_tournament_config(), None)
-        .await?; // Set tournament_started to true and registration to false
     Ok(true)
 }
 
@@ -155,19 +152,19 @@ async fn make_rounds(
     }
     info!("Writing round collections to the databases");
     for round in 1..=rounds {
-        let collection_names = format!("Round {}", round);
-        if database
+        let collection_name = format!("Round {}", round);
+        if !database
             .list_collection_names(None)
-            .await
-            .unwrap()
-            .contains(&collection_names)
-        {
-            database
-                .create_collection(format!("Round {}", round), None)
-                .await?;
-        }
+            .await?
+            .contains(&collection_name){
+                database.create_collection(&collection_name, None).await?;
+            }
     }
-
+    
+    let config = database.collection::<Document>("Config");
+    config
+        .update_one(doc! {}, start_tournament_config(&rounds), None)
+        .await?; // Set total rounds, tournament_started to true and registration to false
     Ok(true)
 }
 

@@ -67,13 +67,12 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         Ok(Some(player)) => {
             if player.get("battle").unwrap().as_bool().unwrap() {
                 ctx.send(|s| {
-                    s.reply(true)
-                        .ephemeral(false)
-                        .embed(|e| {
-                            e.title("You have already submitted the result!")
-                                .description("Please wait for the next round to start!")
-                        })
-                }).await?;
+                    s.reply(true).ephemeral(false).embed(|e| {
+                        e.title("You have already submitted the result!")
+                            .description("Please wait for the next round to start!")
+                    })
+                })
+                .await?;
                 return Ok(());
             } else {
                 player

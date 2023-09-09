@@ -1,7 +1,7 @@
 use crate::{
     bracket_tournament::config::set_config,
     bracket_tournament::region::{Mode, Region},
-    misc::CustomError,
+    misc::{CustomError, QuoteStripper},
     Context, Error,
 };
 use mongodb::{bson::doc, bson::Document, Collection};
@@ -38,20 +38,23 @@ pub async fn config(
             )))
         }
     };
+    let mut printed_config: Vec<(String, String, bool)> = vec![];
+    for (key, value) in post_config.iter() {
+        printed_config.push((
+            format!("**{}**: {}", key, value.to_string().strip_quote()),
+            "".to_string(),
+            false,
+        ))
+    }
+    printed_config.remove(0); //remove ObjectID to print lol
     ctx.send(|s| {
         s.reply(true).ephemeral(true).embed(|e| {
             e.title("**Configuration has been updated!**")
-                .description("The configuration for this tournament is shown below")
-                .fields(vec![
-                    (format!("Region: {}", region), "", false),
-                    (format!("Mode: {}", mode), "", false),
-                    (format!("Map: {:?}", map), "", false),
-                    (
-                        format!("Registration: {}", post_config.get("registration").unwrap()),
-                        "",
-                        false,
-                    ),
-                ])
+                .description(format!(
+                    "The configuration for {} tournament is shown below",
+                    region
+                ))
+                .fields(printed_config)
         })
     })
     .await?;

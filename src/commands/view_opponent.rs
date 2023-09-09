@@ -16,10 +16,7 @@ use tracing::{info, instrument};
 
 /// View your opponent
 #[instrument]
-#[poise::command(
-    slash_command, 
-    guild_only,
-    rename = "view-opponent")]
+#[poise::command(slash_command, guild_only, rename = "view-opponent")]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting opponent for user {}", ctx.author().tag());
     let caller = match find_discord_id(&ctx, None).await {

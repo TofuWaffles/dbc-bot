@@ -18,18 +18,23 @@ pub async fn disqualify(
     let user_id = player.id;
     info!("Attempting to disqualify player");
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config: Document = database.collection("Config").find_one(None, None).await.unwrap().unwrap();
-    let round = match config.get("round").unwrap().to_string().parse::<i32>(){
+    let config: Document = database
+        .collection("Config")
+        .find_one(None, None)
+        .await
+        .unwrap()
+        .unwrap();
+    let round = match config.get("round").unwrap().to_string().parse::<i32>() {
         Ok(round) => {
-            if round == 0{
+            if round == 0 {
                 "Player".to_string()
-            }
-            else{
+            } else {
                 format!("Round {}", round)
             }
         }
         Err(e) => {
-            ctx.say(format!("Error occurred while parsing round number: {}", e)).await?;
+            ctx.say(format!("Error occurred while parsing round number: {}", e))
+                .await?;
             return Ok(());
         }
     };
@@ -50,14 +55,13 @@ pub async fn disqualify(
             collection
                 .delete_one(doc! {"discord_id": user_id.to_string()}, None)
                 .await?;
-            collection
-                .insert_one(mannequin, None)
-                .await?;
-            ctx.send(|s|{
+            collection.insert_one(mannequin, None).await?;
+            ctx.send(|s| {
                 s.ephemeral(true)
-                .reply(true)
-                .content(format!("Sucessfully disqualified player {}", user_id))
-            }).await?;
+                    .reply(true)
+                    .content(format!("Sucessfully disqualified player {}", user_id))
+            })
+            .await?;
 
             info!("Sucessfully disqualified player {}", user_id);
             return Ok(());
