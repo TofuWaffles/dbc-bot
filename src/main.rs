@@ -221,7 +221,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     regional_database.insert(Region::APAC, client.database("APAC"));
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
-    let required_collections = vec!["Player", "SelfRoleMessage", "Managers"];
+    let required_collections = vec!["Player", "SelfRoleMessage", "Manager"];
     let required_regional_collections = bracket_tournament::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist

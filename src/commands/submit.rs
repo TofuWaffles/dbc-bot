@@ -80,8 +80,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
         Ok(None) => {
             ctx.send(|s| {
-                s.reply(true)
-                .ephemeral(true).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("You are not in this round!")
                         .description("Oops! Better luck next time")
                 })
@@ -91,11 +90,9 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         }
         Err(_) => {
             ctx.send(|s| {
-                s.reply(true)
-                .ephemeral(true)
-                .embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("An error pops up!")
-                    .description("Please run this command later!")
+                        .description("Please run this command later!")
                 })
             })
             .await?;
@@ -130,8 +127,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 .await?;
             update_battle(database, round, match_id).await?;
             ctx.send(|s| {
-                s.reply(true)
-                .ephemeral(true).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("Result is here!").description(format!(
                         "{}({}) has won this round! You are going to next round!",
                         winner.get("name").unwrap().to_string().strip_quote(),

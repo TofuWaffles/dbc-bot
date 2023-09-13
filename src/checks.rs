@@ -4,25 +4,24 @@ use mongodb::bson::{doc, Document};
 use mongodb::Database;
 use tracing::{info, instrument};
 
-
 /// Checks if a tournament has started for the given region.
-/// 
+///
 /// Make sure to pass in the database that corresponds to the region you want to check.
-pub async fn check_if_tournament_started(database: Database) -> Result<bool, Error> {
+pub async fn tournament_started(database: &Database) -> Result<bool, Error> {
     let config = database
         .collection::<Document>("Config")
         .find_one(None, None)
         .await?
         .unwrap();
 
-    let tournament_started = config.get_bool("tournament_started").unwrap();
+    let tournament_started = config.get_bool("tournament_started")?;
 
     Ok(tournament_started)
 }
 
 /// Checks if the user is a manager. Returns true if they are, false otherwise.
 /// The bot owner may set new managers using the /set-manager command
-/// 
+///
 /// Simply stick this at the top of your command to implement this check:
 /// ```
 /// if !user_is_manager(ctx).await? { return Ok(()) }
@@ -42,7 +41,7 @@ pub async fn user_is_manager(ctx: Context<'_>) -> Result<bool, Error> {
 
     match manager_doc_option {
         Some(manager_doc) => {
-            info!("Managers doc found");
+            info!("Manager doc found");
             let manager_ids = manager_doc.get_array("manager_ids")?;
             let manager_id_strings = manager_ids
                 .iter()

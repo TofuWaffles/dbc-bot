@@ -2,7 +2,7 @@ use crate::bracket_tournament::config::{make_config, start_tournament_config};
 use crate::bracket_tournament::mannequin::add_mannequin;
 use crate::bracket_tournament::match_id::assign_match_id;
 use crate::bracket_tournament::region::Region;
-use crate::checks::user_is_manager;
+use crate::checks::{tournament_started, user_is_manager};
 use crate::{Context, Error};
 use mongodb::{bson, Database};
 use mongodb::{
@@ -26,8 +26,10 @@ pub async fn start_tournament(
     ctx: Context<'_>,
     region_option: Option<Region>,
 ) -> Result<(), Error> {
-    if !user_is_manager(ctx).await? { return Ok(()) }
-    
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
+
     info!("Attempting to start the tournament...");
 
     let mut started_tournaments = Vec::<Region>::new();
@@ -41,6 +43,19 @@ pub async fn start_tournament(
 
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
+
+        if tournament_started(database).await? {
+            ctx.send(|s| {
+                s.ephemeral(true).reply(true).content(format!(
+                    "Unable to start tournament for region {} because it is already started",
+                    region
+                ))
+            })
+            .await?;
+
+            continue;
+        }
+
         if !config_prerequisite(&ctx, database, &region).await? {
             continue;
         }
