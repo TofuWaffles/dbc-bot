@@ -3,6 +3,7 @@ use crate::{
     bracket_tournament::region::{Mode, Region},
     misc::CustomError,
     Context, Error,
+    checks::user_is_manager
 };
 use mongodb::{bson::doc, bson::Document, Collection};
 
@@ -10,7 +11,6 @@ use mongodb::{bson::doc, bson::Document, Collection};
 #[poise::command(
     slash_command,
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn config(
     ctx: Context<'_>,
@@ -18,6 +18,8 @@ pub async fn config(
     mode: Mode,
     map: Option<String>,
 ) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+    
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
     let config = set_config(&mode, map.as_ref());

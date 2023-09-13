@@ -1,6 +1,6 @@
 use crate::{
     bracket_tournament::{config::enable_registration, region::Region},
-    Context, Error,
+    Context, Error, checks::user_is_manager,
 };
 use mongodb::{
     bson::{doc, Document},
@@ -10,9 +10,10 @@ use strum::IntoEnumIterator;
 ///Reset tournament set up, but still keeps list of real players.
 #[poise::command(
     slash_command,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+
     ctx.say("Resetting match id, and removing mannequins and rounds...")
         .await?;
     for region in Region::iter() {

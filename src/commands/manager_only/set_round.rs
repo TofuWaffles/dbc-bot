@@ -3,18 +3,18 @@ use crate::{
         config::{get_config, update_round},
         region::Region,
     },
-    Context, Error,
+    Context, Error, checks::user_is_manager,
 };
 use mongodb::bson::{doc, Document};
 
-/// Which round are we at now?
+/// Get the current round of the tournament
 #[poise::command(
     slash_command,
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
-
 pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
     match database

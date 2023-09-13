@@ -1,4 +1,4 @@
-use crate::{bracket_tournament::region::Region, Context, Error};
+use crate::{bracket_tournament::region::Region, Context, Error, checks::user_is_manager};
 use mongodb::bson::{doc, Document};
 use strum::IntoEnumIterator;
 /// Get proportion of participants from each region
@@ -11,10 +11,10 @@ struct RegionStats {
 #[poise::command(
     slash_command,
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
-
 pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+
     let filter: Document = doc! { "name": { "$ne": "Mannequin" } }; //Filter out mannequins $ne = not equal
     let mut data: Vec<RegionStats> = vec![];
     for region in Region::iter() {

@@ -1,5 +1,6 @@
 use crate::bracket_tournament::config::start_tournament_config;
 use crate::bracket_tournament::{region::Region, *};
+use crate::checks::user_is_manager;
 use crate::{Context, Error};
 use mongodb::{
     bson::{doc, Bson::Null, Document},
@@ -18,6 +19,8 @@ const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to sta
     rename = "start-tournament"
 )]
 pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+    
     info!("Attempting to start the tournament...");
 
     let mut started_tournaments = Vec::<Region>::new();

@@ -110,16 +110,15 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             let mut cancel_prompt = mci.message.clone();
             cancel_prompt
                 .edit(ctx, |s| {
-                    s.components(|c| c)
-                        .embed(|e| {
-                            e.title("**Deregistration cancelled!**")
-                                .description("Thanks for staying in the tournament with us!")
+                    s.components(|c| c).embed(|e| {
+                        e.title("**Deregistration cancelled!**")
+                            .description("Thanks for staying in the tournament with us!")
                     })
                 })
                 .await?;
         }
         std::thread::sleep(std::time::Duration::from_secs(10));
         mci.message.delete(ctx).await?;
-    } 
+    }
     Ok(())
 }

@@ -1,6 +1,6 @@
 use crate::{
     bracket_tournament::{mannequin::add_mannequin, region::Region},
-    Context, Error,
+    Context, Error, checks::user_is_manager,
 };
 use mongodb::{
     bson::{doc, Document},
@@ -13,12 +13,13 @@ use tracing::{info, instrument};
 #[instrument]
 #[poise::command(
     slash_command,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn fill_mannequins(
     ctx: Context<'_>,
     #[description = "Put your tag here (without #)"] quantity: i32,
 ) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? { return Ok(()) }
+
     info!("Filling databases with mannequins for testing...");
     ctx.say("Filling databases with mannequins...").await?;
     for region in Region::iter() {
