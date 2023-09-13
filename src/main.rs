@@ -10,11 +10,12 @@ use mongodb::{
     options::{ClientOptions, ResolverConfig},
     Client, Collection, Database,
 };
+mod checks;
 use poise::{
-    serenity_prelude::{self as serenity, GatewayIntents},
+    serenity_prelude::{self as serenity, GatewayIntents, UserId},
     Event, FrameworkError,
 };
-use std::{collections::HashMap, fs::File, sync::Arc};
+use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
 use strum::IntoEnumIterator;
 
 use crate::bracket_tournament::region::Region;
@@ -73,10 +74,13 @@ async fn run() -> Result<(), Error> {
         commands::manager_only::fill_manequins::fill_mannequins(),
         commands::manager_only::set_round::set_round(),
         commands::manager_only::disqualify::disqualify(),
+        commands::manager_only::set_manager::set_manager(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
+    let owner_id =
+        std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");
 
     info!("Setting up the bot...");
 
@@ -131,6 +135,7 @@ async fn run() -> Result<(), Error> {
                 );
             })
         },
+        owners: std::collections::HashSet::from([UserId::from_str(&owner_id)?]),
         on_error: |error| Box::pin(on_error(error)),
         ..Default::default()
     };
@@ -216,7 +221,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     regional_database.insert(Region::APAC, client.database("APAC"));
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
-    let required_collections = vec!["Player", "SelfRoleMessage"];
+    let required_collections = vec!["Player", "SelfRoleMessage", "Manager"];
     let required_regional_collections = bracket_tournament::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
@@ -298,17 +303,15 @@ async fn on_error(error: FrameworkError<'_, Data, Error>) {
         }
         FrameworkError::CommandCheckFailed { error, ctx } => {
             error!(
-                "Error executing the pre-command check for {} in guild {}: {:?}",
+                "Error executing the pre-command check for {}{:?}",
                 ctx.command().qualified_name,
-                ctx.guild().unwrap().name,
                 error
             );
         }
         FrameworkError::ArgumentParse { error, input, ctx } => {
             error!(
-                "Error parsing arguments for {} in guild {} with input(s) {:?}: {:?}",
+                "Error parsing arguments for {} with input(s) {:?}: {:?}",
                 ctx.command().qualified_name,
-                ctx.guild().unwrap().name,
                 input,
                 error
             );

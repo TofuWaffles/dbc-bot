@@ -1,11 +1,8 @@
+use crate::checks::user_is_manager;
 use crate::{misc::CustomError, self_role::SelfRoleMessage, Context, Error};
 use poise::serenity_prelude as serenity;
 
-#[poise::command(
-    slash_command,
-    guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
-)]
+#[poise::command(slash_command, guild_only)]
 
 pub async fn create_self_role_message(
     ctx: Context<'_>,
@@ -15,6 +12,10 @@ pub async fn create_self_role_message(
     #[description = "The channel ID to send the self-roles message"] ping_channel_id: String,
     #[description = "The custom emoji for the react button"] emoji: String,
 ) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
+
     let guild_id = match ctx.guild_id() {
         Some(guild_id) => guild_id,
         None => {

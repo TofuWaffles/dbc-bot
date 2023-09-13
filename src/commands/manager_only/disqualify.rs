@@ -2,44 +2,29 @@ use mongodb::bson::{doc, Document};
 use tracing::{info, instrument};
 
 use crate::bracket_tournament::{mannequin::add_mannequin, region::Region};
+use crate::checks::user_is_manager;
 use crate::misc::QuoteStripper;
 use crate::{Context, Error};
-use poise::serenity_prelude as serenity;
 #[instrument]
-#[poise::command(
-    slash_command,
-    guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
-)]
+#[poise::command(slash_command, guild_only)]
 pub async fn disqualify(
     ctx: Context<'_>,
-    #[description = "The ID of the user to disqualify"] player: serenity::User,
+    #[description = "The ID of the user to disqualify"] user_id: u64,
     region: Region,
 ) -> Result<(), Error> {
-    let user_id = player.id;
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
+
     info!("Attempting to disqualify player");
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config: Document = database
-        .collection("Config")
-        .find_one(None, None)
-        .await
+    let collection = ctx
+        .data()
+        .database
+        .regional_databases
+        .get(&region)
         .unwrap()
-        .unwrap();
-    let round = match config.get("round").unwrap().to_string().parse::<i32>() {
-        Ok(round) => {
-            if round == 0 {
-                "Player".to_string()
-            } else {
-                format!("Round {}", round)
-            }
-        }
-        Err(e) => {
-            ctx.say(format!("Error occurred while parsing round number: {}", e))
-                .await?;
-            return Ok(());
-        }
-    };
-    let collection = database.collection::<Document>(round.as_str());
+        .collection::<Document>("Player");
+
     let player = collection
         .find_one(doc! {"discord_id": user_id.to_string()}, None)
         .await?;

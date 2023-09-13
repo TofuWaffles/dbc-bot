@@ -1,5 +1,6 @@
 use crate::{
     bracket_tournament::{mannequin::add_mannequin, region::Region},
+    checks::user_is_manager,
     Context, Error,
 };
 use mongodb::{
@@ -18,8 +19,12 @@ use tracing::{info, instrument};
 )]
 pub async fn fill_mannequins(
     ctx: Context<'_>,
-    #[description = "Put your tag here (without #)"] quantity: i32,
+    #[description = "The number of mannequins to add"] quantity: i32,
 ) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
+
     info!("Filling databases with mannequins for testing...");
     ctx.say("Filling databases with mannequins...").await?;
     for region in Region::iter() {

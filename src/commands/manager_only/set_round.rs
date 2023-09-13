@@ -3,6 +3,7 @@ use crate::{
         config::{get_config, update_round},
         region::Region,
     },
+    checks::{tournament_started, user_is_manager},
     Context, Error,
 };
 use mongodb::{
@@ -10,14 +11,23 @@ use mongodb::{
     Database,
 };
 
-/// Which round are we at now?
-#[poise::command(
-    slash_command,
-    guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
-)]
-
+/// Get the current round of the tournament
+#[poise::command(slash_command, guild_only)]
 pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> Result<(), Error> {
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
+
+    if !tournament_started(ctx.data().database.regional_databases.get(&region).unwrap()).await? {
+        ctx.send(|s| {
+            s.ephemeral(true).reply(true).content(format!(
+                "unable to set the round for the current tournament: the tournament has not started yet!"
+            ))
+        })
+        .await?;
+        return Ok(());
+    }
+
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
     match database
