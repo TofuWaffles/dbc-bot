@@ -4,23 +4,23 @@ use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
+use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::json::Value;
-use strum::IntoEnumIterator;
 use tracing::{info, instrument};
 
 /// Checks a player registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    slash_command,
+    context_menu_command = "Player information",
     guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
-    rename = "participant"
+    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS"
 )]
 pub async fn get_individual_player_data(
     ctx: Context<'_>,
-    #[description = "Check a player registration status by user ID here"] discord_id: String,
+    #[description = "Check a player registration status by user ID here"] user: serenity::User,
 ) -> Result<(), Error> {
     info!("Getting participant data");
+    let discord_id = user.id.to_string();
     let data = match find_discord_id(&ctx, Some(discord_id)).await {
         Some(data) => data,
         None => {
@@ -85,81 +85,78 @@ pub async fn get_individual_player_data(
 /// Checks all players' registration status by Discord user ID. Available to mods and sheriffs only.
 #[instrument]
 #[poise::command(
-    prefix_command,
     slash_command,
     // Multiple permissions can be OR-ed together with `|` to make them all required
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
     rename="all_participants"
 )]
-pub async fn get_all_players_data(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn get_all_players_data(ctx: Context<'_>, region: Region) -> Result<(), Error> {
     info!("Getting all participants' data");
-    for region in Region::iter() {
-        let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let mut player_data = match database
-            .collection::<Document>("Player")
-            .find(None, None)
-            .await
-        {
-            Ok(player_data) => player_data,
-            Err(_) => {
-                ctx.say(format!(
-                    "Error occurred while finding player data for {}",
-                    region
-                ))
-                .await?;
-                continue;
-            }
-        };
-
-        let player_data_pages = dashmap::DashMap::<String, Document>::new();
-
-        while let Some(player_data_page) = player_data.try_next().await? {
-            let name = player_data_page
-                .get("name")
-                .and_then(|n| n.as_str())
-                .unwrap_or("Username not found.");
-            player_data_pages.insert(name.to_string(), player_data_page);
-        }
-
-        let page_content = player_data_pages
-            .iter()
-            .map(|entry| {
-                let name = entry.key().clone();
-                let data = entry.value().clone();
-                let tag = data
-                    .get("tag")
-                    .and_then(|t| t.as_str())
-                    .unwrap_or("Tag not found.");
-                let region = data
-                    .get("region")
-                    .and_then(|r| r.as_str())
-                    .unwrap_or("Region not found.");
-                let id = data
-                    .get("id")
-                    .and_then(|i| i.as_str())
-                    .unwrap_or("ID not found.");
-                format!(
-                    "Name: {}\nTag: {}\nRegion: {}\nID: {}\n",
-                    name, tag, region, id
-                )
-            })
-            .collect::<Vec<_>>();
-
-        poise::builtins::paginate(
-            ctx,
-            page_content
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
-        .await?;
-        ctx.channel_id()
-            .send_message(ctx, |s| {
-                s.content(format!("Reading players information in {}...", region))
-            })
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let mut player_data = match database
+        .collection::<Document>("Player")
+        .find(None, None)
+        .await
+    {
+        Ok(player_data) => player_data,
+        Err(_) => {
+            ctx.say(format!(
+                "Error occurred while finding player data for {}",
+                region
+            ))
             .await?;
+            return Ok(());
+        }
+    };
+
+    let player_data_pages = dashmap::DashMap::<String, Document>::new();
+
+    while let Some(player_data_page) = player_data.try_next().await? {
+        let name = player_data_page
+            .get("name")
+            .and_then(|n| n.as_str())
+            .unwrap_or("Username not found.");
+        player_data_pages.insert(name.to_string(), player_data_page);
     }
+
+    let page_content = player_data_pages
+        .iter()
+        .map(|entry| {
+            let name = entry.key().clone();
+            let data = entry.value().clone();
+            let tag = data
+                .get("tag")
+                .and_then(|t| t.as_str())
+                .unwrap_or("Tag not found.");
+            let region = data
+                .get("region")
+                .and_then(|r| r.as_str())
+                .unwrap_or("Region not found.");
+            let id = data
+                .get("discord_id")
+                .and_then(|i| i.as_str())
+                .unwrap_or("ID not found.");
+            format!(
+                "Name: {}\nTag: {}\nRegion: {}\nID: {}\n",
+                name, tag, region, id
+            )
+        })
+        .collect::<Vec<_>>();
+
+    poise::builtins::paginate(
+        ctx,
+        page_content
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .as_slice(),
+    )
+    .await?;
+    ctx.channel_id()
+        .send_message(ctx, |s| {
+            s.content(format!("Reading players information in {}...", region))
+        })
+        .await?;
 
     info!("Successfully retrieved all participants' data");
 

@@ -9,9 +9,10 @@ pub fn make_config() -> Document {
     let config = doc! {
       "registration": true,
       "tournament_started": false,
-      "round": 1,
+      "round": 0,
       "mode": Null,
-      "map": Null
+      "map": Null,
+      "total": 0,
     };
     config
 }
@@ -42,11 +43,14 @@ pub fn disable_registration() -> Document {
     config
 }
 
-pub fn start_tournament_config() -> Document {
+pub fn start_tournament_config(total: &u32) -> Document {
+    println!("There are total of {} rounds", total);
     let config = doc! {
       "$set": {
+        "round": 1,
         "tournament_started": true,
-        "registration": false
+        "registration": false,
+        "total": total
       }
     };
     config
@@ -81,4 +85,18 @@ pub fn update_round(round: Option<i32>) -> Document {
             config
         }
     }
+}
+
+pub fn reset_config() -> Document {
+    let config = doc! {
+        "$set": {
+            "registration": true,
+            "tournament_started": false,
+            "round": 0,
+            "mode": Null,
+            "map": Null,
+            "total": 0
+        }
+    };
+    config
 }

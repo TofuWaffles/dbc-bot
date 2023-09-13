@@ -1,9 +1,12 @@
-use crate::bracket_tournament::config::start_tournament_config;
-use crate::bracket_tournament::{region::Region, *};
+use crate::bracket_tournament::config::{make_config, start_tournament_config};
+use crate::bracket_tournament::mannequin::add_mannequin;
+use crate::bracket_tournament::match_id::assign_match_id;
+use crate::bracket_tournament::region::Region;
 use crate::checks::user_is_manager;
 use crate::{Context, Error};
+use mongodb::{bson, Database};
 use mongodb::{
-    bson::{doc, Bson::Null, Document},
+    bson::{doc, Bson, Document},
     options::AggregateOptions,
     Collection,
 };
@@ -15,10 +18,14 @@ const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to sta
 #[instrument]
 #[poise::command(
     slash_command,
+    guild_only,
     required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
     rename = "start-tournament"
 )]
-pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn start_tournament(
+    ctx: Context<'_>,
+    region_option: Option<Region>,
+) -> Result<(), Error> {
     if !user_is_manager(ctx).await? { return Ok(()) }
     
     info!("Attempting to start the tournament...");
@@ -27,110 +34,20 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
     // Handling each region mathematical computations to preset brackets
     ctx.say("Starting tournament...").await?;
     for region in Region::iter() {
+        match region_option {
+            Some(ref region_option) if region != *region_option => continue,
+            _ => {}
+        }
+
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-
-        // Disable registration
-        let config = match database
-            .collection::<Document>("Config")
-            .find_one(None, None)
-            .await
-        {
-            Ok(Some(config)) => config,
-            Ok(None) => {
-                ctx.say(format!("Config for {} not found", region)).await?;
-                continue;
-            }
-            Err(_) => {
-                ctx.say(format!(
-                    "Error occurred while finding config for {}",
-                    region
-                ))
-                .await?;
-                continue;
-            }
+        if !config_prerequisite(&ctx, database, &region).await? {
+            continue;
+        }
+        if !make_rounds(&ctx, database, &region).await? {
+            continue;
         };
-        if !is_config_ok(&ctx, &config, &region).await? {
-            continue;
-        }
-        database
-            .collection::<Document>("Config")
-            .update_one(config, start_tournament_config(), None)
-            .await?;
-
-        // Counting players in a region
-        let collection: Collection<Document> = database.collection("Player");
-        let count = collection.count_documents(None, None).await? as i32;
-
-        // If there aren't enough players in a region, skip to next region
-        if count < MINIMUM_PLAYERS {
-            ctx.say(
-                format!(
-                    "Tournament for {} cannot start due to having only {} players (at least {} are needed)",
-                    region,
-                    count,
-                    MINIMUM_PLAYERS
-                )
-                .as_str(),
-            )
-            .await?;
-            continue;
-        }
-        let rounds = (count as f64).log2().ceil() as u32;
-        let byes = 2_i32.pow(rounds) - count;
-        info!(
-            "Generating a bracket tournament with {} rounds and {} byes",
-            rounds, byes
-        );
-        ctx.channel_id()
-            .send_message(ctx, |m| {
-                m.content(format!("There are {} byes in region {}", byes, region))
-            })
-            .await?;
-        match byes {
-            0 => {}
-            _ => {
-                for bye in 1..=byes {
-                    let mannequin = mannequin::add_mannequin(&region, Some(bye), None);
-                    collection.insert_one(mannequin, None).await?;
-                }
-            }
-        }
-        assign_match_id::assign_match_id(&region, database, byes).await?;
-        //Create rounds collection for each databases
-        info!("Writing round collections to the databases");
-        for round in 1..=rounds {
-            let collection_names = format!("Round {}", round);
-            if !database
-                .list_collection_names(None)
-                .await
-                .unwrap()
-                .contains(&collection_names)
-            {
-                database
-                    .create_collection(format!("Round {}", round), None)
-                    .await?;
-            }
-        }
-
-        //Clone and sort all player data to round 1
-        let pipeline = vec![
-            doc! {
-                "$sort": {
-                    "match_id": 1
-                }
-            },
-            doc! {
-                "$out": "Round 1"
-            },
-        ];
-        let aggregation_options = AggregateOptions::builder().allow_disk_use(true).build();
-
-        // Run the aggregation pipeline to copy and sort documents
-        collection
-            .aggregate(pipeline, Some(aggregation_options))
-            .await?;
-
+        prepare_round_1(&ctx, database, &region).await?;
         started_tournaments.push(region);
     }
 
@@ -153,31 +70,124 @@ pub async fn start_tournament(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn is_config_ok(
+async fn config_prerequisite(
     ctx: &Context<'_>,
-    config: &Document,
+    database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
+    let config_collection = database.collection("Config");
+    let config: Document = match config_collection.find_one(None, None).await {
+        Ok(None) => {
+            let config = make_config();
+            config_collection.insert_one(config.clone(), None).await?;
+            return Ok(false);
+        }
+        Ok(Some(config)) => config,
+        Err(_) => {
+            ctx.say("Error occurred while finding config").await?;
+            return Ok(false);
+        }
+    };
+    if let Some(Bson::Boolean(tournament_started)) = config.get("tournament_started") {
+        if *tournament_started {
+            ctx.say("Tournament is already started").await?;
+            return Ok(false);
+        }
+    }
+
     if let Some(mode) = config.get("mode") {
-        if mode == &Null {
-            ctx.say(format!(
-                "Please set the mode for {} first in </config:1148650981555441897>!",
-                region
-            ))
-            .await?;
-            return Ok(false);
-        }
-    }
-
-    if let Some(started) = config.get("tournament_started") {
-        if started.as_bool().is_some() {
-            ctx.say(format!("Tournament for {} has already started!", region))
+        match mode {
+            Bson::String(_) => {}
+            Bson::Null => {
+                ctx.send(|s| {
+                    s.reply(true).ephemeral(true).embed(|e| {
+                        e.title(format!("Mode has not been set for {}", region))
+                            .description(
+                                "Please set the mode first at </config:1148650981555441897>",
+                            )
+                    })
+                })
                 .await?;
-            return Ok(false);
+                return Ok(false);
+            }
+            _ => {
+                // Handle other mode types if needed
+            }
+        }
+    }
+    Ok(true)
+}
+
+async fn make_rounds(
+    ctx: &Context<'_>,
+    database: &Database,
+    region: &Region,
+) -> Result<bool, Error> {
+    let collection: Collection<Document> = database.collection("Player");
+    let count = collection.count_documents(None, None).await? as i32;
+    if count < MINIMUM_PLAYERS {
+        ctx.say(format!(
+            "Not enough players to start a tournament at {}",
+            region
+        ))
+        .await?;
+        return Ok(false);
+    }
+    let rounds = (count as f64).log2().ceil() as u32;
+    let byes = 2_i32.pow(rounds) - count;
+    info!(
+        "Generating a bracket tournament with {} rounds and {} byes",
+        rounds, byes
+    );
+    ctx.channel_id()
+        .send_message(ctx, |m| {
+            m.content(format!("There are {} byes in region {}", byes, region))
+        })
+        .await?;
+    match byes {
+        0 => {}
+        _ => {
+            for _ in 1..=byes {
+                let mannequin = add_mannequin(&region, None, None);
+                collection.insert_one(mannequin, None).await?;
+            }
+        }
+    }
+    info!("Writing round collections to the databases");
+    for round in 1..=rounds {
+        let collection_name = format!("Round {}", round);
+        if !database
+            .list_collection_names(None)
+            .await?
+            .contains(&collection_name)
+        {
+            database.create_collection(&collection_name, None).await?;
         }
     }
 
-    // Handle other cases here if needed.
-
+    let config = database.collection::<Document>("Config");
+    config
+        .update_one(doc! {}, start_tournament_config(&rounds), None)
+        .await?; // Set total rounds, tournament_started to true and registration to false
     Ok(true)
+}
+
+async fn prepare_round_1(
+    ctx: &Context<'_>,
+    database: &Database,
+    region: &Region,
+) -> Result<(), Error> {
+    let players: Collection<Document> = database.collection("Player");
+    let pipeline = vec![
+        bson::doc! { "$match": bson::Document::new() },
+        bson::doc! { "$out": "Round 1" },
+    ];
+
+    let options = AggregateOptions::builder().allow_disk_use(true).build();
+    players.aggregate(pipeline, Some(options)).await?;
+
+    assign_match_id(&region, database).await?;
+    ctx.say(format!("Complete set up the tournament for {}", region))
+        .await?;
+    Ok(())
 }

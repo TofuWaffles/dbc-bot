@@ -16,14 +16,14 @@ use tracing::{info, instrument};
 
 /// View your opponent
 #[instrument]
-#[poise::command(slash_command, guild_only)]
+#[poise::command(slash_command, guild_only, rename = "view-opponent")]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting opponent for user {}", ctx.author().tag());
     let caller = match find_discord_id(&ctx, None).await {
         Some(caller) => caller,
         None => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("You are not in the tournament!")
                         .description("Sorry, you are not in the tournament to use this command!")
                 })
@@ -32,6 +32,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
+
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
@@ -59,10 +60,23 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         .find_one(doc! {"tag": &caller_tag}, None)
         .await
     {
-        Ok(Some(player)) => player,
+        Ok(Some(player)) => {
+            if player.get("battle").unwrap().as_bool().unwrap() {
+                ctx.send(|s| {
+                    s.reply(true).ephemeral(true).embed(|e| {
+                        e.title("You have already submitted the result!")
+                            .description("Please wait until next round begins!")
+                    })
+                })
+                .await?;
+                return Ok(());
+            } else {
+                player
+            }
+        }
         Ok(None) => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("You are not in this round!")
                         .description("Oops! Better luck next time")
                 })
@@ -72,7 +86,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         }
         Err(_) => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("An error pops up!")
                         .description("Please run this command later!")
                 })
@@ -85,7 +99,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         Some(enemy) => {
             if is_mannequin(&enemy) {
                 ctx.send(|s| {
-                    s.reply(true).ephemeral(false).embed(|e| {
+                    s.reply(true).ephemeral(true).embed(|e| {
                         e.title("Congratulation! You are the bye player for this round!").description(
                             "Please run </submit-result:1148650981555441894> to be in next round!",
                         )
@@ -99,7 +113,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         }
         None => {
             ctx.send(|s| {
-                s.reply(true).ephemeral(false).embed(|e| {
+                s.reply(true).ephemeral(true).embed(|e| {
                     e.title("An error pops up!")
                         .description("Please run this command later!")
                 })
@@ -115,7 +129,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     // let player2 = request(get_api_link("player", &enemy_tag).as_str()).await?;
 
     ctx.send(|s| {
-        s.reply(true).ephemeral(false).embed(|e| {
+        s.reply(true).ephemeral(true).embed(|e| {
             e.title("**DISCORD BRAWL CUP TOURNAMENT**")
                 .description(format!("Round {} - Match {}", round, match_id))
                 .fields(vec![

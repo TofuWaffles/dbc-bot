@@ -7,7 +7,7 @@ pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
         return Ok(());
     }
-    let response = "Pong".to_owned();
+    let response = "Pong".to_string();
     ctx.say(response).await?;
     Ok(())
 }

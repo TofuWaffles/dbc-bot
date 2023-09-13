@@ -61,11 +61,11 @@ async fn run() -> Result<(), Error> {
         commands::battle_log::latest_log(),
         commands::register::register(),
         commands::submit::submit(),
-        commands::db_handler::get_individual_player_data(),
-        commands::db_handler::get_all_players_data(),
         commands::deregister::deregister(),
         commands::view_opponent::view_opponent(),
         commands::draco::draco(),
+        commands::manager_only::db_handler::get_individual_player_data(),
+        commands::manager_only::db_handler::get_all_players_data(),
         commands::manager_only::config::config(),
         commands::manager_only::create_self_role_message::create_self_role_message(),
         commands::manager_only::start_tournament::start_tournament(),
@@ -73,6 +73,7 @@ async fn run() -> Result<(), Error> {
         commands::manager_only::reset::reset(),
         commands::manager_only::fill_manequins::fill_mannequins(),
         commands::manager_only::set_round::set_round(),
+        commands::manager_only::disqualify::disqualify(),
         commands::manager_only::set_manager::set_manager(),
     ];
 
