@@ -2,7 +2,7 @@ use strum_macros::EnumIter;
 
 // Define an enum called `Region` to represent geographical regions.
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]
+#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq, Clone)]
 pub enum Region {
     #[name = "North America & South America"]
     NASA,

@@ -2,9 +2,6 @@ mod bracket_tournament;
 mod commands;
 mod database_utils;
 mod misc;
-mod self_role;
-use dashmap::DashMap;
-use futures::stream::TryStreamExt;
 use mongodb::{
     bson::Document,
     options::{ClientOptions, ResolverConfig},
@@ -30,8 +27,7 @@ struct Databases {
 // This data struct is used to pass data (such as the db_pool) to the context object
 #[derive(Debug)]
 pub struct Data {
-    database: Databases,
-    self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+    database: Databases
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -57,8 +53,8 @@ async fn run() -> Result<(), Error> {
     // Might be better to find a more scalable and flexible solution down the line.
     let commands = vec![
         commands::ping::ping(),
-        commands::player::player(),
-        commands::battle_log::latest_log(),
+        // commands::player::player(),
+        // commands::battle_log::latest_log(),
         commands::register::register(),
         commands::submit::submit(),
         commands::deregister::deregister(),
@@ -67,7 +63,6 @@ async fn run() -> Result<(), Error> {
         commands::manager_only::db_handler::get_individual_player_data(),
         commands::manager_only::db_handler::get_all_players_data(),
         commands::manager_only::config::config(),
-        commands::manager_only::create_self_role_message::create_self_role_message(),
         commands::manager_only::start_tournament::start_tournament(),
         commands::manager_only::region_proportion::region_proportion(),
         commands::manager_only::reset::reset(),
@@ -87,7 +82,7 @@ async fn run() -> Result<(), Error> {
     info!("Generating options");
     let options = poise::FrameworkOptions {
         commands,
-        event_handler: |ctx, event, _framework, data| {
+        event_handler: |_ctx, event, _framework, _data| {
             Box::pin(async move {
                 match event {
                     Event::Ready { data_about_bot } => {
@@ -96,23 +91,6 @@ async fn run() -> Result<(), Error> {
                         println!("{} is online!", bot_name);
                     }
 
-                    Event::InteractionCreate { interaction } => match interaction {
-                        serenity::Interaction::MessageComponent(message_component_interaction) => {
-                            match message_component_interaction.data.component_type {
-                                // We exhaustively check the specific interaction type so that we don't have to do it inside every function
-                                serenity::ComponentType::Button => {
-                                    self_role::handle_button::handle_selfrole_button(
-                                        message_component_interaction,
-                                        ctx,
-                                        data,
-                                    )
-                                    .await?;
-                                }
-                                _ => (),
-                            }
-                        }
-                        _ => (),
-                    },
                     _ => (),
                 }
 
@@ -153,27 +131,8 @@ async fn run() -> Result<(), Error> {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                let mut self_role_data = database
-                    .general
-                    .collection::<self_role::SelfRoleMessage>("SelfRoleMessage")
-                    .find(None, None)
-                    .await
-                    .expect("Self Role data not found.");
-                let self_role_messages = DashMap::<i64, self_role::SelfRoleMessage>::new();
-                while let Some(self_role_individual_data) = self_role_data.try_next().await? {
-                    self_role_messages.insert(
-                        self_role_individual_data.message_id,
-                        self_role::SelfRoleMessage {
-                            message_id: self_role_individual_data.message_id,
-                            guild_id: self_role_individual_data.guild_id,
-                            role_id: self_role_individual_data.role_id,
-                            ping_channel_id: self_role_individual_data.ping_channel_id,
-                        },
-                    );
-                }
                 Ok(Data {
                     database,
-                    self_role_messages,
                 })
             })
         })

@@ -1,6 +1,5 @@
 use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::region::Region;
-use crate::database_utils::find_discord_id::find_discord_id;
 use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::{
@@ -8,16 +7,15 @@ use mongodb::{
     Collection,
 };
 use poise::serenity_prelude::{self as serenity};
+use super::register::{register_opened, player_registered};
 use tracing::{info, instrument};
 
 /// Remove your registration from Discord Brawl Cup.
 #[instrument]
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.defer().await?;
-
     info!("Attempted to deregister user {}", ctx.author().tag());
-    let data = match find_discord_id(&ctx, None).await {
+    let player = match player_registered(&ctx, None).await?{
         None => {
             ctx.send(|s|{
                 s.reply(true)
@@ -31,19 +29,13 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         }
         Some(data) => data,
     };
-    let region = Region::find_key(data.get("region").unwrap().as_str().unwrap()).unwrap();
-    //Check whether registation has already closed
+    
+
+    let region = Region::find_key(player.get("region").unwrap().as_str().unwrap()).unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
 
-    if !(config.get("registration").unwrap()).as_bool().unwrap() {
-        ctx.send(|s| {
-            s.reply(true).ephemeral(true).embed(|e| {
-                e.title("**Registration has already closed!**")
-                    .description("Sorry, registration has already closed!")
-            })
-        })
-        .await?;
+    if !register_opened(&ctx, &config).await? {
         return Ok(());
     }
 
@@ -69,9 +61,9 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
           .embed(|e|{
             e.title("**Are you sure you want to deregister?**")
             .description(format!("You are about to deregister from the tournament. Below information are what you told us!\nYour account name: **{}**\nWith your respective tag: **{}**\nAnd you are in the following region: **{}**", 
-                                data.get("name").unwrap().to_string().strip_quote(), 
-                                data.get("tag").unwrap().to_string().strip_quote(), 
-                                Region::find_key(data.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
+                                player.get("name").unwrap().to_string().strip_quote(), 
+                                player.get("tag").unwrap().to_string().strip_quote(), 
+                                Region::find_key(player.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
                         )
         })
     }).await?;
@@ -83,7 +75,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         .await
     {
         if mci.data.custom_id == deregister_confirm.to_string() {
-            let region = Region::find_key(&data.get("region").unwrap().to_string().strip_quote());
+            let region = Region::find_key(&player.get("region").unwrap().to_string().strip_quote());
             let player_data: Collection<Document> = ctx
                 .data()
                 .database
@@ -92,7 +84,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
                 .unwrap()
                 .collection("Player");
             player_data
-                .delete_one(doc! {"_id": data.get("_id")}, None)
+                .delete_one(doc! {"_id": player.get("_id")}, None)
                 .await?;
 
             let mut confirm_prompt = mci.message.clone();

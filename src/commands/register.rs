@@ -4,6 +4,7 @@ use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_tag::find_tag;
 use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
+use mongodb::bson::Document;
 use mongodb::bson::{doc, Bson::Null};
 use poise::serenity_prelude::{self as serenity};
 use tracing::{error, info, instrument};
@@ -21,44 +22,19 @@ pub async fn register(
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
 
-    if !(config.get("registration").unwrap()).as_bool().unwrap() {
-        ctx.send(|s| {
-            s.reply(true).ephemeral(true).embed(|e| {
-                e.title("**Registration has already closed!**")
-                    .description("Sorry, registration has already closed!")
-            })
-        })
-        .await?;
+    if !register_opened(&ctx, &config).await? || !account_available(&ctx, &tag).await?{
         return Ok(());
     }
-    //Check whether a player has registered or not by their Discord id
-    if (find_discord_id(&ctx, None).await).is_some() {
+    if player_registered(&ctx, Some(region.clone())).await?.is_some(){
         ctx.send(|s|{
             s.reply(true)
             .ephemeral(true)
             .embed(|e|{
                 e.title("**You have already registered!**")
-                .description("If you want to participate the event with a different account, please </deregister:1146092020843155496> first and run this again!")
+                .description("You have already registered for the tournament! If you want to deregister, please use the </deregister:1146092020843155496> command!")
             })
         }).await?;
-        return Ok(());
-    }
-    //Check if an account is registered by any earlier player
-    if let Some(someone) = find_tag(&ctx, &(tag.to_uppercase())).await {
-        ctx.send(|s| {
-            s.reply(true).ephemeral(true).embed(|e| {
-                e.title("**This account has been registered by some player already!**")
-                    .description(format!(
-                        "**{}** ({}) has already been registered with <@{}>.",
-                        someone.get("name").unwrap().to_string().strip_quote(),
-                        someone.get("tag").unwrap().to_string().strip_quote(),
-                        someone.get("discord_id").unwrap().to_string().strip_quote()
-                    ))
-            })
-        })
-        .await?;
-        return Ok(());
-    }
+    } 
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
@@ -83,7 +59,7 @@ pub async fn register(
                         })
                     })
                     .reply(true)
-                    .ephemeral(false)
+                    .ephemeral(true)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
                         .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
@@ -172,7 +148,7 @@ pub async fn register(
             ctx.send(|s| {
                 s.content("".to_string())
                     .reply(true)
-                    .ephemeral(false)
+                    .ephemeral(true)
                     .embed(|e| {
                         e.title("**We have tried very hard to find but...**")
                             .description(format!(
@@ -185,6 +161,47 @@ pub async fn register(
             .await?;
         }
     }
-
     Ok(())
+}
+
+pub async fn register_opened(ctx: &Context<'_>, config: &Document) -> Result<bool, Error> {
+    if !(config.get("registration").unwrap()).as_bool().unwrap() {
+        ctx.send(|s| {
+            s.reply(true).ephemeral(true).embed(|e| {
+                e.title("**Registration has already closed!**")
+                    .description("Sorry, registration has already closed!")
+            })
+        })
+        .await?;
+        Ok(false)
+    } else {
+        Ok(true)
+    }
+}
+
+pub async fn player_registered(ctx: &Context<'_>, region: Option<Region>) -> Result<Option<Document>, Error>{
+    match find_discord_id(ctx, None, region).await {
+        None => Ok(None),
+        Some(player) => Ok(Some(player)),
+    }
+}
+
+async fn account_available(ctx: &Context<'_>, tag: &str) -> Result<bool, Error>{
+    if let Some(someone) = find_tag(ctx, &(tag.to_uppercase())).await {
+        ctx.send(|s| {
+            s.reply(true).ephemeral(true).embed(|e| {
+                e.title("**This account has been registered by some player already!**")
+                    .description(format!(
+                        "**{}** ({}) has already been registered with <@{}>.",
+                        someone.get("name").unwrap().to_string().strip_quote(),
+                        someone.get("tag").unwrap().to_string().strip_quote(),
+                        someone.get("discord_id").unwrap().to_string().strip_quote()
+                    ))
+            })
+        })
+        .await?;
+        Ok(false)
+    } else {
+        Ok(true)
+    }
 }

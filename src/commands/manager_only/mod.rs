@@ -1,5 +1,4 @@
 pub mod config;
-pub mod create_self_role_message;
 pub mod db_handler;
 pub mod disqualify;
 pub mod fill_manequins;

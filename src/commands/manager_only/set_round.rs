@@ -14,22 +14,22 @@ use mongodb::{
 /// Get the current round of the tournament
 #[poise::command(slash_command, guild_only)]
 pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
     if !user_is_manager(ctx).await? {
         return Ok(());
     }
 
-    if !tournament_started(ctx.data().database.regional_databases.get(&region).unwrap()).await? {
+    if !tournament_started(database).await? {
         ctx.send(|s| {
-            s.ephemeral(true).reply(true).content(format!(
-                "unable to set the round for the current tournament: the tournament has not started yet!"
-            ))
+            s.ephemeral(true)
+            .reply(true)
+            .content("Unable to set the round for the current tournament: the tournament has not started yet!")
         })
         .await?;
         return Ok(());
     }
 
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(database).await;
     match database
         .collection::<Document>("Config")
         .update_one(config, update_round(round), None)

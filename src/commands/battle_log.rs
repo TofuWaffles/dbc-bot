@@ -33,7 +33,7 @@ pub async fn latest_log(
                                 .to_string()
                                 .strip_quote(),
                         ))
-                        .thumbnail(get_mode_icon(&log["items"][0]["event"]["mode"]))
+                        .thumbnail(get_mode_icon(&log["items"][0]["event"]["mode"].as_str().unwrap()))
                         .fields(vec![
                             (
                                 "Battle Time",

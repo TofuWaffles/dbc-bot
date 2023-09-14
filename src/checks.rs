@@ -78,5 +78,5 @@ pub async fn user_is_manager(ctx: Context<'_>) -> Result<bool, Error> {
     })
     .await?;
 
-    return Ok(false);
+    Ok(false)
 }

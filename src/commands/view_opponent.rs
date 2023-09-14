@@ -4,7 +4,7 @@ use crate::{
         find_discord_id::find_discord_id,
         find_enemy::{find_enemy, is_mannequin},
     },
-    misc::QuoteStripper,
+    misc::{QuoteStripper, get_mode_icon},
     Context, Error,
 };
 
@@ -19,7 +19,7 @@ use tracing::{info, instrument};
 #[poise::command(slash_command, guild_only, rename = "view-opponent")]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting opponent for user {}", ctx.author().tag());
-    let caller = match find_discord_id(&ctx, None).await {
+    let caller = match find_discord_id(&ctx, None, None).await {
         Some(caller) => caller,
         None => {
             ctx.send(|s| {
@@ -48,8 +48,9 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
 
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let round = get_config(database)
-        .await
+    let config = get_config(database)
+        .await;
+    let round = config
         .get("round")
         .unwrap()
         .as_i32()
@@ -132,6 +133,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         s.reply(true).ephemeral(true).embed(|e| {
             e.title("**DISCORD BRAWL CUP TOURNAMENT**")
                 .description(format!("Round {} - Match {}", round, match_id))
+                .thumbnail(get_mode_icon(config.get("mode").unwrap().as_str().unwrap()))
                 .fields(vec![
                     (caller.get("name").unwrap().to_string(), caller_tag, true),
                     ("".to_string(), "**VS**".to_string(), true),

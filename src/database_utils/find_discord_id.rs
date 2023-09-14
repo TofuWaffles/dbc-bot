@@ -56,7 +56,7 @@ use tracing::{error, info, instrument};
 /// }
 /// ```
 #[instrument]
-pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> Option<Document> {
+pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>, region_option: Option<Region>) -> Option<Document> {
     let invoker_id = match discord_id {
         Some(id) => id,
         None => ctx.author().id.to_string(),
@@ -67,12 +67,17 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>) -> O
     // Iterate through the regions and check each database
     for region in Region::iter() {
         info!("Checking database for region: {}", region);
+        match region_option {
+            Some(ref region_option) if region != *region_option => continue,
+            _ => {}
+        }
+
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let config = get_config(database).await;
         let round = match config.get("round") {
             Some(round) => {
                 if let Bson::Int32(0) = round {
-                    format!("Player")
+                    "Player".to_string()
                 } else {
                     format!("Round {}", round.as_i32().unwrap())
                 }

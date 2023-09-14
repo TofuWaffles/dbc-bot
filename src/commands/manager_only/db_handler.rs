@@ -21,7 +21,7 @@ pub async fn get_individual_player_data(
 ) -> Result<(), Error> {
     info!("Getting participant data");
     let discord_id = user.id.to_string();
-    let data = match find_discord_id(&ctx, Some(discord_id)).await {
+    let data = match find_discord_id(&ctx, Some(discord_id), None).await {
         Some(data) => data,
         None => {
             ctx.say("User not found in database").await?;

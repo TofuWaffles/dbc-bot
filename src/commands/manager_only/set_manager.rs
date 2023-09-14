@@ -48,7 +48,7 @@ pub async fn set_manager(ctx: Context<'_>, role: Role) -> Result<(), Error> {
     let managers_vec = managers_doc
         .get_array("manager_ids")?
         .iter()
-        .map(|x| x.as_str().unwrap_or_else(|| "0").to_string().strip_quote())
+        .map(|x| x.as_str().unwrap_or("0").to_string().strip_quote())
         .collect::<Vec<String>>();
     info!("The current managers are: {:?}", managers_vec);
 

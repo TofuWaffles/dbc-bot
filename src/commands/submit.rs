@@ -19,7 +19,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     info!("Checking user {}'s match result", ctx.author().tag());
 
     //Check if the user is in the tournament
-    let caller = match find_discord_id(&ctx, None).await {
+    let caller = match find_discord_id(&ctx, None, None).await {
         Some(caller) => caller,
         None => {
             ctx.send(|s| {

@@ -25,7 +25,8 @@ pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
         {
             Ok(result) => result.try_into().unwrap_or_else(|_err| {
                 // The _ to shut up warning lol
-                let _ = ctx.say("There are way too many documents so it is unable to convert from u64 to i32 due to overflow.");
+                let drop = ctx.say("There are way too many documents so it is unable to convert from u64 to i32 due to overflow.");
+                std::mem::drop(drop);
                 0
             }),
             Err(err) => {

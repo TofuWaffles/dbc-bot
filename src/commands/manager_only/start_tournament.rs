@@ -44,43 +44,28 @@ pub async fn start_tournament(
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
 
-        if tournament_started(database).await? {
-            ctx.send(|s| {
-                s.ephemeral(true).reply(true).content(format!(
-                    "Unable to start tournament for region {} because it is already started",
-                    region
-                ))
-            })
-            .await?;
-
+        if !config_prerequisite(&ctx, database, &region).await? || !make_rounds(&ctx, database, &region).await?{
             continue;
         }
-
-        if !config_prerequisite(&ctx, database, &region).await? {
-            continue;
-        }
-        if !make_rounds(&ctx, database, &region).await? {
-            continue;
-        };
+       
         prepare_round_1(&ctx, database, &region).await?;
         started_tournaments.push(region);
     }
 
     if started_tournaments.is_empty() {
         info!("No tournaments have been started");
-        ctx.channel_id()
-            .send_message(ctx, |m| m.content("No tournaments have been started"))
-            .await?;
+        ctx.send(|m| {
+            m.content("No tournaments have been started")
+            .ephemeral(true)
+        })
+        .await?;
     } else {
         info!("Tournament(s) successfully started!");
-        ctx.channel_id()
-            .send_message(ctx, |m| {
-                m.content(format!(
-                    "Tournament started for regions: {:#?}",
-                    started_tournaments
-                ))
-            })
-            .await?;
+        ctx.send(|m| {
+            m.content(format!("Tournament started for regions: {:#?}", started_tournaments))
+            .ephemeral(true)
+        })
+        .await?;
     }
     Ok(())
 }
@@ -103,11 +88,9 @@ async fn config_prerequisite(
             return Ok(false);
         }
     };
-    if let Some(Bson::Boolean(tournament_started)) = config.get("tournament_started") {
-        if *tournament_started {
-            ctx.say("Tournament is already started").await?;
-            return Ok(false);
-        }
+    if tournament_started(database).await? {
+        ctx.say("Tournament is already started").await?;
+        return Ok(false);
     }
 
     if let Some(mode) = config.get("mode") {
@@ -163,7 +146,7 @@ async fn make_rounds(
         0 => {}
         _ => {
             for _ in 1..=byes {
-                let mannequin = add_mannequin(&region, None, None);
+                let mannequin = add_mannequin(region, None, None);
                 collection.insert_one(mannequin, None).await?;
             }
         }
@@ -201,7 +184,7 @@ async fn prepare_round_1(
     let options = AggregateOptions::builder().allow_disk_use(true).build();
     players.aggregate(pipeline, Some(options)).await?;
 
-    assign_match_id(&region, database).await?;
+    assign_match_id(region, database).await?;
     ctx.say(format!("Complete set up the tournament for {}", region))
         .await?;
     Ok(())

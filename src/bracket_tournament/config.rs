@@ -29,8 +29,7 @@ pub fn set_config(mode: &Mode, map: Option<&String>) -> Document {
 
 pub async fn get_config(db: &Database) -> Document {
     let collection: Collection<Document> = db.collection("Config");
-    let config = collection.find_one(None, None).await.unwrap().unwrap();
-    config
+    collection.find_one(None, None).await.unwrap().unwrap()
 }
 
 #[allow(dead_code)]
@@ -99,4 +98,12 @@ pub fn reset_config() -> Document {
         }
     };
     config
+}
+
+pub fn get_round_collection(config: &Document) -> String {
+    match config.get_i32("round") {
+        Ok(0) => "Player".to_string(),
+        Ok(round) => format!("Round {}", round),
+        Err(_) => "Player".to_string(),
+    }
 }
