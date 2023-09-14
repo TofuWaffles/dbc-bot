@@ -44,10 +44,12 @@ pub async fn start_tournament(
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
 
-        if !config_prerequisite(&ctx, database, &region).await? || !make_rounds(&ctx, database, &region).await?{
+        if !config_prerequisite(&ctx, database, &region).await?
+            || !make_rounds(&ctx, database, &region).await?
+        {
             continue;
         }
-       
+
         prepare_round_1(&ctx, database, &region).await?;
         started_tournaments.push(region);
     }
@@ -56,13 +58,16 @@ pub async fn start_tournament(
         info!("No tournaments have been started");
         ctx.send(|m| {
             m.content("No tournaments have been started")
-            .ephemeral(true)
+                .ephemeral(true)
         })
         .await?;
     } else {
         info!("Tournament(s) successfully started!");
         ctx.send(|m| {
-            m.content(format!("Tournament started for regions: {:#?}", started_tournaments))
+            m.content(format!(
+                "Tournament started for regions: {:#?}",
+                started_tournaments
+            ))
             .ephemeral(true)
         })
         .await?;
@@ -121,7 +126,7 @@ async fn make_rounds(
     database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
-    let collection: Collection<Document> = database.collection("Player");
+    let collection: Collection<Document> = database.collection("Players");
     let count = collection.count_documents(None, None).await? as i32;
     if count < MINIMUM_PLAYERS {
         ctx.say(format!(
@@ -175,7 +180,7 @@ async fn prepare_round_1(
     database: &Database,
     region: &Region,
 ) -> Result<(), Error> {
-    let players: Collection<Document> = database.collection("Player");
+    let players: Collection<Document> = database.collection("Players");
     let pipeline = vec![
         bson::doc! { "$match": bson::Document::new() },
         bson::doc! { "$out": "Round 1" },

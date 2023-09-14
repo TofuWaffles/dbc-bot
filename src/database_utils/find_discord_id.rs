@@ -56,7 +56,11 @@ use tracing::{error, info, instrument};
 /// }
 /// ```
 #[instrument]
-pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>, region_option: Option<Region>) -> Option<Document> {
+pub async fn find_discord_id(
+    ctx: &Context<'_>,
+    discord_id: Option<String>,
+    region_option: Option<Region>,
+) -> Option<Document> {
     let invoker_id = match discord_id {
         Some(id) => id,
         None => ctx.author().id.to_string(),
@@ -77,7 +81,7 @@ pub async fn find_discord_id(ctx: &Context<'_>, discord_id: Option<String>, regi
         let round = match config.get("round") {
             Some(round) => {
                 if let Bson::Int32(0) = round {
-                    "Player".to_string()
+                    "Players".to_string()
                 } else {
                     format!("Round {}", round.as_i32().unwrap())
                 }

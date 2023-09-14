@@ -3,7 +3,7 @@ mod commands;
 mod database_utils;
 mod misc;
 use mongodb::{
-    bson::Document,
+    bson::{Document, doc},
     options::{ClientOptions, ResolverConfig},
     Client, Collection, Database,
 };
@@ -27,7 +27,8 @@ struct Databases {
 // This data struct is used to pass data (such as the db_pool) to the context object
 #[derive(Debug)]
 pub struct Data {
-    database: Databases
+    database: Databases,
+    // managers: Vec<u64>
 }
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -133,6 +134,7 @@ async fn run() -> Result<(), Error> {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     database,
+                    // managers
                 })
             })
         })
@@ -180,7 +182,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     regional_database.insert(Region::APAC, client.database("APAC"));
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
-    let required_collections = vec!["Player", "SelfRoleMessage", "Manager"];
+    let required_collections = vec!["Players", "Managers"];
     let required_regional_collections = bracket_tournament::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
@@ -216,7 +218,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
             info!("Config already exists in {}", region);
         }
         database
-            .create_collection("Player", None)
+            .create_collection("Players", None)
             .await
             .unwrap_or_else(|e| info!("{:?}", e));
     }
@@ -228,7 +230,17 @@ async fn prepare_databases() -> Result<Databases, Error> {
         regional_databases: regional_database,
     })
 }
-
+// async fn retrieve_managers(database: &Database) -> Vec<u64>{
+//     let mut managers_list = vec![];
+//     let mut managers = database
+//         .collection::<Document>("Managers")
+//         .find(doc! {"guild_id": &guild_id}, None)
+//         .await;
+//     while let Some(manager) = managers.try_next().await{
+//         managers_list.push(manager.get("role_id").unwrap().to_string().parse::<u64>().unwrap());
+//     }
+//     managers_list
+// }
 // Create the subscriber to listen to logging events
 fn create_subscriber() -> Result<(), Error> {
     let stdout_log = tracing_subscriber::fmt::layer().pretty();

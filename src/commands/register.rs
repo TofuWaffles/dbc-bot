@@ -22,10 +22,13 @@ pub async fn register(
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
 
-    if !register_opened(&ctx, &config).await? || !account_available(&ctx, &tag).await?{
+    if !register_opened(&ctx, &config).await? || !account_available(&ctx, &tag).await? {
         return Ok(());
     }
-    if player_registered(&ctx, Some(region.clone())).await?.is_some(){
+    if player_registered(&ctx, Some(region.clone()))
+        .await?
+        .is_some()
+    {
         ctx.send(|s|{
             s.reply(true)
             .ephemeral(true)
@@ -34,7 +37,7 @@ pub async fn register(
                 .description("You have already registered for the tournament! If you want to deregister, please use the </deregister:1146092020843155496> command!")
             })
         }).await?;
-    } 
+    }
 
     let registry_confirm: u64 = format!("{}1", ctx.id()).parse().unwrap(); //Message ID concatenates with 1 which indicates true
     let registry_cancel: u64 = format!("{}0", ctx.id()).parse().unwrap(); //Message ID concatenates with 0 which indicates false
@@ -108,7 +111,7 @@ pub async fn register(
                     };
 
                     let collection =
-                        ctx.data().database.regional_databases[&region].collection("Player");
+                        ctx.data().database.regional_databases[&region].collection("Players");
 
                     match collection.insert_one(data, None).await {
                         Ok(_) => {}
@@ -179,14 +182,17 @@ pub async fn register_opened(ctx: &Context<'_>, config: &Document) -> Result<boo
     }
 }
 
-pub async fn player_registered(ctx: &Context<'_>, region: Option<Region>) -> Result<Option<Document>, Error>{
+pub async fn player_registered(
+    ctx: &Context<'_>,
+    region: Option<Region>,
+) -> Result<Option<Document>, Error> {
     match find_discord_id(ctx, None, region).await {
         None => Ok(None),
         Some(player) => Ok(Some(player)),
     }
 }
 
-async fn account_available(ctx: &Context<'_>, tag: &str) -> Result<bool, Error>{
+async fn account_available(ctx: &Context<'_>, tag: &str) -> Result<bool, Error> {
     if let Some(someone) = find_tag(ctx, &(tag.to_uppercase())).await {
         ctx.send(|s| {
             s.reply(true).ephemeral(true).embed(|e| {

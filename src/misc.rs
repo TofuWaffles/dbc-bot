@@ -101,10 +101,8 @@ pub fn get_difficulty(num: &serde_json::Value) -> String {
 /// }
 /// ```
 pub fn get_mode_icon(event_name: &str) -> &str {
- 
-
     // Match the event_name to known event names and return the corresponding URL as Some(&str)
-    match event_name{
+    match event_name {
         "brawlBall" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
         "bounty" => "https://cdn.brawlstats.com/event-icons/event_mode_bounty.png",
         "gemGrab" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",

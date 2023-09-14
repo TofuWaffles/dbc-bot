@@ -4,7 +4,7 @@ use crate::{
         find_discord_id::find_discord_id,
         find_enemy::{find_enemy, is_mannequin},
     },
-    misc::{QuoteStripper, get_mode_icon},
+    misc::{get_mode_icon, QuoteStripper},
     Context, Error,
 };
 
@@ -48,13 +48,8 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
 
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(database)
-        .await;
-    let round = config
-        .get("round")
-        .unwrap()
-        .as_i32()
-        .unwrap();
+    let config = get_config(database).await;
+    let round = config.get("round").unwrap().as_i32().unwrap();
     let current_round: Collection<Document> =
         database.collection(format!("Round {}", round).as_str());
     let caller: Document = match current_round

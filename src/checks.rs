@@ -1,5 +1,6 @@
 use crate::misc::QuoteStripper;
 use crate::{Context, Error};
+use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Database;
 use tracing::{info, instrument};
@@ -29,54 +30,24 @@ pub async fn tournament_started(database: &Database) -> Result<bool, Error> {
 #[instrument]
 pub async fn user_is_manager(ctx: Context<'_>) -> Result<bool, Error> {
     info!("Checking permissions...");
-    let guild_id = ctx.guild_id().unwrap();
-    let user_id = ctx.author().id;
-    let manager_doc_option = ctx
-        .data()
-        .database
-        .general
-        .collection::<Document>("Manager")
-        .find_one(doc! {"guild_id": guild_id.clone().to_string()}, None)
+    let guild_id = ctx.guild_id().unwrap().to_string();
+    let database = &ctx.data().database.general;
+  
+    let mut managers = database
+        .collection::<Document>("Managers")
+        .find(doc! {"guild_id": &guild_id}, None)
         .await?;
-
-    match manager_doc_option {
-        Some(manager_doc) => {
-            info!("Manager doc found");
-            let manager_ids = manager_doc.get_array("manager_ids")?;
-            let manager_id_strings = manager_ids
-                .iter()
-                .map(|id| id.to_string().strip_quote())
-                .collect::<Vec<String>>();
-            info!("Manager ids are: {:?}", manager_id_strings);
-
-            let member_roles = guild_id.member(ctx, user_id).await?.roles;
-            let member_role_id_strings = member_roles
-                .iter()
-                .map(|role| role.to_string())
-                .collect::<Vec<String>>();
-            info!(
-                "The current member's roles are: {:?}",
-                member_role_id_strings
-            );
-
-            for id in manager_id_strings {
-                if member_role_id_strings.contains(&id) {
-                    return Ok(true);
-                }
-            }
+    while let Some(manager) = managers.try_next().await?{
+        let role_id = manager.get("role_id").unwrap().to_string().strip_quote();
+        if ctx.author().has_role(ctx.http(), guild_id.parse::<u64>().unwrap(), role_id.parse::<u64>().unwrap()).await?{
+            return Ok(true)
         }
-        None => {
-            ctx.say("No manager roles have been set for this server, you can set it by getting the bot owner to run /set-manager").await?;
-            return Ok(false);
-        }
-    };
-
+    }
     ctx.send(|s| {
-        s.ephemeral(true)
-            .content("Sorry, you do not have the permissions required to run this command!")
+        s.content("Sorry, you do not have the permissions required to run this command!")
+            .ephemeral(true)
             .reply(true)
     })
     .await?;
-
     Ok(false)
 }

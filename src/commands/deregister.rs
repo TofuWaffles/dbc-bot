@@ -1,3 +1,4 @@
+use super::register::{player_registered, register_opened};
 use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::region::Region;
 use crate::misc::QuoteStripper;
@@ -7,7 +8,6 @@ use mongodb::{
     Collection,
 };
 use poise::serenity_prelude::{self as serenity};
-use super::register::{register_opened, player_registered};
 use tracing::{info, instrument};
 
 /// Remove your registration from Discord Brawl Cup.
@@ -15,7 +15,7 @@ use tracing::{info, instrument};
 #[poise::command(slash_command, guild_only)]
 pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     info!("Attempted to deregister user {}", ctx.author().tag());
-    let player = match player_registered(&ctx, None).await?{
+    let player = match player_registered(&ctx, None).await? {
         None => {
             ctx.send(|s|{
                 s.reply(true)
@@ -29,7 +29,6 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         }
         Some(data) => data,
     };
-    
 
     let region = Region::find_key(player.get("region").unwrap().as_str().unwrap()).unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -82,7 +81,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
                 .regional_databases
                 .get(&region.unwrap())
                 .unwrap()
-                .collection("Player");
+                .collection("Players");
             player_data
                 .delete_one(doc! {"_id": player.get("_id")}, None)
                 .await?;

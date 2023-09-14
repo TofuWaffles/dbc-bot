@@ -30,7 +30,7 @@ pub async fn fill_mannequins(
     for region in Region::iter() {
         info!("Filling mannequins for {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let collection: Collection<Document> = database.collection("Player");
+        let collection: Collection<Document> = database.collection("Players");
         for _ in 0..quantity {
             collection
                 .insert_one(add_mannequin(&region, None, None), None)

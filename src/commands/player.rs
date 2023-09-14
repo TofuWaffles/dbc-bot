@@ -32,12 +32,24 @@ pub async fn player(
                             ))
                             .fields(vec![
                                 ("Trophies", player["trophies"].to_string(), true),
-                                ("Highest Trophies",player["highestTrophies"].to_string(),true),
+                                (
+                                    "Highest Trophies",
+                                    player["highestTrophies"].to_string(),
+                                    true,
+                                ),
                                 ("3v3 Victories", player["3vs3Victories"].to_string(), true),
                                 ("Solo Victories", player["soloVictories"].to_string(), true),
                                 ("Duo Victories", player["duoVictories"].to_string(), true),
-                                ("Best Robo Rumble Time",get_difficulty(&player["bestRoboRumbleTime"]),true),
-                                ("Club",player["club"]["name"].to_string().strip_quote(),true),
+                                (
+                                    "Best Robo Rumble Time",
+                                    get_difficulty(&player["bestRoboRumbleTime"]),
+                                    true,
+                                ),
+                                (
+                                    "Club",
+                                    player["club"]["name"].to_string().strip_quote(),
+                                    true,
+                                ),
                             ])
                             .timestamp(ctx.created_at())
                     })
