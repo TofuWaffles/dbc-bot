@@ -8,6 +8,7 @@ use crate::{
     Context, Error,
 };
 
+use futures::TryStreamExt;
 use mongodb::{
     bson::{doc, Document},
     Collection,
@@ -137,5 +138,36 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         })
     })
     .await?;
+    Ok(())
+}
+
+///View list of roles as manager of the tournament
+#[instrument]
+#[poise::command(slash_command, guild_only, rename = "view-managers")]
+pub async fn view_managers(ctx: Context<'_>) -> Result<(), Error>{
+    let guild_id = ctx.guild_id().unwrap().to_string();
+    let database = &ctx.data().database.general;
+    let mut list: Vec<String> = vec![];
+    let mut managers = database
+        .collection::<Document>("Managers")
+        .find(doc! {"guild_id": &guild_id}, None)
+        .await?;
+    while let Some(manager) = managers.try_next().await?{
+        let role_id = manager.get("role_id").unwrap().to_string().strip_quote();
+        list.push(role_id);
+    }
+    let role_msg = list
+        .iter()
+        .map(|role| format!("<@&{}>", role))
+        .collect::<Vec<String>>()
+        .join(", ");
+    ctx.send(|s|{
+        s.reply(true)
+        .ephemeral(true)
+        .embed(|e|{
+            e.title("**These following roles have permission to run manager-only commands: **")
+            .description(role_msg)
+        })
+    }).await?;
     Ok(())
 }

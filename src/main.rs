@@ -1,23 +1,25 @@
-mod bracket_tournament;
-mod commands;
-mod database_utils;
-mod misc;
+use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
+use strum::IntoEnumIterator;
 use mongodb::{
     bson::{Document, doc},
     options::{ClientOptions, ResolverConfig},
     Client, Collection, Database,
 };
-mod checks;
 use poise::{
     serenity_prelude::{self as serenity, GatewayIntents, UserId},
     Event, FrameworkError,
 };
-use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
-use strum::IntoEnumIterator;
-
-use crate::bracket_tournament::region::Region;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
+
+mod bracket_tournament;
+mod checks;
+mod commands;
+mod database_utils;
+mod misc;
+
+use crate::bracket_tournament::region::Region;
+
 
 #[derive(Debug)]
 struct Databases {
@@ -53,14 +55,16 @@ async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
     let commands = vec![
-        commands::ping::ping(),
-        // commands::player::player(),
         // commands::battle_log::latest_log(),
-        commands::register::register(),
-        commands::submit::submit(),
-        commands::deregister::deregister(),
-        commands::view_opponent::view_opponent(),
         commands::draco::draco(),
+        // commands::ping::ping(),
+        // commands::player::player(),
+        commands::register::register(),
+        commands::register::deregister(),
+        commands::submit::submit(),
+        commands::view::view_managers(),
+        commands::view::view_opponent(),
+
         commands::manager_only::db_handler::get_individual_player_data(),
         commands::manager_only::db_handler::get_all_players_data(),
         commands::manager_only::config::config(),
