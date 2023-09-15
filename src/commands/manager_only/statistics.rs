@@ -53,7 +53,7 @@ async fn get_region_stats(ctx: &Context<'_>) -> Result<Vec<RegionStats>, Error> 
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let count: i32 = match database
-            .collection::<i32>("Player")
+            .collection::<i32>("Players")
             .count_documents(doc! { "name": { "$ne": "Mannequin" } }, None)
             .await
         {
