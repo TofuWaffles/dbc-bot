@@ -7,7 +7,8 @@ use crate::{Context, Error};
 use futures::StreamExt;
 use mongodb::bson::Document;
 use mongodb::bson::{doc, Bson::Null};
-use poise::serenity_prelude::{self as serenity};
+use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::json::Value;
 use poise::ReplyHandle;
 use tracing::{error, info, instrument};
 
@@ -101,32 +102,7 @@ pub async fn register(
                                 })
                             }).await?;
 
-                        let data = doc! {
-                            "name": player["name"].to_string().strip_quote(),
-                            "tag": player["tag"].to_string().strip_quote(),
-                            "discord_id": ctx.author_member().await.unwrap().user.id.to_string(),
-                            "region": format!("{:?}", region),
-                            "match_id": Null,
-                            "battle": false
-                        };
-
-                        let collection =
-                            ctx.data().database.regional_databases[&region].collection("Players");
-
-                        match collection.insert_one(data, None).await {
-                            Ok(_) => {}
-                            Err(err) => match err.kind.as_ref() {
-                                mongodb::error::ErrorKind::Command(code) => {
-                                    error!("Command error: {:?}", code);
-                                }
-                                mongodb::error::ErrorKind::Write(code) => {
-                                    error!("Write error: {:?}", code);
-                                }
-                                _ => {
-                                    error!("Error: {:?}", err);
-                                }
-                            },
-                        };
+                        insert_player(&player, &ctx, region.clone()).await?;
                     }
                     "Cancel" => {
                         msg
@@ -320,4 +296,34 @@ async fn account_available(
     } else {
         Ok(true)
     }
+}
+
+async fn insert_player(player: &Value, ctx: &Context<'_>, region: Region) -> Result<(), Error> {
+    let data = doc! {
+        "name": player["name"].to_string().strip_quote(),
+        "tag": player["tag"].to_string().strip_quote(),
+        "discord_id": ctx.author_member().await.unwrap().user.id.to_string(),
+        "region": format!("{:?}", region),
+        "match_id": Null,
+        "battle": false
+    };
+
+    let collection =
+        ctx.data().database.regional_databases[&region].collection("Players");
+
+    match collection.insert_one(data, None).await {
+        Ok(_) => {}
+        Err(err) => match err.kind.as_ref() {
+            mongodb::error::ErrorKind::Command(code) => {
+                error!("Command error: {:?}", code);
+            }
+            mongodb::error::ErrorKind::Write(code) => {
+                error!("Write error: {:?}", code);
+            }
+            _ => {
+                error!("Error: {:?}", err);
+            }
+        },
+    };
+    Ok(())
 }
