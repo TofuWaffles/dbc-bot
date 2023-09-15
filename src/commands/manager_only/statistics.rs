@@ -32,7 +32,9 @@ pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
         .collect::<Vec<_>>();
 
     ctx.send(|s| {
-        s.reply(true).ephemeral(false).embed(|e| {
+        s.reply(true)
+        .ephemeral(false)
+        .embed(|e| {
             e.title("Region Proportion")
                 .description(
                     "The following statistics are collected from the registered participants.",
