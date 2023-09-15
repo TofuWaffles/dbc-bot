@@ -1,10 +1,11 @@
 use crate::{
     bracket_tournament::{config::get_config, region::Region},
+    database_utils::find_round::get_round,
     misc::QuoteStripper,
     Context,
 };
 use mongodb::{
-    bson::{doc, Bson, Document},
+    bson::{doc, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
@@ -78,19 +79,7 @@ pub async fn find_discord_id(
 
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let config = get_config(database).await;
-        let round = match config.get("round") {
-            Some(round) => {
-                if let Bson::Int32(0) = round {
-                    "Players".to_string()
-                } else {
-                    format!("Round {}", round.as_i32().unwrap())
-                }
-            }
-            None => {
-                error!("Error while getting round from config");
-                return None;
-            }
-        };
+        let round = get_round(&config).unwrap();
 
         let player_data: Collection<Document> = database.collection(round.as_str());
         match player_data

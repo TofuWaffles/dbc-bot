@@ -1,24 +1,31 @@
+use std::collections::HashMap;
+
 use crate::{
     bracket_tournament::config::set_config,
-    bracket_tournament::{region::{Mode, Region}, config::{get_config, update_round}},
-    checks::{user_is_manager, tournament_started},
+    bracket_tournament::{
+        config::{get_config, update_round},
+        region::{Mode, Region},
+    },
+    checks::{tournament_started, user_is_manager},
+    database_utils::find_round::get_round,
     misc::{CustomError, QuoteStripper},
     Context, Error,
 };
-use mongodb::{bson::doc, bson::Document, Collection, Database};
+use futures::StreamExt;
+use mongodb::{
+    bson::doc,
+    bson::{self, Document},
+    Collection, Database,
+};
 use poise::serenity_prelude::Role;
 use tracing::{info, instrument};
 /// Set config for the tournament
-#[poise::command(
-    slash_command, 
-    guild_only,
-    rename = "set-config",
-)]
+#[poise::command(slash_command, guild_only, rename = "set-config")]
 pub async fn config(
     ctx: Context<'_>,
-    region: Region,
-    mode: Mode,
-    map: Option<String>,
+    #[description = "Select region"] region: Region,
+    #[description = "Select game mode for the tournament"] mode: Mode,
+    #[description = "Set the map for that game mode"] map: Option<String>,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
         return Ok(());
@@ -70,7 +77,10 @@ pub async fn config(
 /// Set a role as a manager to access manager-only commands. Only the bot owner can run this.
 #[instrument]
 #[poise::command(slash_command, guild_only, owners_only, rename = "set-manager")]
-pub async fn set_manager(ctx: Context<'_>, role: Role) -> Result<(), Error> {
+pub async fn set_manager(
+    ctx: Context<'_>,
+    #[description = "Select a role to hold permission to monitor the tournament"] role: Role,
+) -> Result<(), Error> {
     info!("Setting manager for {}", role);
     let database = &ctx.data().database.general;
     let guild_id = ctx.guild_id().unwrap().to_string();
@@ -120,15 +130,20 @@ async fn role_exists(
         )
         .await
     {
-        Ok(Some(_)) => Ok(true),    
-        Ok(None) => Ok(false),       
+        Ok(Some(_)) => Ok(true),
+        Ok(None) => Ok(false),
         Err(err) => Err(err.into()),
     }
 }
 /////////////////////////////////////////////////////////////////
 /// Get the current round of the tournament
 #[poise::command(slash_command, guild_only)]
-pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> Result<(), Error> {
+pub async fn set_round(
+    ctx: Context<'_>,
+    #[description = "Select the region"] region: Region,
+    #[description = "(Optional) Set the round. By default, without this parameter, the round is increased by 1"]
+    round: Option<i32>,
+) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
     if !user_is_manager(ctx).await? {
@@ -144,7 +159,9 @@ pub async fn set_round(ctx: Context<'_>, region: Region, round: Option<i32>) -> 
         .await?;
         return Ok(());
     }
-
+    if !all_battles_occured(&ctx, database, &config).await? {
+        return Ok(());
+    }
     match database
         .collection::<Document>("Config")
         .update_one(config, update_round(round), None)
@@ -194,3 +211,94 @@ async fn sort_collection(database: &Database, config: &Document) -> Result<(), E
     Ok(())
 }
 
+async fn all_battles_occured(
+    ctx: &Context<'_>,
+    database: &Database,
+    config: &Document,
+) -> Result<bool, Error> {
+    let round = get_round(config).unwrap();
+    let collection = database.collection::<Document>(round.as_str());
+    let mut battles = collection
+        .find(
+            doc! {
+                "battle": false
+            },
+            None,
+        )
+        .await?;
+
+    if battles.next().await.is_none() {
+        return Ok(false);
+    }
+
+    let mut players: Vec<Document> = Vec::new();
+
+    while let Some(player) = battles.next().await {
+        match player {
+            Ok(p) => players.push(p),
+            Err(err) => {
+                eprintln!("Error reading document: {}", err);
+                // Handle the error as needed
+            }
+        }
+    }
+    let mut match_groups: HashMap<i32, Vec<&Document>> = HashMap::new();
+    for player in &players {
+        if let Some(match_id) = player.get("match_id").and_then(bson::Bson::as_i32) {
+            match_groups
+                .entry(match_id)
+                .or_insert(Vec::new())
+                .push(player);
+        }
+    }
+    let ongoing: Vec<(String, String, bool)> = match_groups
+        .values()
+        .map(|group| {
+            if group.len() == 2 {
+                let player1 = &group[0];
+                let player2 = &group[1];
+                let name1 = player1
+                    .get("discord_id")
+                    .and_then(bson::Bson::as_str)
+                    .unwrap_or("");
+                let name2 = player2
+                    .get("discord_id")
+                    .and_then(bson::Bson::as_str)
+                    .unwrap_or("");
+                (
+                    format!(
+                        "Match {}: <@{}> - <@{}>",
+                        player1
+                            .get("match_id")
+                            .and_then(bson::Bson::as_i32)
+                            .unwrap_or(0),
+                        name1,
+                        name2
+                    ),
+                    "".to_string(),
+                    false,
+                )
+            } else {
+                (
+                    format!("{} - {}", group[0], group[1]),
+                    "".to_string(),
+                    false,
+                )
+            }
+        })
+        .collect();
+
+    ctx.send(|s| {
+        s.reply(true).ephemeral(false).embed(|e| {
+            e.title("**Unable to start next round due to ongoing battles!**")
+                .description(format!(
+                    "There are {} matches left to be completed",
+                    players.len() / 2
+                ))
+                .fields(ongoing)
+        })
+    })
+    .await?;
+
+    Ok(false)
+}

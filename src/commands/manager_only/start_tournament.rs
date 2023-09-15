@@ -10,20 +10,17 @@ use mongodb::{
     options::AggregateOptions,
     Collection,
 };
+use poise::ReplyHandle;
 use strum::IntoEnumIterator;
 use tracing::{info, instrument};
 const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to start a tournament
 
 ///Run this command once registration closes to start the tournament.
 #[instrument]
-#[poise::command(
-    slash_command,
-    guild_only,
-    required_permissions = "MANAGE_MESSAGES | MANAGE_THREADS",
-    rename = "start-tournament"
-)]
+#[poise::command(slash_command, guild_only, rename = "start-tournament")]
 pub async fn start_tournament(
     ctx: Context<'_>,
+    #[description = "(Optional) Start the tournament for specific region. By default, tournaments are started for all."]
     region_option: Option<Region>,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
@@ -31,10 +28,16 @@ pub async fn start_tournament(
     }
 
     info!("Attempting to start the tournament...");
+    let msg = ctx
+        .send(|s| {
+            s.reply(true)
+                .ephemeral(true)
+                .content("Starting the tournament...")
+        })
+        .await?;
 
     let mut started_tournaments = Vec::<Region>::new();
     // Handling each region mathematical computations to preset brackets
-    ctx.say("Starting tournament...").await?;
     for region in Region::iter() {
         match region_option {
             Some(ref region_option) if region != *region_option => continue,
@@ -44,19 +47,19 @@ pub async fn start_tournament(
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
 
-        if !config_prerequisite(&ctx, database, &region).await?
-            || !make_rounds(&ctx, database, &region).await?
+        if !config_prerequisite(&ctx, &msg, database, &region).await?
+            || !make_rounds(&ctx, &msg, database, &region).await?
         {
             continue;
         }
 
-        prepare_round_1(&ctx, database, &region).await?;
+        prepare_round_1(&ctx, &msg, database, &region).await?;
         started_tournaments.push(region);
     }
 
     if started_tournaments.is_empty() {
         info!("No tournaments have been started");
-        ctx.send(|m| {
+        msg.edit(ctx, |m| {
             m.content("No tournaments have been started")
                 .ephemeral(true)
         })
@@ -77,6 +80,7 @@ pub async fn start_tournament(
 
 async fn config_prerequisite(
     ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
     database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
@@ -89,12 +93,14 @@ async fn config_prerequisite(
         }
         Ok(Some(config)) => config,
         Err(_) => {
-            ctx.say("Error occurred while finding config").await?;
+            msg.edit(*ctx, |s| s.content("Error occurred while finding config"))
+                .await?;
             return Ok(false);
         }
     };
     if tournament_started(database).await? {
-        ctx.say("Tournament is already started").await?;
+        msg.edit(*ctx, |s| s.content("Tournament is already started"))
+            .await?;
         return Ok(false);
     }
 
@@ -102,11 +108,11 @@ async fn config_prerequisite(
         match mode {
             Bson::String(_) => {}
             Bson::Null => {
-                ctx.send(|s| {
-                    s.reply(true).ephemeral(true).embed(|e| {
+                msg.edit(*ctx, |s| {
+                    s.embed(|e| {
                         e.title(format!("Mode has not been set for {}", region))
                             .description(
-                                "Please set the mode first at </config:1148650981555441897>",
+                                "Please set the mode first at </set-config:1152203582356070450>",
                             )
                     })
                 })
@@ -123,16 +129,19 @@ async fn config_prerequisite(
 
 async fn make_rounds(
     ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
     database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
     let collection: Collection<Document> = database.collection("Players");
     let count = collection.count_documents(None, None).await? as i32;
     if count < MINIMUM_PLAYERS {
-        ctx.say(format!(
-            "Not enough players to start a tournament at {}",
-            region
-        ))
+        msg.edit(*ctx, |s| {
+            s.content(format!(
+                "Not enough players to start a tournament at {}",
+                region
+            ))
+        })
         .await?;
         return Ok(false);
     }
@@ -142,11 +151,10 @@ async fn make_rounds(
         "Generating a bracket tournament with {} rounds and {} byes",
         rounds, byes
     );
-    ctx.channel_id()
-        .send_message(ctx, |m| {
-            m.content(format!("There are {} byes in region {}", byes, region))
-        })
-        .await?;
+    msg.edit(*ctx, |m| {
+        m.content(format!("There are {} byes in region {}", byes, region))
+    })
+    .await?;
     match byes {
         0 => {}
         _ => {
@@ -177,6 +185,7 @@ async fn make_rounds(
 
 async fn prepare_round_1(
     ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
     database: &Database,
     region: &Region,
 ) -> Result<(), Error> {
@@ -190,7 +199,9 @@ async fn prepare_round_1(
     players.aggregate(pipeline, Some(options)).await?;
 
     assign_match_id(region, database).await?;
-    ctx.say(format!("Complete set up the tournament for {}", region))
-        .await?;
+    msg.edit(*ctx, |s| {
+        s.content(format!("Complete set up the tournament for {}", region))
+    })
+    .await?;
     Ok(())
 }

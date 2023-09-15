@@ -18,7 +18,7 @@ pub fn add_mannequin(
     let mannequin = doc! {
       "name": "Mannequin",
       "tag": Null,
-      "discord_id:": discord_id,
+      "discord_id": discord_id,
       "region": format!("{:?}", *region),
       "match_id": match_id,
       "battle": false

@@ -26,7 +26,11 @@ pub async fn fill_mannequins(
     }
 
     info!("Filling databases with mannequins for testing...");
-    ctx.say("Filling databases with mannequins...").await?;
+    let msg = ctx.send(|s|
+        s.content("Filling databases with mannequins...")
+        .ephemeral(true)
+        .reply(true)
+    ).await?;
     for region in Region::iter() {
         info!("Filling mannequins for {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -36,15 +40,13 @@ pub async fn fill_mannequins(
                 .insert_one(add_mannequin(&region, None, None), None)
                 .await?;
         }
-        ctx.channel_id()
-            .send_message(ctx, |s| {
+        msg.edit(ctx, |s| {
                 s.content(format!("Added {} mannequins to {}", quantity, region))
             })
             .await?;
     }
     info!("Finished filling mannequins");
-    ctx.channel_id()
-        .send_message(ctx, |s| s.content("Complete!"))
+    msg.edit(ctx, |s| s.content("Complete!"))
         .await?;
     Ok(())
 }

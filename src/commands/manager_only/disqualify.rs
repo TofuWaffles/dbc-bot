@@ -12,7 +12,7 @@ use crate::{Context, Error};
 #[poise::command(slash_command, guild_only)]
 pub async fn disqualify(
     ctx: Context<'_>,
-    #[description = "The ID of the user to disqualify"] user_id: u64,
+    #[description = "Select the user to disqualify"] user_id: u64,
     region: Region,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {

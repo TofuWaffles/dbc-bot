@@ -1,7 +1,5 @@
-use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
-use strum::IntoEnumIterator;
 use mongodb::{
-    bson::{Document, doc},
+    bson::{doc, Document},
     options::{ClientOptions, ResolverConfig},
     Client, Collection, Database,
 };
@@ -9,6 +7,8 @@ use poise::{
     serenity_prelude::{self as serenity, GatewayIntents, UserId},
     Event, FrameworkError,
 };
+use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
+use strum::IntoEnumIterator;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
 
@@ -19,7 +19,6 @@ mod database_utils;
 mod misc;
 
 use crate::bracket_tournament::region::Region;
-
 
 #[derive(Debug)]
 struct Databases {
@@ -57,14 +56,12 @@ async fn run() -> Result<(), Error> {
     let commands = vec![
         // commands::battle_log::latest_log(),
         commands::draco::draco(),
-        // commands::ping::ping(),
         // commands::player::player(),
         commands::register::register(),
         commands::register::deregister(),
         commands::submit::submit(),
         commands::view::view_managers(),
         commands::view::view_opponent(),
-
         commands::manager_only::db_handler::get_individual_player_data(),
         commands::manager_only::db_handler::get_all_players_data(),
         commands::manager_only::settings::config(),
@@ -75,7 +72,6 @@ async fn run() -> Result<(), Error> {
         commands::manager_only::reset::reset(),
         commands::manager_only::fill_manequins::fill_mannequins(),
         commands::manager_only::disqualify::disqualify(),
-
     ];
 
     let token = std::env::var("DISCORD_TOKEN")
@@ -90,14 +86,10 @@ async fn run() -> Result<(), Error> {
         commands,
         event_handler: |_ctx, event, _framework, _data| {
             Box::pin(async move {
-                match event {
-                    Event::Ready { data_about_bot } => {
-                        let bot_name = data_about_bot.user.name.to_owned();
-                        info!("{username} is online", username = bot_name);
-                        println!("{} is online!", bot_name);
-                    }
-
-                    _ => (),
+                if let Event::Ready { data_about_bot } = event {
+                    let bot_name = data_about_bot.user.name.to_owned();
+                    info!("{username} is online", username = bot_name);
+                    println!("{} is online!", bot_name);
                 }
 
                 Ok(())
