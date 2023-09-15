@@ -216,7 +216,7 @@ async fn all_battles_occured(
     database: &Database,
     config: &Document,
 ) -> Result<bool, Error> {
-    let round = get_round(config).unwrap();
+    let round = get_round(config);
     let collection = database.collection::<Document>(round.as_str());
     let mut battles = collection
         .find(

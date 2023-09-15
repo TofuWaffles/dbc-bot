@@ -100,10 +100,4 @@ pub fn reset_config() -> Document {
     config
 }
 
-pub fn get_round_collection(config: &Document) -> String {
-    match config.get_i32("round") {
-        Ok(0) => "Player".to_string(),
-        Ok(round) => format!("Round {}", round),
-        Err(_) => "Player".to_string(),
-    }
-}
+

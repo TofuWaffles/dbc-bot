@@ -1,8 +1,10 @@
 use crate::bracket_tournament::{
     api, config::get_config, match_id::update_match_id, region, update_battle::update_battle,
 };
+use crate::database_utils::battle_happened::battle_happened;
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_enemy::{find_enemy, is_mannequin};
+use crate::database_utils::find_round::get_round;
 use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
@@ -17,13 +19,19 @@ use tracing::{info, instrument};
 #[poise::command(slash_command, guild_only, rename = "submit-result")]
 pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     info!("Checking user {}'s match result", ctx.author().tag());
-
+    let msg = ctx
+        .send(|s| {
+            s.ephemeral(true)
+                .reply(true)
+                .content("Checking your match result...")
+        })
+        .await?;
     //Check if the user is in the tournament
     let caller = match find_discord_id(&ctx, None, None).await {
         Some(caller) => caller,
         None => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
+            msg.edit(ctx, |s| {
+                s.embed(|e| {
                     e.title("Sorry, you are not in the tournament!")
                         .description("You have to be in a tournament to use this command!")
                 })
@@ -52,62 +60,21 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     let config = get_config(database).await;
     let mode = config.get("mode").unwrap().to_string().strip_quote();
     let map = config.get("map").unwrap().to_string().strip_quote();
-    let round = get_config(database)
-        .await
-        .get("round")
-        .unwrap()
-        .as_i32()
-        .unwrap();
     let current_round: Collection<Document> =
-        database.collection(format!("Round {}", round).as_str());
-    let caller = match current_round
-        .find_one(doc! {"tag": &caller_tag}, None)
-        .await
-    {
-        Ok(Some(player)) => {
-            if player.get("battle").unwrap().as_bool().unwrap() {
-                ctx.send(|s| {
-                    s.reply(true).ephemeral(true).embed(|e| {
-                        e.title("You have already submitted the result!")
-                            .description("Please wait for the next round to start!")
-                    })
-                })
-                .await?;
-                return Ok(());
-            } else {
-                player
-            }
-        }
-        Ok(None) => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
-                    e.title("You are not in this round!")
-                        .description("Oops! Better luck next time")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
-        Err(_) => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
-                    e.title("An error pops up!")
-                        .description("Please run this command later!")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
+        database.collection(get_round(&config).as_str());
+    let round = config.get("round").unwrap().as_i32().unwrap();
+    let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
+        Some(caller) => caller, // Battle did not happen yet
+        None => return Ok(()),  // Battle already happened
     };
-
     let enemy = find_enemy(&ctx, &region, &round, &match_id, &caller_tag)
         .await
         .unwrap();
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round.insert_one(update_match_id(caller), None).await?;
-        ctx.send(|s| {
-            s.reply(true).ephemeral(true).embed(|e| {
+        msg.edit(ctx, |s| {
+            s.embed(|e| {
                 e.title("Bye! See you next... round!").description(
                     "You have been automatically advanced to the next round due to bye!",
                 )
@@ -126,8 +93,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 .insert_one(update_match_id(winner.clone()), None)
                 .await?;
             update_battle(database, round, match_id).await?;
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
+            msg.edit(ctx, |s| {
+                s.embed(|e| {
                     e.title("Result is here!").description(format!(
                         "{}({}) has won this round! You are going to next round!",
                         winner.get("name").unwrap().to_string().strip_quote(),
@@ -136,7 +103,6 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                 })
             })
             .await?;
-            Ok(())
         }
         None => {
             ctx.send(|s| {
@@ -148,9 +114,9 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                     })
             })
             .await?;
-            Ok(())
         }
     }
+    Ok(())
 }
 
 async fn get_result(
@@ -178,7 +144,6 @@ async fn get_result(
             && (caller_tag == player1 || caller_tag == player2)
             && (enemy_tag == player1 || enemy_tag == player2)
         {
-            println!("Found the log");
             results.push(log["battle"]["result"].to_string().strip_quote());
         }
     }

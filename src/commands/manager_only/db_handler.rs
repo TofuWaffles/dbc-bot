@@ -76,9 +76,7 @@ pub async fn get_individual_player_data(
             })
     })
     .await?;
-
     info!("Successfully retrieved participant data");
-
     Ok(())
 }
 

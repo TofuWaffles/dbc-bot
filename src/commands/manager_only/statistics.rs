@@ -32,9 +32,7 @@ pub async fn region_proportion(ctx: Context<'_>) -> Result<(), Error> {
         .collect::<Vec<_>>();
 
     ctx.send(|s| {
-        s.reply(true)
-        .ephemeral(false)
-        .embed(|e| {
+        s.reply(true).ephemeral(false).embed(|e| {
             e.title("Region Proportion")
                 .description(
                     "The following statistics are collected from the registered participants.",
@@ -78,7 +76,7 @@ async fn get_region_stats(ctx: &Context<'_>) -> Result<Vec<RegionStats>, Error> 
     Ok(data)
 }
 
-fn calculate_percentages(data: &mut Vec<RegionStats>) {
+fn calculate_percentages(data: &mut [RegionStats]) {
     let total: i32 = data.iter().map(|x| x.count).sum();
     for region in data.iter_mut() {
         region.percentage = Some(region.count as f64 / total as f64 * 100.0);

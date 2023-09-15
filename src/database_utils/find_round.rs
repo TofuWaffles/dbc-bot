@@ -1,19 +1,15 @@
 use mongodb::bson::{Bson, Document};
-use tracing::error;
 
-pub fn get_round(config: &Document) -> Option<String> {
+pub fn get_round(config: &Document) -> String {
     let round = match config.get("round") {
         Some(round) => {
             if let Bson::Int32(0) = round {
-                Some("Players".to_string())
+                "Players".to_string()
             } else {
-                Some(format!("Round {}", round.as_i32().unwrap()))
+               format!("Round {}", round.as_i32().unwrap())
             }
         }
-        None => {
-            error!("Error while getting round from config");
-            None
-        }
+        _ => unreachable!("Round not found in config!")
     };
 
     round

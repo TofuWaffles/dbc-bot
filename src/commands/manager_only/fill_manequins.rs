@@ -26,11 +26,13 @@ pub async fn fill_mannequins(
     }
 
     info!("Filling databases with mannequins for testing...");
-    let msg = ctx.send(|s|
-        s.content("Filling databases with mannequins...")
-        .ephemeral(true)
-        .reply(true)
-    ).await?;
+    let msg = ctx
+        .send(|s| {
+            s.content("Filling databases with mannequins...")
+                .ephemeral(true)
+                .reply(true)
+        })
+        .await?;
     for region in Region::iter() {
         info!("Filling mannequins for {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -41,12 +43,11 @@ pub async fn fill_mannequins(
                 .await?;
         }
         msg.edit(ctx, |s| {
-                s.content(format!("Added {} mannequins to {}", quantity, region))
-            })
-            .await?;
+            s.content(format!("Added {} mannequins to {}", quantity, region))
+        })
+        .await?;
     }
     info!("Finished filling mannequins");
-    msg.edit(ctx, |s| s.content("Complete!"))
-        .await?;
+    msg.edit(ctx, |s| s.content("Complete!")).await?;
     Ok(())
 }

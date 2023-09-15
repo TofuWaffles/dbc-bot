@@ -308,8 +308,7 @@ async fn insert_player(player: &Value, ctx: &Context<'_>, region: Region) -> Res
         "battle": false
     };
 
-    let collection =
-        ctx.data().database.regional_databases[&region].collection("Players");
+    let collection = ctx.data().database.regional_databases[&region].collection("Players");
 
     match collection.insert_one(data, None).await {
         Ok(_) => {}

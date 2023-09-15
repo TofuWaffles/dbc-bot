@@ -79,7 +79,7 @@ pub async fn find_discord_id(
 
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let config = get_config(database).await;
-        let round = get_round(&config).unwrap();
+        let round = get_round(&config);
 
         let player_data: Collection<Document> = database.collection(round.as_str());
         match player_data

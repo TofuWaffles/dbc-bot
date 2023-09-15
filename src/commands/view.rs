@@ -1,8 +1,10 @@
 use crate::{
     bracket_tournament::{config::get_config, region},
     database_utils::{
+        battle_happened::battle_happened,
         find_discord_id::find_discord_id,
         find_enemy::{find_enemy, is_mannequin},
+        find_round::get_round,
     },
     misc::{get_mode_icon, QuoteStripper},
     Context, Error,
@@ -20,11 +22,18 @@ use tracing::{info, instrument};
 #[poise::command(slash_command, guild_only, rename = "view-opponent")]
 pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     info!("Getting opponent for user {}", ctx.author().tag());
+    let msg = ctx
+        .send(|s| {
+            s.ephemeral(true)
+                .reply(true)
+                .content("Getting your opponent...")
+        })
+        .await?;
     let caller = match find_discord_id(&ctx, None, None).await {
         Some(caller) => caller,
         None => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
+            msg.edit(ctx, |s| {
+                s.embed(|e| {
                     e.title("You are not in the tournament!")
                         .description("Sorry, you are not in the tournament to use this command!")
                 })
@@ -50,59 +59,23 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
-    let round = config.get("round").unwrap().as_i32().unwrap();
     let current_round: Collection<Document> =
-        database.collection(format!("Round {}", round).as_str());
-    let caller: Document = match current_round
-        .find_one(doc! {"tag": &caller_tag}, None)
-        .await
-    {
-        Ok(Some(player)) => {
-            if player.get("battle").unwrap().as_bool().unwrap() {
-                ctx.send(|s| {
-                    s.reply(true).ephemeral(true).embed(|e| {
-                        e.title("You have already submitted the result!")
-                            .description("Please wait until next round begins!")
-                    })
-                })
-                .await?;
-                return Ok(());
-            } else {
-                player
-            }
-        }
-        Ok(None) => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
-                    e.title("You are not in this round!")
-                        .description("Oops! Better luck next time")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
-        Err(_) => {
-            ctx.send(|s| {
-                s.reply(true).ephemeral(true).embed(|e| {
-                    e.title("An error pops up!")
-                        .description("Please run this command later!")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
+        database.collection(get_round(&config).as_str());
+    let round = config.get("round").unwrap().as_i32().unwrap();
+    let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
+        Some(caller) => caller, // Battle did not happen yet
+        None => return Ok(()),  // Battle already happened
     };
     let enemy = match find_enemy(&ctx, &region, &round, &match_id, &caller_tag).await {
         Some(enemy) => {
             if is_mannequin(&enemy) {
-                ctx.send(|s| {
-                    s.reply(true).ephemeral(true).embed(|e| {
-                        e.title("Congratulation! You are the bye player for this round!").description(
-                            "Please run </submit-result:1148650981555441894> to be in next round!",
-                        )
-            })
-        })
-        .await?;
+                msg.edit(ctx, |s|
+                    s.embed(|e| {
+                            e.title("Congratulations! You are the bye player for this round!")
+                                .description("Please run </submit-result:1148650981555441894> to be in the next round!")
+                        })
+                )
+                .await?;
                 return Ok(());
             } else {
                 enemy
@@ -111,8 +84,8 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         None => {
             ctx.send(|s| {
                 s.reply(true).ephemeral(true).embed(|e| {
-                    e.title("An error pops up!")
-                        .description("Please run this command later!")
+                    e.title("An error occurred!")
+                        .description("Please run this command later.")
                 })
             })
             .await?;
