@@ -1,5 +1,5 @@
 use mongodb::{
-    bson::{doc, Document},
+    bson::Document,
     options::{ClientOptions, ResolverConfig},
     Client, Collection, Database,
 };
