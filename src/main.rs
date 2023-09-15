@@ -67,14 +67,15 @@ async fn run() -> Result<(), Error> {
 
         commands::manager_only::db_handler::get_individual_player_data(),
         commands::manager_only::db_handler::get_all_players_data(),
-        commands::manager_only::config::config(),
+        commands::manager_only::settings::config(),
+        commands::manager_only::settings::set_manager(),
+        commands::manager_only::settings::set_round(),
         commands::manager_only::start_tournament::start_tournament(),
-        commands::manager_only::region_proportion::region_proportion(),
+        commands::manager_only::statistics::region_proportion(),
         commands::manager_only::reset::reset(),
         commands::manager_only::fill_manequins::fill_mannequins(),
-        commands::manager_only::set_round::set_round(),
         commands::manager_only::disqualify::disqualify(),
-        commands::manager_only::set_manager::set_manager(),
+
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

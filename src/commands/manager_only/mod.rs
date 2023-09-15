@@ -1,9 +1,7 @@
-pub mod config;
+pub mod settings;
 pub mod db_handler;
 pub mod disqualify;
 pub mod fill_manequins;
-pub mod region_proportion;
+pub mod statistics;
 pub mod reset;
-pub mod set_manager;
-pub mod set_round;
 pub mod start_tournament;

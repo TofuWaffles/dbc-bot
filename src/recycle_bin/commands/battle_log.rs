@@ -1,49 +1,205 @@
-// use crate::bracket_tournament::battle_log::BattleLog;
-// use crate::utils::mode::get_mode_icon;
-// use crate::{Context, Error};
-// use poise::serenity_prelude::Colour;
+use crate::bracket_tournament::api;
+use crate::misc::{get_color, get_mode_icon, QuoteStripper};
+use crate::{Context, Error};
+use poise::serenity_prelude::json::Value;
+use tracing::{error, info, instrument};
 
-// /// Get the player's profile
-// #[poise::command(slash_command, prefix_command)]
-// pub async fn latest_log(
-//   ctx: Context<'_>, 
-//   #[description = "Put your tag here (without #)" ] tag: String) 
-// -> Result<(), Error>{
-//   let log = BattleLog::new(&tag).await;
-//   let latest_log = log.get_latest_log();
-//   ctx.say(format!(
-//     "Time: {}
-//     Mode: {}
-//      Map: {}",&latest_log.battle_time,&latest_log.event.get(mode), &latest_log.event.map)).await?;
-
-//   // ctx.channel_id()
-//   //   .send_message(&ctx, |response|{
-//   //     response
-//   //       .allowed_mentions(|a| a.replied_user(true))
-//   //       .embed(|e|{
-//   //          e.title(String::from("Latest Battle Log"))
-//   //           .thumbnail(format!("{:#?}", get_mode_icon().get(&latest_log.event.mode)))
-//   //           .color(color(&latest_log.battle.result))
-//   //           .fields(vec![
-//   //             ("Mode: ",&latest_log.event.mode, true),
-//   //             ("Map: ", &latest_log.event.map, true),
-//   //             ("Type: ", &latest_log.battle.battle_type, true),
-//   //             ("Result: ", &latest_log.battle.result, true),
-//   //             ("Duration: ", &latest_log.battle.duration.to_string(), true),
-//   //             ("Trophy Change: ", &latest_log.battle.trophy_change.to_string(), true),
-//   //             ("Star Player: ", &latest_log.battle.star_player.name, true),
-//   //           ])
-//   //         .timestamp(ctx.created_at())
-//   //       })
-//   //   }).await?;
-//   Ok(())
-// }
-
-// fn color(result: &str) -> Colour {
-//   match result {
-//       "victory" => Colour::new(u32::from_str_radix("00800",16).unwrap()), // Green
-//       "defeat" => Colour::new(u32::from_str_radix("FF0000",16).unwrap()), // Red
-//       "draw" => Colour::new(u32::from_str_radix("FFFFFF",16).unwrap()), // White
-//       _ => Colour::new(000000),         // Default color (black) for unknown cases
-//   }
-// }
+/// Get the latest log of a player
+#[instrument]
+#[poise::command(slash_command, guild_only)]
+pub async fn latest_log(
+    ctx: Context<'_>,
+    #[description = "Put your tag here (without #)"] tag: String,
+) -> Result<(), Error> {
+    info!("Getting the battle log for {}", ctx.author().name);
+    let endpoint = api::get_api_link("battle_log", &tag.to_uppercase());
+    match api::request(&endpoint).await {
+        Ok(log) => {
+            info!("Successfully retrived player data from the API");
+            let player_endpoint = api::get_api_link("player", &tag.to_uppercase());
+            let player: Value = api::request(&player_endpoint).await.unwrap();
+            ctx.send(|s| {
+                s.content("".to_string()).reply(true).embed(|e| {
+                    e.author(|a| a.name(ctx.author().name.clone()))
+                        .title(format!(
+                            "{}'s most recent match: {}",
+                            player["name"].to_string().strip_quote(),
+                            log["items"][0]["battle"]["result"]
+                                .to_string()
+                                .strip_quote()
+                        ))
+                        .color(get_color(
+                            log["items"][0]["battle"]["result"]
+                                .to_string()
+                                .strip_quote(),
+                        ))
+                        .thumbnail(get_mode_icon(
+                            &log["items"][0]["event"]["mode"].as_str().unwrap(),
+                        ))
+                        .fields(vec![
+                            (
+                                "Battle Time",
+                                log["items"][0]["battleTime"].to_string(),
+                                false,
+                            ),
+                            (
+                                "Mode",
+                                log["items"][0]["event"]["mode"].to_string().strip_quote(),
+                                true,
+                            ),
+                            (
+                                "Map",
+                                log["items"][0]["event"]["map"].to_string().strip_quote(),
+                                true,
+                            ),
+                            (
+                                "Duration",
+                                format!(
+                                    "{}s",
+                                    log["items"][0]["battle"]["duration"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                "Game",
+                                log["items"][0]["battle"]["type"].to_string().strip_quote(),
+                                true,
+                            ),
+                            (
+                                "Trophy Change",
+                                log["items"][0]["battle"]["trophyChange"]
+                                    .to_string()
+                                    .strip_quote(),
+                                true,
+                            ),
+                            ("", "".to_string(), false),
+                            (
+                                "=============================================",
+                                "".to_string(),
+                                false,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][0][0]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][0][0]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][0]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][0][1]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][0][1]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][1]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][0][2]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][0][2]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][0][2]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            ("", "".to_string(), true),
+                            ("VS", "".to_string(), true),
+                            ("", "".to_string(), true),
+                            (
+                                log["items"][0]["battle"]["teams"][1][0]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][1][0]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][0]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][1][1]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][1][1]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][1]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                            (
+                                log["items"][0]["battle"]["teams"][1][2]["name"]
+                                    .to_string()
+                                    .strip_quote()
+                                    .as_str(),
+                                format!(
+                                    "{}\n{}",
+                                    log["items"][0]["battle"]["teams"][1][2]["brawler"]["name"]
+                                        .to_string()
+                                        .strip_quote(),
+                                    log["items"][0]["battle"]["teams"][1][2]["brawler"]["power"]
+                                        .to_string()
+                                        .strip_quote()
+                                ),
+                                true,
+                            ),
+                        ])
+                })
+            })
+            .await?;
+            info!("Successfully send the battle log to the user");
+        }
+        Err(err) => {
+            error!("Unable to retrive the battle log from the API");
+            ctx.send(|s| {
+                s.content("".to_string())
+                    .reply(true)
+                    .ephemeral(false)
+                    .embed(|e| {
+                        e.title(format!("Error: {:#?}", err)).description(format!(
+                            "No player is associated with {}",
+                            tag.to_uppercase()
+                        ))
+                    })
+            })
+            .await?;
+        }
+    }
+    Ok(())
+}

@@ -1,61 +1,78 @@
-// use crate::bracket_tournament::player::Player;
-// use crate::{Context, Error};
-// use crate::utils::api;
+use tracing::{error, info, instrument};
 
-// /// Get the player's profile
-// #[poise::command(slash_command, prefix_command)]
-// pub async fn player(
-//   ctx: Context<'_>, 
-//   #[description = "Put your tag here (without #)" ] tag: String) 
-// -> Result<(), Error>{
-//   match api::api_handlers::get_api_link("player", &tag){
-    
-//   }
+use crate::bracket_tournament::api;
+use crate::misc::{get_difficulty, QuoteStripper};
+use crate::{Context, Error};
 
+/// Get a player's in-game profile
+#[instrument]
+#[poise::command(slash_command, guild_only)]
+pub async fn player(
+    ctx: Context<'_>,
+    #[description = "Put your tag here (without #)"] tag: String,
+) -> Result<(), Error> {
+    let endpoint = api::get_api_link("player", &tag.to_uppercase());
+    info!("Getting player information from the API...");
+    match api::request(&endpoint).await {
+        Ok(player) => {
+            ctx.send(|s| {
+                s.content("".to_string())
+                    .reply(true)
+                    .ephemeral(false)
+                    .embed(|e| {
+                        e.author(|a| a.name(ctx.author().name.clone()))
+                            .title(format!(
+                                "**{} ({})**",
+                                &player["name"].to_string().strip_quote(),
+                                &player["tag"].to_string().strip_quote()
+                            ))
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile-low/{}.png",
+                                player["icon"]["id"]
+                            ))
+                            .fields(vec![
+                                ("Trophies", player["trophies"].to_string(), true),
+                                (
+                                    "Highest Trophies",
+                                    player["highestTrophies"].to_string(),
+                                    true,
+                                ),
+                                ("3v3 Victories", player["3vs3Victories"].to_string(), true),
+                                ("Solo Victories", player["soloVictories"].to_string(), true),
+                                ("Duo Victories", player["duoVictories"].to_string(), true),
+                                (
+                                    "Best Robo Rumble Time",
+                                    get_difficulty(&player["bestRoboRumbleTime"]),
+                                    true,
+                                ),
+                                (
+                                    "Club",
+                                    player["club"]["name"].to_string().strip_quote(),
+                                    true,
+                                ),
+                            ])
+                            .timestamp(ctx.created_at())
+                    })
+            })
+            .await?;
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-//   Ok(())
-// }
-// //   match Player::new(&tag).await{  
-// //     Ok(player) => {
-// //       ctx.channel_id()
-// //         .send_message(&ctx, |response|{
-// //           response
-// //             .allowed_mentions(|a| a.replied_user(true))
-// //             .embed(|e|{
-// //               e.title(format!("**{}({})**",player.name, player.tag))
-// //                 .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player.icon.id))
-// //                 .fields(vec![
-// //                   ("Trophies", &player.trophies.to_string(), true),
-// //                   ("Highest Trophies", &player.highest_trophies.to_string(), true),
-// //                   ("3v3 Victories",&player.victories_3v3.to_string(), true),
-// //                   ("Solo Victories", &player.solo_victories.to_string(), true),
-// //                   ("Duo Victories", &player.duo_victories.to_string(), true),
-// //                   ("Best Robo Rumble Time", &player.best_robo_rumble_time.to_string(), true),
-// //                   ("Club", &player.club.name.to_string(), true),
-// //               ])
-// //               .timestamp(ctx.created_at())
-// //             })
-// //       }).await;
-// //     },
-// //    Err(false) => {
-// //       ctx.say(format!("Player with tag {} not found", tag)).await?;
-// //   },
-// //   Err(_err) => {
-// //       ctx.say("Something went wrong").await?;
-// //   }
-// // }
-// //   Ok(())
-// // }
+        Err(e) => {
+            error!("Player profile lookup failed: {}", e);
+            ctx.send(|s| {
+                s.content("".to_string())
+                    .reply(true)
+                    .ephemeral(false)
+                    .embed(|e| {
+                        e.title("**We have tried very hard to find but...**")
+                            .description(format!(
+                                "No player is associated with the tag #{}",
+                                tag.to_uppercase()
+                            ))
+                    })
+            })
+            .await?;
+        }
+    }
+    Ok(())
+}
