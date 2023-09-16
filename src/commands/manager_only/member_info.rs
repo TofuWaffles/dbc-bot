@@ -20,11 +20,18 @@ pub async fn get_individual_player_data(
     #[description = "Check a player registration status by user ID here"] user: serenity::User,
 ) -> Result<(), Error> {
     info!("Getting participant data");
+    ctx.defer_ephemeral().await?;
+    let msg = ctx.send(|s|
+        s.content("Getting player info...")
+        .reply(true)
+    ).await?;
     let discord_id = user.id.to_string();
     let data = match find_discord_id(&ctx, Some(discord_id), None).await {
         Some(data) => data,
         None => {
-            ctx.say("User not found in database").await?;
+            msg.edit(ctx, |s|
+                s.content("User not found in database")
+            ).await?;
             return Ok(());
         }
     };
@@ -35,10 +42,8 @@ pub async fn get_individual_player_data(
     );
     let player: Value = api::request(&endpoint).await?;
 
-    ctx.send(|s| {
+    msg.edit(ctx,|s| {
         s.content("".to_string())
-            .reply(true)
-            .ephemeral(false)
             .embed(|e| {
                 e.author(|a| a.name(ctx.author().name.clone()))
                     .title(format!(
@@ -53,24 +58,12 @@ pub async fn get_individual_player_data(
                     .fields(vec![
                         ("**Region**", region.to_string(), true),
                         ("Trophies", player["trophies"].to_string(), true),
-                        (
-                            "Highest Trophies",
-                            player["highestTrophies"].to_string(),
-                            true,
-                        ),
+                        ("Highest Trophies", player["highestTrophies"].to_string(),true),
                         ("3v3 Victories", player["3vs3Victories"].to_string(), true),
                         ("Solo Victories", player["soloVictories"].to_string(), true),
                         ("Duo Victories", player["duoVictories"].to_string(), true),
-                        (
-                            "Best Robo Rumble Time",
-                            get_difficulty(&player["bestRoboRumbleTime"]),
-                            true,
-                        ),
-                        (
-                            "Club",
-                            player["club"]["name"].to_string().strip_quote(),
-                            true,
-                        ),
+                        ("Best Robo Rumble Time",get_difficulty(&player["bestRoboRumbleTime"]), true),
+                        ("Club", player["club"]["name"].to_string().strip_quote(), true),
                     ])
                     .timestamp(ctx.created_at())
             })

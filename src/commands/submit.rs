@@ -60,8 +60,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     let config = get_config(database).await;
     let mode = config.get("mode").unwrap().to_string().strip_quote();
     let map = config.get("map").unwrap().to_string().strip_quote();
-    let current_round: Collection<Document> =
-        database.collection(get_round(&config).as_str());
+    let current_round: Collection<Document> = database.collection(get_round(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
         Some(caller) => caller, // Battle did not happen yet
@@ -75,12 +74,10 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         next_round.insert_one(update_match_id(caller), None).await?;
         msg.edit(ctx, |s| {
             s.embed(|e| {
-                e.title("Bye! See you next... round!").description(
-                    "You have been automatically advanced to the next round due to bye!",
-                )
+                e.title("Bye! See you next... round!")
+                    .description("You have been automatically advanced to the next round due to bye!")
             })
-        })
-        .await?;
+        }).await?;
         update_battle(database, round, match_id).await?;
         return Ok(());
     }
@@ -101,8 +98,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                         winner.get("tag").unwrap().to_string().strip_quote()
                     ))
                 })
-            })
-            .await?;
+            }).await?;
         }
         None => {
             ctx.send(|s| {
@@ -112,8 +108,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                         e.title("There are not enough results yet!")
                             .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 minutes for a new battle to appear in the battlelog")
                     })
-            })
-            .await?;
+            }).await?;
         }
     }
     Ok(())

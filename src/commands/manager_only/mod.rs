@@ -1,4 +1,4 @@
-pub mod db_handler;
+pub mod member_info;
 pub mod disqualify;
 pub mod fill_manequins;
 pub mod reset;

@@ -1,9 +1,12 @@
+use poise::serenity_prelude::json::Value;
 use mongodb::{
     bson::{doc, Bson::Null, Document},
     Collection, Database,
 };
 
-use crate::bracket_tournament::region::Mode;
+use crate::{bracket_tournament::region::Mode, misc::QuoteStripper};
+
+use super::region::Region;
 
 pub fn make_config() -> Document {
     let config = doc! {
@@ -15,6 +18,19 @@ pub fn make_config() -> Document {
       "total": 0,
     };
     config
+}
+
+pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Document{
+    let player = doc! {
+        "name": player["name"].to_string().strip_quote(),
+        "tag": player["tag"].to_string().strip_quote(),
+        "icon": player["icon"]["id"].as_i64(),
+        "discord_id": discord_id,
+        "region": format!("{:?}", region),
+        "match_id": Null,
+        "battle": false
+    };
+    player
 }
 
 pub fn set_config(mode: &Mode, map: Option<&String>) -> Document {

@@ -17,7 +17,7 @@ use mongodb::{
     bson::{self, Document},
     Collection, Database,
 };
-use poise::serenity_prelude::Role;
+use poise::{serenity_prelude::Role, ReplyHandle};
 use tracing::{info, instrument};
 /// Set config for the tournament
 #[poise::command(slash_command, guild_only, rename = "set-config")]
@@ -144,6 +144,14 @@ pub async fn set_round(
     #[description = "(Optional) Set the round. By default, without this parameter, the round is increased by 1"]
     round: Option<i32>,
 ) -> Result<(), Error> {
+    ctx.defer_ephemeral().await?;
+    let msg = ctx
+        .send(|s| {
+            s.ephemeral(true)
+                .reply(true)
+                .content("Setting the round...")
+        })
+        .await?;
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
     if !user_is_manager(ctx).await? {
@@ -151,15 +159,12 @@ pub async fn set_round(
     }
 
     if !tournament_started(database).await? {
-        ctx.send(|s| {
-            s.ephemeral(true)
-            .reply(true)
-            .content("Unable to set the round for the current tournament: the tournament has not started yet!")
-        })
-        .await?;
+        msg.edit(ctx,|s| {
+            s.content("Unable to set the round for the current tournament: the tournament has not started yet!")
+        }).await?;
         return Ok(());
     }
-    if !all_battles_occured(&ctx, database, &config).await? {
+    if !all_battles_occured(&ctx, &msg, database, &config).await? {
         return Ok(());
     }
     match database
@@ -213,6 +218,7 @@ async fn sort_collection(database: &Database, config: &Document) -> Result<(), E
 
 async fn all_battles_occured(
     ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
     database: &Database,
     config: &Document,
 ) -> Result<bool, Error> {
@@ -227,7 +233,7 @@ async fn all_battles_occured(
         )
         .await?;
 
-    if battles.next().await.is_none() {
+    if Some(battles.current()).is_none(){
         return Ok(false);
     }
 
@@ -257,42 +263,52 @@ async fn all_battles_occured(
             if group.len() == 2 {
                 let player1 = &group[0];
                 let player2 = &group[1];
+                let dis1 = player1
+                    .get("discord_id")
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
                 let name1 = player1
+                    .get("name")
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
+                let tag1 = player1
+                    .get("tag")
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
+                let dis2 = player2
                     .get("discord_id")
-                    .and_then(bson::Bson::as_str)
-                    .unwrap_or("");
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
                 let name2 = player2
-                    .get("discord_id")
-                    .and_then(bson::Bson::as_str)
-                    .unwrap_or("");
+                    .get("name")
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
+                let tag2 = player2
+                    .get("tag")
+                    .unwrap()
+                    .to_string()
+                    .strip_quote();
                 (
-                    format!(
-                        "Match {}: <@{}> - <@{}>",
-                        player1
-                            .get("match_id")
-                            .and_then(bson::Bson::as_i32)
-                            .unwrap_or(0),
-                        name1,
-                        name2
-                    ),
-                    "".to_string(),
-                    false,
+                    format!("Match {}: <@{}> - <@{}>", player1.get("match_id").unwrap(),dis1, dis2),
+                    format!("{}({}) - {}({})", name1, tag1, name2, tag2),
+                    false
                 )
             } else {
-                (
-                    format!("{} - {}", group[0], group[1]),
-                    "".to_string(),
-                    false,
-                )
+                unreachable!("There should be 2 players in each match!")
             }
         })
         .collect();
 
-    ctx.send(|s| {
+    msg.edit(*ctx,|s| {
         s.reply(true).ephemeral(false).embed(|e| {
             e.title("**Unable to start next round due to ongoing battles!**")
                 .description(format!(
-                    "There are {} matches left to be completed",
+                    "There are {} matches left to be completed\nNote: <@> means Mannequin",
                     players.len() / 2
                 ))
                 .fields(ongoing)

@@ -1,4 +1,4 @@
-use crate::bracket_tournament::config::get_config;
+use crate::bracket_tournament::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_tag::find_tag;
@@ -6,7 +6,7 @@ use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use mongodb::bson::{doc, Bson::Null};
+use mongodb::bson::doc;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::json::Value;
 use poise::ReplyHandle;
@@ -299,17 +299,8 @@ async fn account_available(
 }
 
 async fn insert_player(player: &Value, ctx: &Context<'_>, region: Region) -> Result<(), Error> {
-    let data = doc! {
-        "name": player["name"].to_string().strip_quote(),
-        "tag": player["tag"].to_string().strip_quote(),
-        "discord_id": ctx.author_member().await.unwrap().user.id.to_string(),
-        "region": format!("{:?}", region),
-        "match_id": Null,
-        "battle": false
-    };
-
+    let data = make_player_doc(player,  &ctx.author_member().await.unwrap().user.id.to_string(), &region);
     let collection = ctx.data().database.regional_databases[&region].collection("Players");
-
     match collection.insert_one(data, None).await {
         Ok(_) => {}
         Err(err) => match err.kind.as_ref() {
