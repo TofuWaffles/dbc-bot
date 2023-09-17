@@ -233,7 +233,7 @@ async fn all_battles_occured(
         )
         .await?;
 
-    if Some(battles.current()).is_none(){
+    if Some(battles.current()).is_none() {
         return Ok(false);
     }
 
@@ -263,40 +263,21 @@ async fn all_battles_occured(
             if group.len() == 2 {
                 let player1 = &group[0];
                 let player2 = &group[1];
-                let dis1 = player1
-                    .get("discord_id")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
-                let name1 = player1
-                    .get("name")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
-                let tag1 = player1
-                    .get("tag")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
-                let dis2 = player2
-                    .get("discord_id")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
-                let name2 = player2
-                    .get("name")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
-                let tag2 = player2
-                    .get("tag")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote();
+                let dis1 = player1.get("discord_id").unwrap().to_string().strip_quote();
+                let name1 = player1.get("name").unwrap().to_string().strip_quote();
+                let tag1 = player1.get("tag").unwrap().to_string().strip_quote();
+                let dis2 = player2.get("discord_id").unwrap().to_string().strip_quote();
+                let name2 = player2.get("name").unwrap().to_string().strip_quote();
+                let tag2 = player2.get("tag").unwrap().to_string().strip_quote();
                 (
-                    format!("Match {}: <@{}> - <@{}>", player1.get("match_id").unwrap(),dis1, dis2),
+                    format!(
+                        "Match {}: <@{}> - <@{}>",
+                        player1.get("match_id").unwrap(),
+                        dis1,
+                        dis2
+                    ),
                     format!("{}({}) - {}({})", name1, tag1, name2, tag2),
-                    false
+                    false,
                 )
             } else {
                 unreachable!("There should be 2 players in each match!")
@@ -304,7 +285,7 @@ async fn all_battles_occured(
         })
         .collect();
 
-    msg.edit(*ctx,|s| {
+    msg.edit(*ctx, |s| {
         s.reply(true).ephemeral(false).embed(|e| {
             e.title("**Unable to start next round due to ongoing battles!**")
                 .description(format!(

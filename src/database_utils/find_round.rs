@@ -6,10 +6,10 @@ pub fn get_round(config: &Document) -> String {
             if let Bson::Int32(0) = round {
                 "Players".to_string()
             } else {
-               format!("Round {}", round.as_i32().unwrap())
+                format!("Round {}", round.as_i32().unwrap())
             }
         }
-        _ => unreachable!("Round not found in config!")
+        _ => unreachable!("Round not found in config!"),
     };
 
     round

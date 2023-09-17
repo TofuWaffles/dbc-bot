@@ -47,7 +47,9 @@ pub async fn start_tournament(
         info!("Starting tournament for region {}", region);
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
 
-        if !config_prerequisite(&ctx, &msg, database, &region).await? || !make_rounds(&ctx, &msg, database, &region).await?{
+        if !config_prerequisite(&ctx, &msg, database, &region).await?
+            || !make_rounds(&ctx, &msg, database, &region).await?
+        {
             continue;
         }
 
@@ -64,7 +66,7 @@ pub async fn start_tournament(
         .await?;
     } else {
         info!("Tournament(s) successfully started!");
-        msg.edit(ctx,|m| {
+        msg.edit(ctx, |m| {
             m.content(format!(
                 "Tournament started for regions: {:#?}",
                 started_tournaments

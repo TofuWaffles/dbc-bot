@@ -74,10 +74,12 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         next_round.insert_one(update_match_id(caller), None).await?;
         msg.edit(ctx, |s| {
             s.embed(|e| {
-                e.title("Bye! See you next... round!")
-                    .description("You have been automatically advanced to the next round due to bye!")
+                e.title("Bye! See you next... round!").description(
+                    "You have been automatically advanced to the next round due to bye!",
+                )
             })
-        }).await?;
+        })
+        .await?;
         update_battle(database, round, match_id).await?;
         return Ok(());
     }
@@ -98,7 +100,8 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                         winner.get("tag").unwrap().to_string().strip_quote()
                     ))
                 })
-            }).await?;
+            })
+            .await?;
         }
         None => {
             ctx.send(|s| {
@@ -122,8 +125,7 @@ async fn get_result(
 ) -> Option<Document> {
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
     let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();
-    let endpoint = api::get_api_link("battle_log", &caller_tag);
-    let raw_logs = api::request(&endpoint).await.unwrap();
+    let raw_logs = api::request("battle_log", &caller_tag).await.unwrap();
     let logs: &Vec<Value> = raw_logs["items"].as_array().unwrap();
     let mut results: Vec<String> = vec![];
 

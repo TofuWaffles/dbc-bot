@@ -17,6 +17,7 @@ mod checks;
 mod commands;
 mod database_utils;
 mod misc;
+mod visual;
 
 use crate::bracket_tournament::region::Region;
 

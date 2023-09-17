@@ -5,8 +5,8 @@ use crate::database_utils::find_tag::find_tag;
 use crate::misc::{get_difficulty, QuoteStripper};
 use crate::{Context, Error};
 use futures::StreamExt;
-use mongodb::bson::Document;
 use mongodb::bson::doc;
+use mongodb::bson::Document;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::json::Value;
 use poise::ReplyHandle;
@@ -42,9 +42,7 @@ pub async fn register(
         }).await?;
     }
 
-    let endpoint = api::get_api_link("player", &tag.to_uppercase());
-
-    match api::request(&endpoint).await {
+    match api::request("player", &tag).await {
         Ok(player) => {
             // let embed = player_embed(&player, &ctx, &region);
             msg.edit(ctx,|s| {
@@ -299,7 +297,11 @@ async fn account_available(
 }
 
 async fn insert_player(player: &Value, ctx: &Context<'_>, region: Region) -> Result<(), Error> {
-    let data = make_player_doc(player,  &ctx.author_member().await.unwrap().user.id.to_string(), &region);
+    let data = make_player_doc(
+        player,
+        &ctx.author_member().await.unwrap().user.id.to_string(),
+        &region,
+    );
     let collection = ctx.data().database.regional_databases[&region].collection("Players");
     match collection.insert_one(data, None).await {
         Ok(_) => {}

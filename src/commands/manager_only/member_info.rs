@@ -21,52 +21,57 @@ pub async fn get_individual_player_data(
 ) -> Result<(), Error> {
     info!("Getting participant data");
     ctx.defer_ephemeral().await?;
-    let msg = ctx.send(|s|
-        s.content("Getting player info...")
-        .reply(true)
-    ).await?;
+    let msg = ctx
+        .send(|s| s.content("Getting player info...").reply(true))
+        .await?;
     let discord_id = user.id.to_string();
     let data = match find_discord_id(&ctx, Some(discord_id), None).await {
         Some(data) => data,
         None => {
-            msg.edit(ctx, |s|
-                s.content("User not found in database")
-            ).await?;
+            msg.edit(ctx, |s| s.content("User not found in database"))
+                .await?;
             return Ok(());
         }
     };
     let region = data.get("region").unwrap().to_string().strip_quote();
-    let endpoint = api::get_api_link(
-        "player",
-        data.get("tag").unwrap().to_string().strip_quote().as_str(),
-    );
-    let player: Value = api::request(&endpoint).await?;
+    let player: Value = api::request("player", data.get("tag").unwrap().as_str().unwrap()).await?;
 
-    msg.edit(ctx,|s| {
-        s.content("".to_string())
-            .embed(|e| {
-                e.author(|a| a.name(ctx.author().name.clone()))
-                    .title(format!(
-                        "**{} ({})**",
-                        &player["name"].to_string().strip_quote(),
-                        &player["tag"].to_string().strip_quote()
-                    ))
-                    .thumbnail(format!(
-                        "https://cdn-old.brawlify.com/profile-low/{}.png",
-                        player["icon"]["id"]
-                    ))
-                    .fields(vec![
-                        ("**Region**", region.to_string(), true),
-                        ("Trophies", player["trophies"].to_string(), true),
-                        ("Highest Trophies", player["highestTrophies"].to_string(),true),
-                        ("3v3 Victories", player["3vs3Victories"].to_string(), true),
-                        ("Solo Victories", player["soloVictories"].to_string(), true),
-                        ("Duo Victories", player["duoVictories"].to_string(), true),
-                        ("Best Robo Rumble Time",get_difficulty(&player["bestRoboRumbleTime"]), true),
-                        ("Club", player["club"]["name"].to_string().strip_quote(), true),
-                    ])
-                    .timestamp(ctx.created_at())
-            })
+    msg.edit(ctx, |s| {
+        s.content("".to_string()).embed(|e| {
+            e.author(|a| a.name(ctx.author().name.clone()))
+                .title(format!(
+                    "**{} ({})**",
+                    &player["name"].to_string().strip_quote(),
+                    &player["tag"].to_string().strip_quote()
+                ))
+                .thumbnail(format!(
+                    "https://cdn-old.brawlify.com/profile-low/{}.png",
+                    player["icon"]["id"]
+                ))
+                .fields(vec![
+                    ("**Region**", region.to_string(), true),
+                    ("Trophies", player["trophies"].to_string(), true),
+                    (
+                        "Highest Trophies",
+                        player["highestTrophies"].to_string(),
+                        true,
+                    ),
+                    ("3v3 Victories", player["3vs3Victories"].to_string(), true),
+                    ("Solo Victories", player["soloVictories"].to_string(), true),
+                    ("Duo Victories", player["duoVictories"].to_string(), true),
+                    (
+                        "Best Robo Rumble Time",
+                        get_difficulty(&player["bestRoboRumbleTime"]),
+                        true,
+                    ),
+                    (
+                        "Club",
+                        player["club"]["name"].to_string().strip_quote(),
+                        true,
+                    ),
+                ])
+                .timestamp(ctx.created_at())
+        })
     })
     .await?;
     info!("Successfully retrieved participant data");

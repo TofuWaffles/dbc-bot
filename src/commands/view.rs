@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use crate::{
     bracket_tournament::{config::get_config, region},
     database_utils::{
@@ -6,7 +8,8 @@ use crate::{
         find_enemy::{find_enemy, is_mannequin},
         find_round::get_round,
     },
-    misc::{get_mode_icon, QuoteStripper},
+    misc::QuoteStripper,
+    visual::pre_battle::generate_pre_battle_img,
     Context, Error,
 };
 
@@ -15,6 +18,7 @@ use mongodb::{
     bson::{doc, Document},
     Collection,
 };
+use poise::serenity_prelude as serenity;
 use tracing::{info, instrument};
 
 /// View your opponent
@@ -59,8 +63,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     //Check if the user has already submitted the result or not yet disqualified
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
-    let current_round: Collection<Document> =
-        database.collection(get_round(&config).as_str());
+    let current_round: Collection<Document> = database.collection(get_round(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
         Some(caller) => caller, // Battle did not happen yet
@@ -93,22 +96,23 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         }
     };
 
-    let enemy_tag = enemy.get("tag").unwrap().to_string().strip_quote();
-
-    // let player1 = request(get_api_link("player", &caller_tag).as_str()).await?;
-    // let player2 = request(get_api_link("player", &enemy_tag).as_str()).await?;
-
+    let image = generate_pre_battle_img(caller, enemy, &config)
+        .await
+        .unwrap();
+    let mut bytes: Vec<u8> = Vec::new();
+    image.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
+    let attachment = serenity::model::channel::AttachmentType::Bytes {
+        data: bytes.into(),
+        filename: "pre_battle.png".to_string(),
+    };
     ctx.send(|s| {
-        s.reply(true).ephemeral(true).embed(|e| {
-            e.title("**DISCORD BRAWL CUP TOURNAMENT**")
-                .description(format!("Round {} - Match {}", round, match_id))
-                .thumbnail(get_mode_icon(config.get("mode").unwrap().as_str().unwrap()))
-                .fields(vec![
-                    (caller.get("name").unwrap().to_string(), caller_tag, true),
-                    ("".to_string(), "**VS**".to_string(), true),
-                    (enemy.get("name").unwrap().to_string(), enemy_tag, true),
-                ])
-        })
+        s.reply(true)
+            .ephemeral(true)
+            .embed(|e| {
+                e.title("**DISCORD BRAWL CUP TOURNAMENT**")
+                    .description(format!("Round {} - Match {}", round, match_id))
+            })
+            .attachment(attachment)
     })
     .await?;
     Ok(())

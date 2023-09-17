@@ -25,76 +25,72 @@ use tracing::error;
 /// let battle_log_link = get_api_link("battle_log", battle_log_tag);
 /// assert_eq!(battle_log_link, "https://bsproxy.royaleapi.dev/v1/players/%23XYZ789/battlelog");
 /// ```
-pub fn get_api_link(option: &str, tag: &str) -> String {
+
+fn get_player(player_tag: &str) -> String {
+    format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", player_tag)
+}
+
+fn get_battle_log(player_tag: &str) -> String {
+    format!(
+        "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
+        player_tag
+    )
+}
+
+/// Makes an asynchronous HTTP request to the Brawl Stars API.
+///
+/// This function sends a request to a specified API endpoint based on the provided
+/// `option` and `tag` parameters. It includes an authorization header with a Bearer token
+/// retrieved from the `BRAWL_STARS_TOKEN` environment variable.
+///
+/// # Arguments
+///
+/// * `option` - A string indicating the API endpoint option, such as "player" or "battle_log".
+/// * `tag` - A string representing a tag or identifier used in the API request.
+///
+/// # Returns
+///
+/// * `Result<Value, Box<dyn std::error::Error + Send + Sync>>` - A result containing the JSON
+///   response data if the request is successful, or an error if the request fails.
+///
+/// # Errors
+///
+/// This function can return the following errors:
+///
+/// * `Box<dyn std::error::Error + Send + Sync>` - A generic error type for any errors that occur.
+/// * `CustomError` - An error indicating that the API response was unsuccessful.
+///
+/// # Panics
+///
+/// This function will panic if the `BRAWL_STARS_TOKEN` environment variable is not found.
+///
+/// # Examples
+///
+/// ```rust
+/// use serde_json::Value;
+/// use your_module::request;
+///
+/// async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+///     let response = request("player", "#example_tag").await?;
+///     // Process the JSON response data here
+///     Ok(())
+/// }
+/// ```
+
+pub async fn request(
+    option: &str,
+    tag: &str,
+) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
     let proper_tag = match tag.starts_with('#') {
         true => &tag[1..],
         false => tag,
     };
+    let endpoint = match option {
+        "player" => get_player(proper_tag),
+        "battle_log" => get_battle_log(proper_tag),
+        _ => unreachable!("Invalid option"),
+    };
 
-    match option {
-        "player" => format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", proper_tag),
-        "battle_log" => format!(
-            "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
-            proper_tag
-        ),
-        "club" => format!(
-            "https://bsproxy.royaleapi.dev/v1/clubs/%23{}/members",
-            proper_tag
-        ),
-        _ => panic!("Unknown option"),
-    }
-}
-
-/// Makes an asynchronous HTTP GET request to the specified endpoint with authentication.
-///
-/// This function takes an `endpoint` parameter, which is a string representing the URL
-/// to which the HTTP GET request will be sent. It also expects the `BRAWL_STARS_TOKEN`
-/// environment variable to be set, as it uses this token for authentication in the
-/// request headers.
-///
-/// # Arguments
-///
-/// * `endpoint` - A string containing the URL to the API endpoint.
-///
-/// # Returns
-///
-/// A `Result` with the following possible outcomes:
-///
-/// - `Ok(serde_json::Value)` if the HTTP request is successful and the response
-///    can be parsed as JSON.
-/// - `Err(Box<dyn std::error::Error + Send + Sync>)` if there is an error in making
-///    the request or parsing the response, or if the response status code indicates
-///    failure.
-///
-/// # Errors
-///
-/// If the HTTP request returns a non-successful status code, an error message will
-/// be printed to the standard error stream, and an `Err` variant will be returned
-/// with a `CustomError` containing a descriptive message.
-///
-/// # Example
-///
-/// ```
-/// use your_crate_name::request;
-///
-/// #[tokio::main]
-/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let endpoint = "https://example.com/api/data";
-///     match request(endpoint).await {
-///         Ok(data) => {
-///             // Process the JSON data
-///             println!("Received data: {:?}", data);
-///         }
-///         Err(err) => {
-///             // Handle the error
-///             error!("Error: {}", err);
-///         }
-///     }
-///
-///     Ok(())
-/// }
-/// ```
-pub async fn request(endpoint: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
     let token = std::env::var("BRAWL_STARS_TOKEN").expect("Brawl Stars API token not found.");
     let response = reqwest::Client::new()
         .get(endpoint)

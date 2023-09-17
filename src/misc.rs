@@ -1,3 +1,4 @@
+use mongodb::bson::Bson;
 use poise::serenity_prelude::Colour;
 use std::error::Error;
 use std::fmt;
@@ -100,9 +101,9 @@ pub fn get_difficulty(num: &serde_json::Value) -> String {
 ///     None => println!("Event name {} not found.", event_name),
 /// }
 /// ```
-pub fn get_mode_icon(event_name: &str) -> &str {
+pub fn get_mode_icon(event_name: String) -> String {
     // Match the event_name to known event names and return the corresponding URL as Some(&str)
-    match event_name {
+    let event = match event_name.as_str() {
         "brawlBall" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
         "bounty" => "https://cdn.brawlstats.com/event-icons/event_mode_bounty.png",
         "gemGrab" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
@@ -117,6 +118,19 @@ pub fn get_mode_icon(event_name: &str) -> &str {
         _ => {
             "https://cdn.discordapp.com/emojis/1133867752155779173.webp?size=4096&quality=lossless"
         }
+    };
+    event.to_string()
+}
+
+pub fn get_player_icon_url(icon_id: String) -> String {
+    format!("https://cdn-old.brawlify.com/profile-low/{}.png", icon_id)
+}
+
+pub fn get_icon(icon: &str) -> Box<dyn Fn(String) -> String> {
+    match icon {
+        "player" => Box::new(get_player_icon_url),
+        "mode" => Box::new(get_mode_icon),
+        _ => unreachable!("Invalid icon type"),
     }
 }
 
@@ -197,3 +211,29 @@ impl fmt::Display for CustomError {
 }
 
 impl Error for CustomError {}
+
+trait BsonExtensions {
+    fn as_u32(&self) -> Option<u32>;
+}
+
+impl BsonExtensions for Bson {
+    fn as_u32(&self) -> Option<u32> {
+        match self {
+            Bson::Int32(value) => {
+                if *value >= 0 {
+                    Some(*value as u32)
+                } else {
+                    None
+                }
+            }
+            Bson::Int64(value) => {
+                if *value >= 0 && *value <= u32::MAX as i64 {
+                    Some(*value as u32)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+}
