@@ -41,34 +41,22 @@ pub async fn get_individual_player_data(
             e.author(|a| a.name(ctx.author().name.clone()))
                 .title(format!(
                     "**{} ({})**",
-                    &player["name"].to_string().strip_quote(),
-                    &player["tag"].to_string().strip_quote()
+                    &player["name"].as_str().unwrap(),
+                    &player["tag"].as_str().unwrap()
                 ))
                 .thumbnail(format!(
                     "https://cdn-old.brawlify.com/profile-low/{}.png",
                     player["icon"]["id"]
                 ))
                 .fields(vec![
-                    ("**Region**", region.to_string(), true),
-                    ("Trophies", player["trophies"].to_string(), true),
-                    (
-                        "Highest Trophies",
-                        player["highestTrophies"].to_string(),
-                        true,
-                    ),
-                    ("3v3 Victories", player["3vs3Victories"].to_string(), true),
-                    ("Solo Victories", player["soloVictories"].to_string(), true),
-                    ("Duo Victories", player["duoVictories"].to_string(), true),
-                    (
-                        "Best Robo Rumble Time",
-                        get_difficulty(&player["bestRoboRumbleTime"]),
-                        true,
-                    ),
-                    (
-                        "Club",
-                        player["club"]["name"].to_string().strip_quote(),
-                        true,
-                    ),
+                    ("**Region**", region.to_string().as_str(), true),
+                    ("Trophies", player["trophies"].to_string().as_str(), true),
+                    ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
+                    ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
+                    ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
+                    ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
+                    ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]), true),
+                    ("Club", player["club"]["name"].as_str().unwrap(), true),
                 ])
                 .timestamp(ctx.created_at())
         })

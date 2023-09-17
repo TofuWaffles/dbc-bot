@@ -4,7 +4,7 @@ use mongodb::{
 };
 use poise::serenity_prelude::json::Value;
 
-use crate::{bracket_tournament::region::Mode, misc::QuoteStripper};
+use crate::bracket_tournament::region::Mode;
 
 use super::region::Region;
 
@@ -22,9 +22,9 @@ pub fn make_config() -> Document {
 
 pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Document {
     let player = doc! {
-        "name": player["name"].to_string().strip_quote(),
-        "name_color": player["nameColor"].as_i64(),
-        "tag": player["tag"].to_string().strip_quote(),
+        "name": player["name"].as_str(),
+        "name_color": player["nameColor"].as_str(),
+        "tag": player["tag"].as_str(),
         "icon": player["icon"]["id"].as_i64(),
         "discord_id": discord_id,
         "region": format!("{:?}", region),
@@ -44,8 +44,8 @@ pub fn set_config(mode: &Mode, map: Option<&String>) -> Document {
     config
 }
 
-pub async fn get_config(db: &Database) -> Document {
-    let collection: Collection<Document> = db.collection("Config");
+pub async fn get_config(database: &Database) -> Document {
+    let collection: Collection<Document> = database.collection("Config");
     collection.find_one(None, None).await.unwrap().unwrap()
 }
 

@@ -2,7 +2,6 @@ use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
-use mongodb::Database;
 use tracing::{info, instrument};
 
 /// Check if a tournament has started.
@@ -57,13 +56,7 @@ use tracing::{info, instrument};
 /// named "tournament_started" to indicate the status of the tournament.
 ///
 /// Ensure that your database connection is properly established before calling this function.
-pub async fn tournament_started(database: &Database) -> Result<bool, Error> {
-    let config = database
-        .collection::<Document>("Config")
-        .find_one(None, None)
-        .await?
-        .unwrap();
-
+pub async fn tournament_started(config: &Document) -> Result<bool, Error> {
     let tournament_started = config.get_bool("tournament_started")?;
 
     Ok(tournament_started)

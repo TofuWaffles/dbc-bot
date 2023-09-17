@@ -1,6 +1,7 @@
 use crate::bracket_tournament::{
     api, config::get_config, match_id::update_match_id, region, update_battle::update_battle,
 };
+use crate::checks::tournament_started;
 use crate::database_utils::battle_happened::battle_happened;
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_enemy::{find_enemy, is_mannequin};
@@ -40,11 +41,6 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
-
-    info!("Getting player document from Discord ID");
-    //Get player document via their discord_id
-    let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
-    let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
     let region = region::Region::find_key(
         caller
             .get("region")
@@ -55,9 +51,24 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     )
     .unwrap();
 
-    //Check if the user has already submitted the result or not yet disqualified
+    
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
+    if !tournament_started(&config).await?{
+        msg.edit(ctx,|s|
+            s.embed(|e|
+                e.title("Tournament has not started yet!")
+                    .description("Please wait for the tournament to start before using this command!")
+        )).await?;
+        return Ok(());
+    }
+
+    info!("Getting player document from Discord ID");
+    //Get player document via their discord_id
+    let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
+    let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
+    //Check if the user has already submitted the result or not yet disqualified
+    
     let mode = config.get("mode").unwrap().to_string().strip_quote();
     let map = config.get("map").unwrap().to_string().strip_quote();
     let current_round: Collection<Document> = database.collection(get_round(&config).as_str());

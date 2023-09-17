@@ -40,6 +40,7 @@ pub async fn register(
                 .description("You have already registered for the tournament! If you want to deregister, please use the </deregister:1146092020843155496> command!")
             })
         }).await?;
+        return Ok(());
     }
 
     match api::request("player", &tag).await {
@@ -64,18 +65,18 @@ pub async fn register(
                     .ephemeral(true)
                     .embed(|e| {
                         e.author(|a| a.name(ctx.author().name.clone()))
-                        .title(format!("**{} ({})**", player["name"].to_string().strip_quote(), player["tag"].to_string().strip_quote()))
+                        .title(format!("**{} ({})**", player["name"].as_str().unwrap(), player["tag"].as_str().unwrap()))
                         .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
                         .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
                         .fields(vec![
-                            ("**Region**", region.to_string(), true),
-                            ("Trophies", player["trophies"].to_string(), true),
-                            ("Highest Trophies", player["highestTrophies"].to_string(), true),
-                            ("3v3 Victories", player["3vs3Victories"].to_string(), true),
-                            ("Solo Victories", player["soloVictories"].to_string(), true),
-                            ("Duo Victories", player["duoVictories"].to_string(), true),
-                            ("Best Robo Rumble Time", get_difficulty(&player["bestRoboRumbleTime"]),true),
-                            ("Club", player["club"]["name"].to_string().strip_quote(), true),
+                            ("**Region**", region.to_string().as_str(), true),
+                            ("Trophies", player["trophies"].to_string().as_str(), true),
+                            ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
+                            ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
+                            ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
+                            ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
+                            ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]),true),
+                            ("Club", player["club"]["name"].as_str().unwrap(), true),
                         ])
                         .timestamp(ctx.created_at())
                     })
@@ -187,9 +188,9 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
           .embed(|e|{
             e.title("**Are you sure you want to deregister?**")
             .description(format!("You are about to deregister from the tournament. Below information are what you told us!\nYour account name: **{}**\nWith your respective tag: **{}**\nAnd you are in the following region: **{}**", 
-                                player.get("name").unwrap().to_string().strip_quote(), 
-                                player.get("tag").unwrap().to_string().strip_quote(), 
-                                Region::find_key(player.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
+                                player.get("name").unwrap().as_str().unwrap(), 
+                                player.get("tag").unwrap().as_str().unwrap(), 
+                                &Region::find_key(player.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
                         )
         })
     }).await?;
@@ -204,7 +205,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
         match mci.data.custom_id.as_str() {
             "Confirm" => {
                 let region =
-                    Region::find_key(&player.get("region").unwrap().to_string().strip_quote());
+                    Region::find_key(&player.get("region").unwrap().as_str().unwrap());
                 let player_data = ctx
                     .data()
                     .database

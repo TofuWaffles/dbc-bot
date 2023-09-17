@@ -1,4 +1,4 @@
-use crate::bracket_tournament::config::{make_config, start_tournament_config};
+use crate::bracket_tournament::config::{start_tournament_config, get_config};
 use crate::bracket_tournament::mannequin::add_mannequin;
 use crate::bracket_tournament::match_id::assign_match_id;
 use crate::bracket_tournament::region::Region;
@@ -84,21 +84,8 @@ async fn config_prerequisite(
     database: &Database,
     region: &Region,
 ) -> Result<bool, Error> {
-    let config_collection = database.collection("Config");
-    let config: Document = match config_collection.find_one(None, None).await {
-        Ok(None) => {
-            let config = make_config();
-            config_collection.insert_one(config.clone(), None).await?;
-            return Ok(false);
-        }
-        Ok(Some(config)) => config,
-        Err(_) => {
-            msg.edit(*ctx, |s| s.content("Error occurred while finding config"))
-                .await?;
-            return Ok(false);
-        }
-    };
-    if tournament_started(database).await? {
+    let config = get_config(database).await;
+    if tournament_started(&config).await? {
         msg.edit(*ctx, |s| s.content("Tournament is already started"))
             .await?;
         return Ok(false);

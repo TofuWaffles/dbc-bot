@@ -5,7 +5,6 @@ use crate::bracket_tournament::config::get_config;
 use crate::bracket_tournament::{mannequin::add_mannequin, region::Region};
 use crate::checks::user_is_manager;
 use crate::database_utils::find_round::get_round;
-use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 #[instrument]
 #[poise::command(slash_command, guild_only)]
@@ -57,8 +56,8 @@ pub async fn disqualify(
             collection.insert_one(mannequin, None).await?;
             msg.edit(ctx,|s|
                 s.content(format!("Sucessfully disqualified player: {}({}) with respective Discord <@{}> at round {}", 
-                    player.get("name").unwrap().to_string().strip_quote(), 
-                    player.get("tag").unwrap().to_string().strip_quote(),
+                    player.get("name").unwrap().as_str().unwrap(), 
+                    player.get("tag").unwrap().as_str().unwrap(),
                     user_id,
                     round))
             )

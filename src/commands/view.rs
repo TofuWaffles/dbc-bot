@@ -10,7 +10,7 @@ use crate::{
     },
     misc::QuoteStripper,
     visual::pre_battle::generate_pre_battle_img,
-    Context, Error,
+    Context, Error, checks::tournament_started,
 };
 
 use futures::TryStreamExt;
@@ -47,6 +47,25 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         }
     };
 
+    //Checking if the tournament has started
+    let region = region::Region::find_key(
+        caller
+            .get("region")
+            .unwrap()
+            .to_string()
+            .strip_quote()
+            .as_str(),
+    ).unwrap();
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
+    if !tournament_started(&config).await?{
+        msg.edit(ctx,|s|
+            s.embed(|e|
+                e.title("Tournament has not started yet!")
+                    .description("Please wait for the tournament to start before using this command!")
+        )).await?;
+        return Ok(());
+    }
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
@@ -61,8 +80,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     .unwrap();
 
     //Check if the user has already submitted the result or not yet disqualified
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(database).await;
+   
     let current_round: Collection<Document> = database.collection(get_round(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {

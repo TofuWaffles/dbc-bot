@@ -158,7 +158,7 @@ pub async fn set_round(
         return Ok(());
     }
 
-    if !tournament_started(database).await? {
+    if !tournament_started(&config).await? {
         msg.edit(ctx,|s| {
             s.content("Unable to set the round for the current tournament: the tournament has not started yet!")
         }).await?;
@@ -263,12 +263,12 @@ async fn all_battles_occured(
             if group.len() == 2 {
                 let player1 = &group[0];
                 let player2 = &group[1];
-                let dis1 = player1.get("discord_id").unwrap().to_string().strip_quote();
-                let name1 = player1.get("name").unwrap().to_string().strip_quote();
-                let tag1 = player1.get("tag").unwrap().to_string().strip_quote();
-                let dis2 = player2.get("discord_id").unwrap().to_string().strip_quote();
-                let name2 = player2.get("name").unwrap().to_string().strip_quote();
-                let tag2 = player2.get("tag").unwrap().to_string().strip_quote();
+                let dis1 = player1.get("discord_id").unwrap().as_str().unwrap();
+                let name1 = player1.get("name").unwrap().as_str().unwrap();
+                let tag1 = player1.get("tag").unwrap().as_str().unwrap();
+                let dis2 = player2.get("discord_id").unwrap().as_str().unwrap();
+                let name2 = player2.get("name").unwrap().as_str().unwrap();
+                let tag2 = player2.get("tag").unwrap().as_str().unwrap();
                 (
                     format!(
                         "Match {}: <@{}> - <@{}>",
