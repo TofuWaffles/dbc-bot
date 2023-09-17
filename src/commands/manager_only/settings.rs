@@ -266,17 +266,12 @@ async fn all_battles_occured(
                 let dis1 = player1.get("discord_id").unwrap().as_str().unwrap();
                 let name1 = player1.get("name").unwrap().as_str().unwrap();
                 let tag1 = player1.get("tag").unwrap().as_str().unwrap();
-                let dis2 = player2.get("discord_id").unwrap().as_str().unwrap();
+                let dis2 = player2.get("discord_id").unwrap().to_string().strip_quote();
                 let name2 = player2.get("name").unwrap().as_str().unwrap();
-                let tag2 = player2.get("tag").unwrap().as_str().unwrap();
+                let tag2 = player2.get("tag").unwrap().to_string().strip_quote();
                 (
-                    format!(
-                        "Match {}: <@{}> - <@{}>",
-                        player1.get("match_id").unwrap(),
-                        dis1,
-                        dis2
-                    ),
-                    format!("{}({}) - {}({})", name1, tag1, name2, tag2),
+                    format!("Match {}", player1.get("match_id").unwrap()),
+                    format!("<@{}> - <@{}>\n{}({}) - {}({})", dis1,dis2,name1,tag1,name2,tag2),
                     false,
                 )
             } else {
