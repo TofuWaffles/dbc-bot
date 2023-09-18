@@ -114,7 +114,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         }
     };
 
-    let image = generate_pre_battle_img(caller, enemy, &config)
+    let image = generate_pre_battle_img(&caller, &enemy, &config)
         .await
         .unwrap();
     let mut bytes: Vec<u8> = Vec::new();
@@ -128,7 +128,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
             .ephemeral(true)
             .embed(|e| {
                 e.title("**DISCORD BRAWL CUP TOURNAMENT**")
-                    .description(format!("Round {} - Match {}", round, match_id))
+                    .description(format!("Round {} - Match {}\n<@{}> vs. <@{}>", round, match_id, caller.get("discord_id").unwrap().as_str().unwrap(), enemy.get("discord_id").unwrap().as_str().unwrap()))
             })
             .attachment(attachment)
     })

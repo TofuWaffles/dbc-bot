@@ -4,12 +4,13 @@ use std::error::Error;
 use super::helper::align::{center_x, center_y};
 use super::helper::draw::{draw_rec, make_text_image};
 use super::helper::fetch::fetch_image;
+use image::imageops::FilterType::Nearest;
 use image::{imageops, DynamicImage};
 use mongodb::bson::Document;
 
 async fn create_battle_image(
-    player1: Document,
-    player2: Document,
+    player1: &Document,
+    player2: &Document,
     round: i32,
     match_id: i32,
     mode: &str,
@@ -17,12 +18,14 @@ async fn create_battle_image(
     // Open the background image
     let base = image::open("src\\visual\\asset\\battle_background.jpg")
         .expect("Failed to open background image");
-
+    let vs = image::open("src\\visual\\asset\\versus.png")
+        .expect("Failed to open vs image")
+        .resize(150, 150, Nearest);
     // Fetch player icons and mode icon asynchronously
     let icon1_url = get_icon("player")(player1.get("icon").unwrap().to_string());
-    let icon1 = fetch_image(icon1_url, (Some(150), Some(150))).await;
+    let icon1 = fetch_image(icon1_url, (Some(200), Some(200))).await;
     let icon2_url = get_icon("player")(player2.get("icon").unwrap().to_string());
-    let icon2 = fetch_image(icon2_url, (Some(150), Some(150))).await;
+    let icon2 = fetch_image(icon2_url, (Some(200), Some(200))).await;
     let name1_color = u32::from_str_radix(
         &(player1.get("name_color").unwrap().as_str().unwrap()[2..]),
         16,
@@ -64,7 +67,6 @@ async fn create_battle_image(
         &0xFFFF99,
     );
     let mode_text = make_text_image(&mode.to_uppercase(), 40, &0xFFFFFF);
-    let vs = make_text_image("VS", 100, &0xFFFFFF);
     let footer = make_text_image("Best of 2", 50, &0xFFFFFF);
 
     // Clone the base image to create an overlay
@@ -127,8 +129,8 @@ async fn create_battle_image(
 }
 
 pub async fn generate_pre_battle_img(
-    player1: Document,
-    player2: Document,
+    player1: &Document,
+    player2: &Document,
     config: &Document,
 ) -> Result<DynamicImage, Box<dyn Error>> {
     let mode = config.get("mode").unwrap().as_str().unwrap();
