@@ -4,8 +4,6 @@ use mongodb::{
 };
 use poise::serenity_prelude::json::Value;
 
-use crate::bracket_tournament::region::Mode;
-
 use super::region::Region;
 
 pub fn make_config() -> Document {
@@ -42,7 +40,7 @@ pub fn set_config(role_id: Option<&str>, mode: Option<&str>, map: Option<&str>) 
     }
   
     if let Some(mode) = mode {
-      config.insert("$set", doc! { "mode": mode.to_string() });
+      config.insert("$set", doc! { "mode": mode });
     }
   
     if let Some(map) = map {
