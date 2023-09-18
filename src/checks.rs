@@ -4,57 +4,40 @@ use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use tracing::{info, instrument};
 
-/// Check if a tournament has started.
-///
-/// This asynchronous function queries the database to determine whether a tournament
-/// has started based on the value of the "tournament_started" field in the "Config" collection.
+/// Checks if a tournament has started based on the provided configuration document.
 ///
 /// # Arguments
 ///
-/// * `database` - A reference to the database connection (provided by the `Database` type).
+/// * `config` - A reference to a BSON `Document` containing configuration data.
 ///
 /// # Returns
 ///
-/// If the function successfully retrieves the "tournament_started" field from the database,
-/// it returns a `Result` containing a boolean value indicating whether the tournament has started.
+/// Returns a `Result<bool, Error>`. If the "tournament_started" key is found in the
+/// `config` document and its value is a boolean, it returns `Ok(true)` or `Ok(false)`
+/// depending on the boolean value. If the key is not found or the value is not a boolean,
+/// it returns an `Err` containing an error description.
 ///
-/// If an error occurs during the database query or while extracting the value,
-/// an `Err` variant of the `Result` containing an `Error` type is returned.
-///
-/// # Examples
+/// # Example
 ///
 /// ```
-/// use your_module::tournament_started;
-/// use your_module::Database;
+/// let config = doc! {
+///     "tournament_started": Bson::Boolean(true), // Replace with your actual configuration data.
+/// };
 ///
-/// #[tokio::main]
-/// async fn main() {
-///     let database = Database::connect().await.expect("Failed to connect to the database");
-///
-///     match tournament_started(&database).await {
-///         Ok(has_started) => {
-///             if has_started {
-///                 println!("The tournament has started.");
-///             } else {
-///                 println!("The tournament has not started yet.");
-///             }
-///         },
-///         Err(err) => {
-///             eprintln!("Error checking tournament status: {:?}", err);
-///         },
+///     // Call the tournament_started function.
+/// match tournament_started(&config) {
+///     Ok(started) => {
+///         if started {
+///             println!("The tournament has started.");
+///         } else {
+///             println!("The tournament has not started.");
+///         }
+///     }
+///     Err(err) => {
+///         eprintln!("Error: {}", err);
 ///     }
 /// }
 /// ```
-///
-/// This function is designed to be used in an asynchronous context, typically with the Tokio runtime.
-///
-/// Make sure to handle potential errors that may occur during the database query.
-///
-/// # Note
-///
-/// The function assumes that the "Config" collection in the database contains a boolean field
-/// named "tournament_started" to indicate the status of the tournament.
-///
 /// Ensure that your database connection is properly established before calling this function.
 pub async fn tournament_started(config: &Document) -> Result<bool, Error> {
     let tournament_started = config.get_bool("tournament_started")?;

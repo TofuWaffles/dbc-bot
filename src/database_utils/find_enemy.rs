@@ -11,7 +11,7 @@ pub async fn find_enemy(
     region: &Region,
     round: &i32,
     match_id: &i32,
-    other_tag: &String,
+    other_tag: &str,
 ) -> Option<Document> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection(format!("Round {}", round).as_str());

@@ -31,7 +31,7 @@ use tracing::{error, info, instrument};
 /// }
 /// ```
 #[instrument]
-pub async fn find_tag(ctx: &Context<'_>, tag: &String) -> Option<Document> {
+pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
     let mut result: Option<Document> = None;
     info!("Iterating through and checking the database for each region");
     let proper_tag = match tag.starts_with('#') {
