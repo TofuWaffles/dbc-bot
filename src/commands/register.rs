@@ -324,7 +324,7 @@ async fn remove_player(database: &Database, player: &Document) -> Result<(), Err
 }
 
 async fn assign_role(ctx: &Context<'_>, msg: &ReplyHandle<'_>, config: &Document) -> Result<(), Error>{
-    let role_id = config.get("role_id").unwrap().as_str().unwrap().parse::<u64>().unwrap();
+    let role_id = config.get("role").unwrap().as_str().unwrap().parse::<u64>().unwrap();
     let mut member = match ctx.author_member().await{
         Some(m) => m.deref().to_owned(),
         None => {
@@ -350,7 +350,7 @@ async fn assign_role(ctx: &Context<'_>, msg: &ReplyHandle<'_>, config: &Document
 }
 
 async fn remove_role(ctx: &Context<'_>, msg: &ReplyHandle<'_>, config: &Document) -> Result<(), Error>{
-    let role_id = config.get("role_id").unwrap().as_str().unwrap().parse::<u64>().unwrap();
+    let role_id = config.get("role").unwrap().as_str().unwrap().parse::<u64>().unwrap();
     let mut member = match ctx.author_member().await{
         Some(m) => m.deref().to_owned(),
         None => {

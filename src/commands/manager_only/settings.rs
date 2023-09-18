@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use crate::{
     bracket_tournament::config::set_config,
@@ -37,7 +37,7 @@ pub async fn config(
     };
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = set_config(role_id.as_deref(), &mode, map.as_deref());
+    let config = set_config(role_id.as_deref(), Some(mode.deref()), map.as_deref());
     match collection.update_one(doc! {}, config, None).await {
         Ok(_) => {}
         Err(_) => {

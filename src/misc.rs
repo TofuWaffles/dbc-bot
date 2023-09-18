@@ -281,6 +281,6 @@ impl Time{
         let hours = now.hour() - (self.hours as u32);
         let minutes = now.minute() - (self.minutes as u32);
         let seconds = now.second() - (self.seconds as u32);
-        format!("{} hours, {} minutes, {} seconds ago", hours, minutes, seconds)
+        format!("{}h {}m {}s ago", hours, minutes, seconds)
     }
 }

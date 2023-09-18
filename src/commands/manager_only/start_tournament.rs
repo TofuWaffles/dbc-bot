@@ -91,25 +91,18 @@ async fn config_prerequisite(
         return Ok(false);
     }
 
-    if let (Some(mode), Some(role_id)) = (config.get("mode"), config.get("role_id")) {
-        match (mode, role_id) {
-            (Bson::String(_), Bson::String(_)) => {}
-            (_,_) => {
-                msg.edit(*ctx, |s| {
-                    s.embed(|e| {
-                        e.title(format!("Either mode and/or role have not set for {} yet", region))
-                            .description(
-                                "Please set them first at </set-config:1152203582356070450>",
-                            )
-                    })
-                })
-                .await?;
-                return Ok(false);
-            }
-                // Handle other mode types if needed
-        }
+    if config.get("mode").map_or(true, |mode| mode == &Bson::Null)
+    || config.get("role").map_or(true, |role_id| role_id == &Bson::Null){
+        msg.edit(*ctx, |s| {
+            s.embed(|e| {
+                e.title(format!("Either mode and/or role have not been set for {} yet", region))
+                    .description("Please set them first at </set-config:1152203582356070450>")
+            })
+        }).await?;
+        Ok(false)
+    } else{
+        Ok(true)
     }
-    Ok(true)
 }
 
 async fn make_rounds(

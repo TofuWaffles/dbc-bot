@@ -11,7 +11,11 @@ use poise::ReplyHandle;
 use strum::IntoEnumIterator;
 ///Reset tournament set up, but still keeps list of real players.
 #[poise::command(slash_command)]
-pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn reset(
+    ctx: Context<'_>, 
+    #[description = "(Optional) Reset tournament setting for a specific region, or all."]
+    region_option: Option<Region>,
+) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
         return Ok(());
     }
@@ -23,6 +27,10 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error> {
         })
         .await?;
     for region in Region::iter() {
+        match region_option {
+            Some(ref region_option) if region != *region_option => continue,
+            _ => {}
+        }
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let collection: Collection<Document> = database.collection("Players");
         reset_match_ids(&collection, &region, &ctx, &msg).await?;

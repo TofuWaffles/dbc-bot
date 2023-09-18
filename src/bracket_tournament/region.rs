@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use strum_macros::EnumIter;
 
 // Define an enum called `Region` to represent geographical regions.
@@ -66,4 +68,21 @@ pub enum Mode {
     siege,
     #[name = "Bounty"]
     bounty,
+}
+
+impl Deref for Mode {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Mode::wipeout => "wipeout",
+            Mode::brawlBall => "brawlBall",
+            Mode::gemGrab => "gemGrab",
+            Mode::heist => "heist",
+            Mode::hotZone => "hotZone",
+            Mode::knockout => "knockout",
+            Mode::siege => "siege",
+            Mode::bounty => "bounty",
+        }
+    }
 }

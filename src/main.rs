@@ -63,6 +63,8 @@ async fn run() -> Result<(), Error> {
         commands::submit::submit(),
         commands::view::view_managers(),
         commands::view::view_opponent(),
+        commands::manager_only::registry_open::open_registration(),
+        commands::manager_only::registry_open::close_registration(),
         commands::manager_only::member_info::get_individual_player_data(),
         commands::manager_only::member_info::get_all_players_data(),
         commands::manager_only::settings::config(),

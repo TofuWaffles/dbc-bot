@@ -11,6 +11,7 @@ use crate::{Context, Error};
 #[poise::command(slash_command, guild_only, rename = "open-registration")]
 pub async fn open_registration(
     ctx: Context<'_>,
+    #[description = "(Optional) Open registration for specific region, or all"]
     region_option: Option<Region>,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
@@ -48,6 +49,7 @@ pub async fn open_registration(
 #[poise::command(slash_command, guild_only, rename = "close-registration")]
 pub async fn close_registration(
     ctx: Context<'_>,
+    #[description = "(Optional) Close registration for specific region, or all"]
     region_option: Option<Region>,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
