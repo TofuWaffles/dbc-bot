@@ -41,15 +41,11 @@ pub fn center_x(parent_width: i64, child_width: i64) -> i64 {
 /// # Example
 ///
 /// ```rust
-/// 
-///
-///
 /// let parent_height = 600;
 /// let child_height = 150;
-///
 /// let center_y_position = center_y(parent_height, child_height);
 /// println!("Center Y Position: {}", center_y_position);
-/// 
+///
 /// ```
 pub fn center_y(parent_height: i64, child_height: i64) -> i64 {
     (parent_height - child_height) / 2

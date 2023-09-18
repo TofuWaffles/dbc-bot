@@ -1,10 +1,13 @@
+use std::ops::Deref;
+
 use crate::bracket_tournament::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::find_discord_id::find_discord_id;
 use crate::database_utils::find_tag::find_tag;
-use crate::misc::{get_difficulty, QuoteStripper};
+use crate::misc::{get_difficulty, QuoteStripper, CustomError};
 use crate::{Context, Error};
 use futures::StreamExt;
+use mongodb::Database;
 use mongodb::bson::doc;
 use mongodb::bson::Document;
 use poise::serenity_prelude as serenity;
@@ -102,6 +105,7 @@ pub async fn register(
                             }).await?;
 
                         insert_player(&player, &ctx, region.clone()).await?;
+                        assign_role(&ctx, &msg, &config).await?;
                     }
                     "Cancel" => {
                         msg
@@ -190,7 +194,7 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
             .description(format!("You are about to deregister from the tournament. Below information are what you told us!\nYour account name: **{}**\nWith your respective tag: **{}**\nAnd you are in the following region: **{}**", 
                                 player.get("name").unwrap().as_str().unwrap(), 
                                 player.get("tag").unwrap().as_str().unwrap(), 
-                                &Region::find_key(player.get("region").unwrap().to_string().strip_quote().as_str()).unwrap()) 
+                                &Region::find_key(player.get("region").unwrap().as_str().unwrap()).unwrap()) 
                         )
         })
     }).await?;
@@ -204,18 +208,6 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
     while let Some(mci) = cic.next().await {
         match mci.data.custom_id.as_str() {
             "Confirm" => {
-                let region =
-                    Region::find_key(&player.get("region").unwrap().as_str().unwrap());
-                let player_data = ctx
-                    .data()
-                    .database
-                    .regional_databases
-                    .get(&region.unwrap())
-                    .unwrap()
-                    .collection::<Document>("Players");
-                player_data
-                    .delete_one(doc! {"_id": player.get("_id")}, None)
-                    .await?;
                 msg.edit(ctx,|s| {
                     s.components(|c| {c})
                         .embed(|e| {
@@ -226,6 +218,8 @@ pub async fn deregister(ctx: Context<'_>) -> Result<(), Error> {
                       })
                 })
                 .await?;
+                remove_player(database, &player).await?;
+                remove_role(&ctx, &msg, &config).await?;
             }
             "Cancel" => {
                 msg.edit(ctx, |s| {
@@ -319,4 +313,64 @@ async fn insert_player(player: &Value, ctx: &Context<'_>, region: Region) -> Res
         },
     };
     Ok(())
+}
+
+async fn remove_player(database: &Database, player: &Document) -> Result<(), Error>{
+    let collection = database.collection::<Document>("Players");
+    collection
+        .delete_one(doc! {"_id": player.get("_id")}, None)
+        .await?;
+    Ok(())
+}
+
+async fn assign_role(ctx: &Context<'_>, msg: &ReplyHandle<'_>, config: &Document) -> Result<(), Error>{
+    let role_id = config.get("role_id").unwrap().as_str().unwrap().parse::<u64>().unwrap();
+    let mut member = match ctx.author_member().await{
+        Some(m) => m.deref().to_owned(),
+        None => {
+            let user = *ctx.author().id.as_u64();
+            msg.edit(*ctx, |s| 
+                s.content("Assigning role failed! Please contact Moderators for this issue")).await?;
+            info!("Failed to assign role for <@{}>", user);
+            return Err(Box::new(CustomError(format!("Failed to assign role for <@{}>", user))))
+        }
+    };
+    match member.add_role((*ctx).http(), role_id).await{
+        Ok(_) => { 
+            Ok(())
+         }
+        Err(_) => {
+            let user = *ctx.author().id.as_u64();
+            msg.edit(*ctx, |s| 
+                s.content("Assigning role failed! Please contact Moderators for this issue")).await?;
+            info!("Failed to assign role for <@{}>", user);
+            Err(Box::new(CustomError(format!("Failed to assign role for <@{}>", user))))
+        }
+    }
+}
+
+async fn remove_role(ctx: &Context<'_>, msg: &ReplyHandle<'_>, config: &Document) -> Result<(), Error>{
+    let role_id = config.get("role_id").unwrap().as_str().unwrap().parse::<u64>().unwrap();
+    let mut member = match ctx.author_member().await{
+        Some(m) => m.deref().to_owned(),
+        None => {
+            let user = *ctx.author().id.as_u64();
+            msg.edit(*ctx, |s| 
+                s.content("Removing role failed! Please contact Moderators for this issue")).await?;
+            info!("Failed to assign role for <@{}>", user);
+            return Err(Box::new(CustomError(format!("Failed to assign role for <@{}>", user))))
+        }
+    };
+    match member.remove_role((*ctx).http(), role_id).await{
+        Ok(_) => { 
+            Ok(())
+         }
+        Err(_) => {
+            let user = *ctx.author().id.as_u64();
+            msg.edit(*ctx, |s| 
+                s.content("Removing role failed! Please contact Moderators for this issue")).await?;
+            info!("Failed to remove role from <@{}>", user);
+            Err(Box::new(CustomError(format!("Failed to remove role from <@{}>", user))))
+        }
+    }
 }

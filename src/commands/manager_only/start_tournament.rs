@@ -91,24 +91,22 @@ async fn config_prerequisite(
         return Ok(false);
     }
 
-    if let Some(mode) = config.get("mode") {
-        match mode {
-            Bson::String(_) => {}
-            Bson::Null => {
+    if let (Some(mode), Some(role_id)) = (config.get("mode"), config.get("role_id")) {
+        match (mode, role_id) {
+            (Bson::String(_), Bson::String(_)) => {}
+            (_,_) => {
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
-                        e.title(format!("Mode has not been set for {}", region))
+                        e.title(format!("Either mode and/or role have not set for {} yet", region))
                             .description(
-                                "Please set the mode first at </set-config:1152203582356070450>",
+                                "Please set them first at </set-config:1152203582356070450>",
                             )
                     })
                 })
                 .await?;
                 return Ok(false);
             }
-            _ => {
                 // Handle other mode types if needed
-            }
         }
     }
     Ok(true)

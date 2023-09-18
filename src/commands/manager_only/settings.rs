@@ -26,14 +26,18 @@ pub async fn config(
     #[description = "Select region"] region: Region,
     #[description = "Select game mode for the tournament"] mode: Mode,
     #[description = "Set the map for that game mode"] map: Option<String>,
+    #[description = "Set the role for the tournament"] role: Option<Role>,
 ) -> Result<(), Error> {
     if !user_is_manager(ctx).await? {
         return Ok(());
     }
-
+    let role_id: Option<String> = match role{
+        Some(role) => Some(role.id.to_string()),
+        None => None
+    };
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = set_config(&mode, map.as_ref());
+    let config = set_config(role_id.as_deref(), &mode, map.as_deref());
     match collection.update_one(doc! {}, config, None).await {
         Ok(_) => {}
         Err(_) => {
@@ -271,7 +275,10 @@ async fn all_battles_occured(
                 let tag2 = player2.get("tag").unwrap().to_string().strip_quote();
                 (
                     format!("Match {}", player1.get("match_id").unwrap()),
-                    format!("<@{}> - <@{}>\n{}({}) - {}({})", dis1,dis2,name1,tag1,name2,tag2),
+                    format!(
+                        "<@{}> - <@{}>\n{}({}) - {}({})",
+                        dis1, dis2, name1, tag1, name2, tag2
+                    ),
                     false,
                 )
             } else {

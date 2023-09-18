@@ -1,4 +1,5 @@
 use crate::misc::CustomError;
+use crate::Error;
 use poise::serenity_prelude::json::Value;
 use reqwest;
 use tracing::error;
@@ -80,7 +81,7 @@ fn get_battle_log(player_tag: &str) -> String {
 pub async fn request(
     option: &str,
     tag: &str,
-) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<Value, Error> {
     let proper_tag = match tag.starts_with('#') {
         true => &tag[1..],
         false => tag,

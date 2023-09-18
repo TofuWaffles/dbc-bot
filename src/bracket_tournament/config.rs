@@ -10,12 +10,13 @@ use super::region::Region;
 
 pub fn make_config() -> Document {
     let config = doc! {
-      "registration": true,
+      "registration": false,
       "tournament_started": false,
       "round": 0,
       "mode": Null,
       "map": Null,
       "total": 0,
+      "role": Null
     };
     config
 }
@@ -34,11 +35,12 @@ pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Doc
     player
 }
 
-pub fn set_config(mode: &Mode, map: Option<&String>) -> Document {
+pub fn set_config(role_id: Option<&str>, mode: &Mode, map: Option<&str>) -> Document {
     let config = doc! {
       "$set": {
         "mode": format!("{:?}", mode),
-        "map": map
+        "map": map,
+        "role": role_id
       }
     };
     config
@@ -50,7 +52,7 @@ pub async fn get_config(database: &Database) -> Document {
 }
 
 #[allow(dead_code)]
-pub fn disable_registration() -> Document {
+pub fn disable_registration_config() -> Document {
     let config = doc! {
       "$set": {
         "registration": false
@@ -73,7 +75,7 @@ pub fn start_tournament_config(total: &u32) -> Document {
 }
 
 #[allow(dead_code)]
-pub fn enable_registration() -> Document {
+pub fn enable_registration_config() -> Document {
     let config = doc! {
       "$set": {
         "registration": true
@@ -106,12 +108,13 @@ pub fn update_round(round: Option<i32>) -> Document {
 pub fn reset_config() -> Document {
     let config = doc! {
         "$set": {
-            "registration": true,
+            "registration": false,
             "tournament_started": false,
             "round": 0,
             "mode": Null,
             "map": Null,
-            "total": 0
+            "total": 0,
+            "role": Null,
         }
     };
     config

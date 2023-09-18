@@ -1,5 +1,6 @@
+use chrono::{Local, Timelike};
 use mongodb::bson::Bson;
-use poise::serenity_prelude::Colour;
+use poise::serenity_prelude::{Colour, Timestamp};
 use std::error::Error;
 use std::fmt;
 
@@ -235,5 +236,51 @@ impl BsonExtensions for Bson {
             }
             _ => None,
         }
+    }
+}
+
+pub struct Time{
+    pub years: u32,
+    pub months: u8,
+    pub days: u8,
+    pub hours: u8,
+    pub minutes: u8,
+    pub seconds: u8,
+    pub milliseconds: u16,
+    pub time: Option<String>
+}
+
+impl Time{
+    pub fn standardising(time: &str) -> Time{
+        let T = time.find('T').unwrap();
+        let mut time = Time{
+            years: time[0..T-4].parse::<u32>().unwrap(),
+            months: time[T-4..T-2].parse::<u8>().unwrap(),
+            days: time[T-2..T].parse::<u8>().unwrap(),
+            hours: time[T+1..T+3].parse::<u8>().unwrap(),
+            minutes: time[T+3..T+5].parse::<u8>().unwrap(),
+            seconds: time[T+5..T+7].parse::<u8>().unwrap(),
+            milliseconds: time[T+8..T+11].parse::<u16>().unwrap(),
+            time: None
+        };
+        time.format();
+        time
+    }
+
+    pub fn format(&mut self){
+        self.time = Some(format!("{}-{}-{}T{}:{}:{}Z", self.years, self.months, self.days, self.hours, self.minutes, self.seconds))
+    }
+
+    pub fn get_unix(&self) -> Timestamp{
+        let time: &str = &format!("{}-{}-{}T{}:{}:{}Z", self.years, self.months, self.days, self.hours, self.minutes, self.seconds);
+        Timestamp::parse(time).unwrap()
+    }
+
+    pub fn get_relative(&self) -> String{
+        let now = Local::now();
+        let hours = now.hour() - (self.hours as u32);
+        let minutes = now.minute() - (self.minutes as u32);
+        let seconds = now.second() - (self.seconds as u32);
+        format!("{} hours, {} minutes, {} seconds ago", hours, minutes, seconds)
     }
 }
