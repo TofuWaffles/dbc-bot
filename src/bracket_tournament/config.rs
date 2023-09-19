@@ -14,7 +14,8 @@ pub fn make_config() -> Document {
       "mode": Null,
       "map": Null,
       "total": 0,
-      "role": Null
+      "role": Null,
+      "channel": Null
     };
     config
 }
@@ -118,6 +119,7 @@ pub fn reset_config() -> Document {
             "map": Null,
             "total": 0,
             "role": Null,
+            "channel": Null
         }
     };
     config

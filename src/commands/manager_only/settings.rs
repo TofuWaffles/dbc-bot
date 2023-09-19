@@ -24,7 +24,7 @@ use tracing::{info, instrument};
 pub async fn config(
     ctx: Context<'_>,
     #[description = "Select region"] region: Region,
-    #[description = "Select game mode for the tournament"] mode: Mode,
+    #[description = "Select game mode for the tournament"] mode: Option<Mode>,
     #[description = "Set the map for that game mode"] map: Option<String>,
     #[description = "Set the role for the tournament"] role: Option<Role>,
 ) -> Result<(), Error> {
@@ -37,7 +37,7 @@ pub async fn config(
     };
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = set_config(role_id.as_deref(), Some(mode.deref()), map.as_deref());
+    let config = set_config(role_id.as_deref(), mode.as_deref(), map.as_deref());
     match collection.update_one(doc! {}, config, None).await {
         Ok(_) => {}
         Err(_) => {
