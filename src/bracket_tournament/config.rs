@@ -34,7 +34,7 @@ pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Doc
     player
 }
 
-pub fn set_config(key: &str, value: &str) -> Document {
+pub fn set_config(key: &str, value: Option<&str>) -> Document {
     let config = doc!{
         "$set": {
             key: value

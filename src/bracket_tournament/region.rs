@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use strum_macros::EnumIter;
 
 // Define an enum called `Region` to represent geographical regions.
