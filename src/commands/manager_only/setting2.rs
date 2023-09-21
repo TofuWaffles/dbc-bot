@@ -1,83 +1,23 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use crate::{
-    bracket_tournament::config::set_config,
     bracket_tournament::{
         config::{get_config, update_round},
-        region::{Mode, Region},
+        region:: Region,
     },
     checks::{tournament_started, user_is_manager},
     database_utils::find_round::get_round,
-    misc::{CustomError, QuoteStripper},
+    misc::QuoteStripper,
     Context, Error,
 };
 use futures::StreamExt;
 use mongodb::{
-    bson::doc,
-    bson::{self, Document},
-    Collection, Database,
+    bson::{doc, Document, self},
+    Database,
 };
 use poise::{serenity_prelude::Role, ReplyHandle};
 use tracing::{info, instrument};
-/// Set config for the tournament
-#[poise::command(slash_command, guild_only, rename = "set-config")]
-pub async fn config(
-    ctx: Context<'_>,
-    #[description = "Select region"] region: Region,
-    #[description = "Select game mode for the tournament"] mode: Option<Mode>,
-    #[description = "Set the map for that game mode"] map: Option<String>,
-    #[description = "Set the role for the tournament"] role: Option<Role>,
-) -> Result<(), Error> {
-    if !user_is_manager(ctx).await? {
-        return Ok(());
-    }
-    let role_id: Option<String> = match role{
-        Some(role) => Some(role.id.to_string()),
-        None => None
-    };
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let collection: Collection<Document> = database.collection("Config");
-    let config = set_config(role_id.as_deref(), mode.as_deref(), map.as_deref());
-    match collection.update_one(doc! {}, config, None).await {
-        Ok(_) => {}
-        Err(_) => {
-            return Err(Box::new(CustomError(
-                "Error occurred while updating config".to_string(),
-            )))
-        }
-    };
-    let post_config = match collection.find_one(doc! {}, None).await {
-        Ok(Some(config)) => config,
-        Ok(None) => return Err(Box::new(CustomError("Config not found".to_string()))),
-        Err(_) => {
-            return Err(Box::new(CustomError(
-                "Error occurred while finding config".to_string(),
-            )))
-        }
-    };
-    let mut printed_config: Vec<(String, String, bool)> = vec![];
-    for (key, value) in post_config.iter() {
-        printed_config.push((
-            format!("**{}**: {}", key, value.to_string().strip_quote()),
-            "".to_string(),
-            false,
-        ))
-    }
-    printed_config.remove(0); //remove ObjectID to print lol
-    ctx.send(|s| {
-        s.reply(true).ephemeral(true).embed(|e| {
-            e.title("**Configuration has been updated!**")
-                .description(format!(
-                    "The configuration for {} tournament is shown below",
-                    region
-                ))
-                .fields(printed_config)
-        })
-    })
-    .await?;
-    Ok(())
-}
-/////////////////////////////////////////////////////
+
 /// Set a role as a manager to access manager-only commands. Only the bot owner can run this.
 #[instrument]
 #[poise::command(slash_command, guild_only, owners_only, rename = "set-manager")]

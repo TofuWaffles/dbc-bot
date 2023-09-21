@@ -34,19 +34,12 @@ pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Doc
     player
 }
 
-pub fn set_config(role_id: Option<&str>, mode: Option<&str>, map: Option<&str>) -> Document {
-    let mut config = doc!{};
-    if let Some(role_id) = role_id {
-      config.insert("$set", doc! { "role": role_id });
-    }
-  
-    if let Some(mode) = mode {
-      config.insert("$set", doc! { "mode": mode });
-    }
-  
-    if let Some(map) = map {
-      config.insert("$set", doc! { "map": map });
-    }
+pub fn set_config(key: &str, value: &str) -> Document {
+    let config = doc!{
+        "$set": {
+            key: value
+        }
+    };
     config
 }
 
