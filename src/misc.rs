@@ -127,6 +127,22 @@ pub fn get_player_icon_url(icon_id: String) -> String {
     format!("https://cdn-old.brawlify.com/profile-low/{}.png", icon_id)
 }
 
+/// `get_icon` function takes an `icon` parameter and returns a closure (boxed function)
+/// that generates an icon URL based on the provided icon type.
+/// 
+/// # Arguments
+///
+/// * `icon` - A string representing the type of icon. There are 2 options for this: `player`, and `mode`.
+///
+/// # Returns
+///
+/// A boxed closure that takes a string and returns a string, representing the generated icon URL.
+/// 
+/// # Examples
+/// ```rs
+/// let icon = document.get("icon").unwrap().to_string().strip_quote();
+/// let icon_url = get_icon("player")(icon);
+/// ```
 pub fn get_icon(icon: &str) -> Box<dyn Fn(String) -> String> {
     match icon {
         "player" => Box::new(get_player_icon_url),

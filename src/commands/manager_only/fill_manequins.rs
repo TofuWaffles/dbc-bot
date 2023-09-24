@@ -21,9 +21,7 @@ pub async fn fill_mannequins(
     ctx: Context<'_>,
     #[description = "The number of mannequins to add"] quantity: i32,
 ) -> Result<(), Error> {
-    if !user_is_manager(ctx).await? {
-        return Ok(());
-    }
+
 
     info!("Filling databases with mannequins for testing...");
     let msg = ctx

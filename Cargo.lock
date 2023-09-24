@@ -466,6 +466,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serenity_utils",
  "strum",
  "strum_macros",
  "text-to-png",
@@ -2126,6 +2127,16 @@ dependencies = [
  "tracing",
  "typemap_rev",
  "url",
+]
+
+[[package]]
+name = "serenity_utils"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "813831f7e26c782b454002153bf9acb1e49b6503794f8cb4234a7e54ebbd8c79"
+dependencies = [
+ "serenity",
+ "tokio",
 ]
 
 [[package]]
