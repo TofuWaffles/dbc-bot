@@ -62,8 +62,8 @@ pub async fn config(
                 role_option(&ctx, &msg, &collection).await?;
             },
             "channel" => {
-                channel_option(&ctx, &msg, &collection).await?;
                 mci.defer(&ctx.http()).await?;
+                channel_option(&ctx, &msg, &collection).await?;
             },
             "map" => {
                 mci.defer(&ctx.http()).await?;
@@ -294,7 +294,7 @@ async fn channel_option(ctx: &Context<'_>, msg: &ReplyHandle<'_>, collection: &C
         msg.edit(*ctx, |s|
             s.components(|c|c)
                 .embed(|e|
-                    e.title("Role has been set!")
+                    e.title("Channel has been set!")
                     .description(format!("All tournament updates will be posted in <#{}>.
                     Directing back to configuration menu...", channel_id))
                 )
