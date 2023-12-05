@@ -2,6 +2,7 @@ use std::io::Cursor;
 
 use crate::{
     bracket_tournament::{config::get_config, region},
+    checks::tournament_started,
     database_utils::{
         battle_happened::battle_happened,
         find_discord_id::find_discord_id,
@@ -10,7 +11,7 @@ use crate::{
     },
     misc::QuoteStripper,
     visual::pre_battle::generate_pre_battle_img,
-    Context, Error, checks::tournament_started,
+    Context, Error,
 };
 
 use futures::TryStreamExt;
@@ -55,15 +56,19 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
             .to_string()
             .strip_quote()
             .as_str(),
-    ).unwrap();
+    )
+    .unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
-    if !tournament_started(&config).await?{
-        msg.edit(ctx,|s|
-            s.embed(|e|
-                e.title("Tournament has not started yet!")
-                    .description("Please wait for the tournament to start before using this command!")
-        )).await?;
+    if !tournament_started(&config).await? {
+        msg.edit(ctx, |s| {
+            s.embed(|e| {
+                e.title("Tournament has not started yet!").description(
+                    "Please wait for the tournament to start before using this command!",
+                )
+            })
+        })
+        .await?;
         return Ok(());
     }
     //Get player document via their discord_id
@@ -80,7 +85,7 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
     .unwrap();
 
     //Check if the user has already submitted the result or not yet disqualified
-   
+
     let current_round: Collection<Document> = database.collection(get_round(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
@@ -123,12 +128,20 @@ pub async fn view_opponent(ctx: Context<'_>) -> Result<(), Error> {
         data: bytes.into(),
         filename: "pre_battle.png".to_string(),
     };
+    let message = "Please plan with your opponent to schedule at least 2 games in the friendly battle mode (please turn off all bots).";
     ctx.send(|s| {
         s.reply(true)
             .ephemeral(true)
             .embed(|e| {
                 e.title("**DISCORD BRAWL CUP TOURNAMENT**")
-                    .description(format!("Round {} - Match {}\n<@{}> vs. <@{}>", round, match_id, caller.get("discord_id").unwrap().as_str().unwrap(), enemy.get("discord_id").unwrap().as_str().unwrap()))
+                    .description(format!(
+                        "Round {} - Match {}\n<@{}> vs. <@{}\n{}>",
+                        round,
+                        match_id,
+                        caller.get("discord_id").unwrap().as_str().unwrap(),
+                        enemy.get("discord_id").unwrap().as_str().unwrap(),
+                        message
+                    ))
             })
             .attachment(attachment)
     })

@@ -10,8 +10,8 @@ use crate::misc::QuoteStripper;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
-use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::json::Value;
+use poise::serenity_prelude::ChannelId;
 use tracing::{info, instrument};
 
 /// If you are a participant, run this command once you have finished your match round.
@@ -52,15 +52,18 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     )
     .unwrap();
 
-    
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
-    if !tournament_started(&config).await?{
-        msg.edit(ctx,|s|
-            s.embed(|e|
-                e.title("Tournament has not started yet!")
-                    .description("Please wait for the tournament to start before using this command!")
-        )).await?;
+
+    if !tournament_started(&config).await? {
+        msg.edit(ctx, |s| {
+            s.embed(|e| {
+                e.title("Tournament has not started yet!").description(
+                    "Please wait for the tournament to start before using this command!",
+                )
+            })
+        })
+        .await?;
         return Ok(());
     }
 
@@ -69,9 +72,9 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     //Check if the user has already submitted the result or not yet disqualified
-    
+
     let mode = config.get("mode").unwrap().as_str().unwrap();
-    let map = config.get("map").unwrap().as_str().unwrap();
+    // let map = config.get("map").unwrap().as_str().unwrap();
     let current_round: Collection<Document> = database.collection(get_round(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
@@ -95,8 +98,16 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
         update_battle(database, round, match_id).await?;
         return Ok(());
     }
-    let channel_to_announce = ChannelId(config.get("channel").unwrap().as_i64().unwrap() as u64);
-    match get_result(mode, map, caller, enemy).await {
+    println!("{:?}", config);
+    let channel = config
+        .get("channel")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+    let channel_to_announce = ChannelId(channel);
+    match get_result(mode, caller, enemy).await {
         Some(winner) => {
             if round < config.get("total").unwrap().as_i32().unwrap() {
                 let next_round: Collection<Document> =
@@ -115,15 +126,17 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                     })
                 })
                 .await?;
-                channel_to_announce.send_message(ctx, |m| {
-                    m.embed(|e| {
-                        e.title("Result is here!").description(format!(
-                            "{}({}) has won this round! You are going to next round!",
-                            winner.get("name").unwrap().to_string().strip_quote(),
-                            winner.get("tag").unwrap().to_string().strip_quote()
-                        ))
+                channel_to_announce
+                    .send_message(ctx, |m| {
+                        m.embed(|e| {
+                            e.title("Result is here!").description(format!(
+                                "{}({}) has won this round! You are going to next round!",
+                                winner.get("name").unwrap().to_string().strip_quote(),
+                                winner.get("tag").unwrap().to_string().strip_quote()
+                            ))
+                        })
                     })
-                }).await?;
+                    .await?;
             } else {
                 msg.edit(ctx, |s| {
                     s.embed(|e| {
@@ -133,16 +146,19 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
                             winner.get("tag").unwrap().to_string().strip_quote()
                         ))
                     })
-                }).await?;
-                channel_to_announce.send_message(ctx, |m| {
-                    m.embed(|e| {
-                        e.title("Result is here!").description(format!(
-                            "CONGRATULATION! {}({}) IS A CHAMPION FOR THE TOURNAMENT!",
-                            winner.get("name").unwrap().to_string().strip_quote(),
-                            winner.get("tag").unwrap().to_string().strip_quote()
-                        ))
+                })
+                .await?;
+                channel_to_announce
+                    .send_message(ctx, |m| {
+                        m.embed(|e| {
+                            e.title("Result is here!").description(format!(
+                                "CONGRATULATION! {}({}) IS A CHAMPION FOR THE TOURNAMENT!",
+                                winner.get("name").unwrap().to_string().strip_quote(),
+                                winner.get("tag").unwrap().to_string().strip_quote()
+                            ))
+                        })
                     })
-                }).await?;
+                    .await?;
             }
         }
         None => {
@@ -159,12 +175,7 @@ pub async fn submit(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn get_result(
-    mode: &str,
-    _map: &str,
-    caller: Document,
-    enemy: Document,
-) -> Option<Document> {
+async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Document> {
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let raw_logs = api::request("battle_log", &caller_tag).await.unwrap();
@@ -179,7 +190,6 @@ async fn get_result(
             && (caller_tag == player1 || caller_tag == player2)
             && (enemy_tag == player1 || enemy_tag == player2)
         {
-
             results.push(log["battle"]["result"].to_string().strip_quote());
         }
     }
@@ -190,7 +200,7 @@ async fn get_result(
         let mut count_defeat = 0;
 
         for result in results.iter().rev() {
-            match result.as_str(){
+            match result.as_str() {
                 "defeat" => count_defeat += 1,
                 "victory" => count_victory += 1,
                 _ => {} // Handle other cases if needed

@@ -73,7 +73,7 @@ pub async fn close_registration(
         collection
             .update_one(config, disable_registration_config(), None)
             .await?;
-        msg.edit(ctx,|s| {
+        msg.edit(ctx, |s| {
             s.content(format!("Registration is now closed for {}!", region))
                 .ephemeral(true)
                 .reply(true)

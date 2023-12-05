@@ -16,6 +16,7 @@ mod bracket_tournament;
 mod checks;
 mod commands;
 mod database_utils;
+mod functions;
 mod misc;
 mod visual;
 
@@ -55,26 +56,25 @@ async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
     let commands = vec![
-        // commands::battle_log::latest_log(),
-        commands::draco::draco(),
-        // commands::player::player(),
-        commands::register::register(),
-        commands::register::deregister(),
-        commands::submit::submit(),
-        commands::view::view_managers(),
-        commands::view::view_opponent(),
-        commands::manager_only::registry_open::open_registration(),
-        commands::manager_only::registry_open::close_registration(),
-        commands::manager_only::member_info::get_individual_player_data(),
-        commands::manager_only::member_info::get_all_players_data(),
+        commands::index::index(), // // commands::battle_log::latest_log(),
+        // commands::draco::draco(),
+        // commands::index::index(),
+        // // commands::player::player(),
+        // commands::submit::submit(),
+        // commands::view::view_managers(),
+        // commands::view::view_opponent(),
+        // commands::manager_only::registry_open::open_registration(),
+        // commands::manager_only::registry_open::close_registration(),
+        // commands::manager_only::member_info::get_individual_player_data(),
+        // commands::manager_only::member_info::get_all_players_data(),
         commands::manager_only::setting::config(),
-        commands::manager_only::setting2::set_manager(),
-        commands::manager_only::setting2::set_round(),
-        commands::manager_only::start_tournament::start_tournament(),
-        commands::manager_only::statistics::region_proportion(),
-        commands::manager_only::reset::reset(),
-        commands::manager_only::fill_manequins::fill_mannequins(),
-        commands::manager_only::disqualify::disqualify(),
+        // commands::manager_only::setting2::set_manager(),
+        // commands::manager_only::setting2::set_round(),
+        // commands::manager_only::start_tournament::start_tournament(),
+        // commands::manager_only::statistics::region_proportion(),
+        // commands::manager_only::reset::reset(),
+        // commands::manager_only::fill_manequins::fill_mannequins(),
+        // commands::manager_only::disqualify::disqualify(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     bracket_tournament::{
         config::{get_config, update_round},
-        region:: Region,
+        region::Region,
     },
     checks::{tournament_started, user_is_manager},
     database_utils::find_round::get_round,
@@ -12,7 +12,7 @@ use crate::{
 };
 use futures::StreamExt;
 use mongodb::{
-    bson::{doc, Document, self},
+    bson::{self, doc, Document},
     Database,
 };
 use poise::{serenity_prelude::Role, ReplyHandle};
@@ -98,6 +98,7 @@ pub async fn set_round(
         .await?;
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(database).await;
+    println!("Config is got!");
     if !user_is_manager(ctx).await? {
         return Ok(());
     }
@@ -108,9 +109,11 @@ pub async fn set_round(
         }).await?;
         return Ok(());
     }
+    println!("Checking tournament started: DONE");
     if !all_battles_occured(&ctx, &msg, database, &config).await? {
         return Ok(());
     }
+    println!("Check all battle occured: DONE");
     match database
         .collection::<Document>("Config")
         .update_one(config, update_round(round), None)
@@ -168,6 +171,7 @@ async fn all_battles_occured(
 ) -> Result<bool, Error> {
     let round = get_round(config);
     let collection = database.collection::<Document>(round.as_str());
+    println!("Round is got!");
     let mut battles = collection
         .find(
             doc! {
@@ -176,11 +180,12 @@ async fn all_battles_occured(
             None,
         )
         .await?;
-
+    println!("Battles is got!");
     if Some(battles.current()).is_none() {
+        println!("No battle is left!");
         return Ok(false);
     }
-
+    println!("There are battles left!");
     let mut players: Vec<Document> = Vec::new();
 
     while let Some(player) = battles.next().await {

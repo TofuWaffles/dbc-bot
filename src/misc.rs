@@ -129,7 +129,7 @@ pub fn get_player_icon_url(icon_id: String) -> String {
 
 /// `get_icon` function takes an `icon` parameter and returns a closure (boxed function)
 /// that generates an icon URL based on the provided icon type.
-/// 
+///
 /// # Arguments
 ///
 /// * `icon` - A string representing the type of icon. There are 2 options for this: `player`, and `mode`.
@@ -137,7 +137,7 @@ pub fn get_player_icon_url(icon_id: String) -> String {
 /// # Returns
 ///
 /// A boxed closure that takes a string and returns a string, representing the generated icon URL.
-/// 
+///
 /// # Examples
 /// ```rs
 /// let icon = document.get("icon").unwrap().to_string().strip_quote();
@@ -255,7 +255,7 @@ impl BsonExtensions for Bson {
     }
 }
 
-pub struct Time{
+pub struct Time {
     pub years: u32,
     pub months: u8,
     pub days: u8,
@@ -263,36 +263,42 @@ pub struct Time{
     pub minutes: u8,
     pub seconds: u8,
     pub milliseconds: u16,
-    pub time: Option<String>
+    pub time: Option<String>,
 }
 
-impl Time{
-    pub fn standardising(time: &str) -> Time{
+impl Time {
+    pub fn standardising(time: &str) -> Time {
         let T = time.find('T').unwrap();
-        let mut time = Time{
-            years: time[0..T-4].parse::<u32>().unwrap(),
-            months: time[T-4..T-2].parse::<u8>().unwrap(),
-            days: time[T-2..T].parse::<u8>().unwrap(),
-            hours: time[T+1..T+3].parse::<u8>().unwrap(),
-            minutes: time[T+3..T+5].parse::<u8>().unwrap(),
-            seconds: time[T+5..T+7].parse::<u8>().unwrap(),
-            milliseconds: time[T+8..T+11].parse::<u16>().unwrap(),
-            time: None
+        let mut time = Time {
+            years: time[0..T - 4].parse::<u32>().unwrap(),
+            months: time[T - 4..T - 2].parse::<u8>().unwrap(),
+            days: time[T - 2..T].parse::<u8>().unwrap(),
+            hours: time[T + 1..T + 3].parse::<u8>().unwrap(),
+            minutes: time[T + 3..T + 5].parse::<u8>().unwrap(),
+            seconds: time[T + 5..T + 7].parse::<u8>().unwrap(),
+            milliseconds: time[T + 8..T + 11].parse::<u16>().unwrap(),
+            time: None,
         };
         time.format();
         time
     }
 
-    pub fn format(&mut self){
-        self.time = Some(format!("{}-{}-{}T{}:{}:{}Z", self.years, self.months, self.days, self.hours, self.minutes, self.seconds))
+    pub fn format(&mut self) {
+        self.time = Some(format!(
+            "{}-{}-{}T{}:{}:{}Z",
+            self.years, self.months, self.days, self.hours, self.minutes, self.seconds
+        ))
     }
 
-    pub fn get_unix(&self) -> Timestamp{
-        let time: &str = &format!("{}-{}-{}T{}:{}:{}Z", self.years, self.months, self.days, self.hours, self.minutes, self.seconds);
+    pub fn get_unix(&self) -> Timestamp {
+        let time: &str = &format!(
+            "{}-{}-{}T{}:{}:{}Z",
+            self.years, self.months, self.days, self.hours, self.minutes, self.seconds
+        );
         Timestamp::parse(time).unwrap()
     }
 
-    pub fn get_relative(&self) -> String{
+    pub fn get_relative(&self) -> String {
         let now = Local::now();
         let hours = now.hour() - (self.hours as u32);
         let minutes = now.minute() - (self.minutes as u32);

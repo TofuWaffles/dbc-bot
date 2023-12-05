@@ -52,9 +52,9 @@ impl Mode {
             "Gem Grab" | "gemGrab" => Some(Mode::gemGrab),
             "Heist" | "heist" => Some(Mode::heist),
             "Hot Zone" | "hotZone" => Some(Mode::hotZone),
-            "Knockout" | "knockout"=> Some(Mode::knockout),
+            "Knockout" | "knockout" => Some(Mode::knockout),
             "Siege" | "siege" => Some(Mode::siege),
-            "Bounty" | "bounty"=> Some(Mode::bounty),
+            "Bounty" | "bounty" => Some(Mode::bounty),
             _ => None,
         }
     }

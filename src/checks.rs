@@ -40,6 +40,7 @@ use tracing::{info, instrument};
 /// ```
 /// Ensure that your database connection is properly established before calling this function.
 pub async fn tournament_started(config: &Document) -> Result<bool, Error> {
+    println!("tournament_started function runs");
     let tournament_started = config.get_bool("tournament_started")?;
 
     Ok(tournament_started)

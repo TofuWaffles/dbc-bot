@@ -24,12 +24,8 @@ pub async fn find_enemy(
     };
     info!("Using filter: {:?}", filter);
     match collection.find_one(filter, None).await {
-        Ok(Some(enemy)) => {
-            Some(enemy)
-        }
-        Ok(None) => {
-            None
-        }
+        Ok(Some(enemy)) => Some(enemy),
+        Ok(None) => None,
         Err(err) => {
             info!("Error while querying database: {:?}", err);
             None

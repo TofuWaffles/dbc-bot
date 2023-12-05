@@ -35,24 +35,45 @@ pub async fn fetch_image(
     (resize_width, resize_height): (Option<u32>, Option<u32>),
 ) -> DynamicImage {
     let img_bytes = match reqwest::get(url.clone()).await {
-        Ok(res) => res.bytes().await.unwrap(),
+        Ok(res) => {
+            if res.status() == 200 {
+                res.bytes().await.unwrap()
+            } else {
+                println!("Failed to fetch image from {}", url);
+                let icon: Bytes;
+                if url.contains("profile") {
+                    icon = Bytes::copy_from_slice(
+                        &include_bytes!("../asset/default_player_icon.png")[..],
+                    );
+                } else if url.contains("event") {
+                    icon = Bytes::copy_from_slice(
+                        &include_bytes!("../asset/default_mode_icon.png")[..],
+                    );
+                } else {
+                    unreachable!("Invalid icon type")
+                }
+                icon
+            }
+        }
         Err(_) => {
+            println!("Failed to fetch image from {}", url);
             let icon: Bytes;
-            if url.contains("profile"){
-                icon = Bytes::copy_from_slice(&include_bytes!("..\\asset\\default_player_icon.png")[..]);
-            } else if url.contains("event"){
-                icon = Bytes::copy_from_slice(&include_bytes!("..\\asset\\default_mode_icon.png")[..]);
-            } else{
+            if url.contains("profile") {
+                icon =
+                    Bytes::copy_from_slice(&include_bytes!("../asset/default_player_icon.png")[..]);
+            } else if url.contains("event") {
+                icon =
+                    Bytes::copy_from_slice(&include_bytes!("../asset/default_mode_icon.png")[..]);
+            } else {
                 unreachable!("Invalid icon type")
             }
             icon
         }
     };
+
     let original = image::load_from_memory(&img_bytes).expect("Failed to load image");
     match (resize_width, resize_height) {
-        (Some(width), Some(height)) => {
-            original.resize_exact(width, height, Lanczos3)
-        }
+        (Some(width), Some(height)) => original.resize_exact(width, height, Lanczos3),
         (_, _) => original,
     }
 }

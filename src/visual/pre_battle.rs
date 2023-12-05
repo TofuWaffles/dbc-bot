@@ -25,7 +25,9 @@ async fn create_battle_image(
     let icon1_url = get_icon("player")(player1.get("icon").unwrap().to_string());
     let icon1 = fetch_image(icon1_url, (Some(200), Some(200))).await;
     let icon2_url = get_icon("player")(player2.get("icon").unwrap().to_string());
+    println!("{}", icon2_url);
     let icon2 = fetch_image(icon2_url, (Some(200), Some(200))).await;
+    println!("This runs");
     let name1_color = u32::from_str_radix(
         &(player1.get("name_color").unwrap().as_str().unwrap()[2..]),
         16,

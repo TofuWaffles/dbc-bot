@@ -1,4 +1,4 @@
-use crate::bracket_tournament::config::{start_tournament_config, get_config};
+use crate::bracket_tournament::config::{get_config, start_tournament_config};
 use crate::bracket_tournament::mannequin::add_mannequin;
 use crate::bracket_tournament::match_id::assign_match_id;
 use crate::bracket_tournament::region::Region;
@@ -92,15 +92,22 @@ async fn config_prerequisite(
     }
 
     if config.get("mode").map_or(true, |mode| mode == &Bson::Null)
-    || config.get("role").map_or(true, |role_id| role_id == &Bson::Null){
+        || config
+            .get("role")
+            .map_or(true, |role_id| role_id == &Bson::Null)
+    {
         msg.edit(*ctx, |s| {
             s.embed(|e| {
-                e.title(format!("Either mode and/or role have not been set for {} yet", region))
-                    .description("Please set them first at </set-config:1152203582356070450>")
+                e.title(format!(
+                    "Either mode and/or role have not been set for {} yet",
+                    region
+                ))
+                .description("Please set them first at </set-config:1152203582356070450>")
             })
-        }).await?;
+        })
+        .await?;
         Ok(false)
-    } else{
+    } else {
         Ok(true)
     }
 }

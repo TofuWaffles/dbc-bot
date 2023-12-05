@@ -71,10 +71,9 @@ pub fn draw_rec(width: u32, height: u32, color: u32) -> DynamicImage {
 /// text_image.save("output.png").expect("Failed to save image");
 /// ```
 pub fn make_text_image(text: &str, font_size: u8, font_color: &u32) -> DynamicImage {
-    let renderer = TextRenderer::try_new_with_ttf_font_data(
-        include_bytes!("../asset/LilitaOne-Regular.ttf"),
-    )
-    .unwrap();
+    let renderer =
+        TextRenderer::try_new_with_ttf_font_data(include_bytes!("../asset/LilitaOne-Regular.ttf"))
+            .unwrap();
     let img = renderer
         .render_text_to_png_data(text, font_size, *font_color)
         .expect("Failed to render text");

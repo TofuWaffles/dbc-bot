@@ -12,7 +12,7 @@ use strum::IntoEnumIterator;
 ///Reset tournament set up, but still keeps list of real players.
 #[poise::command(slash_command)]
 pub async fn reset(
-    ctx: Context<'_>, 
+    ctx: Context<'_>,
     #[description = "(Optional) Reset tournament setting for a specific region, or all."]
     region_option: Option<Region>,
 ) -> Result<(), Error> {
