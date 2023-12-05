@@ -165,6 +165,10 @@ async fn display_confirmation(
 ) -> Result<Option<Document>, Error> {
     match api::request("player", register.tag.clone().unwrap().as_str()).await {
         Ok(player) => {
+            let club = match player["club"]["name"] {
+                serde_json::Value::Null => "No Club",
+                _ => player["club"]["name"].as_str().unwrap(),
+            };
             msg.edit(*ctx,|s| {
                 s.components(|c| {
                         c.create_action_row(|a| {
@@ -195,7 +199,7 @@ async fn display_confirmation(
                             ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
                             ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
                             ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]),true),
-                            ("Club", player["club"]["name"].as_str().unwrap(), true),
+                            ("Club", club, true),
                         ])
                         .timestamp(ctx.created_at())
                     })
@@ -238,7 +242,7 @@ async fn confirm(
         s.components(|c| c)
          .embed(|e| {
             e.title("**You have successfully registered!**")
-                .description(format!("We have collected your information!\nYour player tag #{} has been registered with the region {}\n You can safely dismiss this.", register.tag.clone().unwrap().to_uppercase(), register.region.clone().unwrap()))
+                .description(format!("We have collected your information!\nYour player tag {} has been registered with the region {}\n You can safely dismiss this.", register.tag.clone().unwrap().to_uppercase(), register.region.clone().unwrap()))
         })
     }).await?;
     insert_player(&ctx, &register.player, &register.region).await?;

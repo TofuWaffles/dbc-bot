@@ -21,9 +21,13 @@ pub fn make_config() -> Document {
 }
 
 pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Document {
+    let name_color = match player["nameColor"]{
+        Value::Null => "0xFFFFFF",
+        _ => player["nameColor"].as_str().unwrap()
+    };
     let player = doc! {
         "name": player["name"].as_str(),
-        "name_color": player["nameColor"].as_str(),
+        "name_color": name_color,
         "tag": player["tag"].as_str(),
         "icon": player["icon"]["id"].as_i64(),
         "discord_id": discord_id,
