@@ -1,7 +1,7 @@
 use crate::bracket_tournament::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::add::add_player;
-use crate::database_utils::find::find_tag;
+use crate::database_utils::find::{find_tag, self};
 use crate::discord::prompt::prompt;
 use crate::misc::{get_difficulty, CustomError};
 use crate::{Context, Error};
@@ -50,23 +50,28 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
                 register.region = Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
                 mci.defer(&ctx.http()).await?;
                 register_tag(ctx, msg).await?;
+                continue;
             }
             "open_modal" => {
                 register.tag = Some(create_modal_tag(ctx, mci.clone()).await?);
-                if account_available(ctx, register.tag.clone().unwrap()).await? {
-                    register.player = display_confirmation(ctx, msg, &register).await?;
-                } else {
-                    already_used(ctx, msg).await?;
-                    break;
+                info!("Tag is {}", register.tag.clone().unwrap());
+                match find_tag(&ctx, &register.tag.clone().unwrap()).await {
+                    Some(player) => {
+                        return already_used(ctx, msg, player).await;
+                    }
+                    None => {
+                        info!("Tag is {}", register.tag.clone().unwrap());
+                        register.player = display_confirmation(ctx, msg, &register).await?;
+                        continue;
+                    }
                 }
             }
             "confirm" => {
-                confirm(ctx, msg, &register).await?;
-                break;
+                return confirm(ctx, msg, &register).await
             }
             "cancel" => {
-                cancel(ctx, msg).await?;
-                break;
+                mci.defer(&ctx.http()).await?;
+                return cancel(ctx, msg).await
             }
             _ => {
                 continue;
@@ -193,11 +198,10 @@ async fn display_confirmation(
                 ctx,
                 msg,
                 "Failed to find your account!",
-                "Please try again with another account!",
+                "We failed to find your account! Please try again!",
                 None,
-                None,
-            )
-            .await?;
+                None
+            ).await?;
             return Ok(None);
         }
     }
@@ -208,33 +212,28 @@ async fn confirm(
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
-    let tag: String = match &register.tag {
-        Some(tag) if tag.starts_with('#') => tag[1..].to_string(),
-        Some(_) | None => "".to_string(),
-    };
+   
+    info!("Confirming registration");
+    add_player(&ctx, &register.player, &register.region).await?;
+    assign_role(&ctx, &msg, &register.region).await?;
     prompt(
         ctx,
         msg,
-        "You have successfully registered!",
-        format!("Your account **{}** has been registered for the tournament!\nYou can run </index:1181542953542488205> again to see your registration!",tag).as_str(),
+        "Congratulations! You are one of our participants!",
+        format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </index:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
         None,
-        None
-    ).await?;
-    add_player(&ctx, &register.player, &register.region).await?;
-    assign_role(&ctx, &msg, &register.region).await?;
-    Ok(())
+        None).await
 }
 
 async fn cancel(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |s| {
-        s.components(|c| c).embed(|e| {
-            e.title("**Please try again**").description(
-                "You have cancelled your registration for the tournament! Please try again!",
-            )
-        })
-    })
-    .await?;
-    Ok(())
+    prompt(
+        ctx,
+        msg,
+        "You have cancelled your registration!",
+        "You can always register again by running </index:1181542953542488205>",
+        None,
+        None
+    ).await
 }
 
 async fn assign_role(
@@ -246,13 +245,13 @@ async fn assign_role(
     let role = match config.get_str("role") {
         Ok(role) => Some(role),
         Err(_) => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("Failed to assign role!")
-                        .description("Please contact Host or Moderators for this issue!")
-                })
-            })
-            .await?;
+            prompt(ctx,
+                msg,
+                "Failed! Unable to find role!",
+                "Please contact Host or Moderator for this issue",
+                None,
+                None
+            ).await?;
             None
         }
     };
@@ -260,10 +259,13 @@ async fn assign_role(
         Some(m) => m.deref().to_owned(),
         None => {
             let user = *ctx.author().id.as_u64();
-            msg.edit(*ctx, |s| {
-                s.content("Assigning role failed! Please contact Moderators for this issue")
-            })
-            .await?;
+            prompt(ctx,
+                msg,
+                "Failed! Unable to assign role!",
+                "Please contact Host or Moderator for this issue",
+                None,
+                None
+            ).await?;
             info!("Failed to assign role for <@{}>", user);
             return Err(Box::new(CustomError(format!(
                 "Failed to assign role for <@{}>",
@@ -278,10 +280,13 @@ async fn assign_role(
         Ok(_) => Ok(()),
         Err(_) => {
             let user = *ctx.author().id.as_u64();
-            msg.edit(*ctx, |s| {
-                s.content("Assigning role failed! Please contact Moderators for this issue")
-            })
-            .await?;
+            prompt(ctx,
+                msg,
+                "Failed! Unable to assign role!",
+                "Please contact Host or Moderator for this issue",
+                None,
+                None
+            ).await?;
             info!("Failed to assign role for <@{}>", user);
             Err(Box::new(CustomError(format!(
                 "Failed to assign role for <@{}>",
@@ -291,20 +296,16 @@ async fn assign_role(
     }
 }
 
-async fn account_available(ctx: &Context<'_>, tag: String) -> Result<bool, Error> {
-    match find_tag(ctx, tag.as_str()).await {
-        Some(_) => Ok(false),
-        None => Ok(true),
-    }
-}
 
-async fn already_used(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |s| {
-        s.embed(|e|{
-            e.title("This account has already been used!")
-            .description("This account has already been used to register by another player! Please try again with another account!")
-        })
-    })
-    .await?;
+async fn already_used(ctx: &Context<'_>, msg: &ReplyHandle<'_>, player: Document) -> Result<(), Error> {
+    let discord_id = player.get_str("discord_id").unwrap();
+    prompt(
+        ctx,
+        msg,
+        "This account has already been used!",
+        format!("This account has already been registered by <@{}>. If this is unwanted, please issue to the Host or Moderator team!", discord_id),
+        None,
+        None
+    ).await?;
     Ok(())
 }

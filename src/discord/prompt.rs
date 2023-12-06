@@ -13,8 +13,8 @@ use crate::{Context, Error};
 pub async fn prompt(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    title: &str,
-    description: &str,
+    title: impl Into<String>,
+    description: impl Into<String>,
     image: Option<&str>,
     color: Option<u32>,
 ) -> Result<(), Error> {
@@ -24,11 +24,12 @@ pub async fn prompt(
     };
     msg.edit(*ctx, |b| {
         b.embed(|e| {
-            e.title(title)
-                .description(description)
+            e.title(title.into())
+                .description(description.into())
                 .color(c)
                 .image(image.unwrap_or(""))
         })
+        .components(|c|c)
     })
     .await?;
     Ok(())

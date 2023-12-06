@@ -1,14 +1,10 @@
 use crate::{
     bracket_tournament::{api, region::Region},
-    commands::index::home,
-    discord::menu::registration_menu,
     misc::get_difficulty,
     Context, Error,
 };
-use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::ReplyHandle;
-const TIMEOUT: u64 = 120;
 pub async fn view_info(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,

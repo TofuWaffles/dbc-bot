@@ -51,8 +51,8 @@ pub async fn deregister_menu(
                 msg.edit(*ctx, |b| {
                     b.components(|c| c)
                         .embed(|e| {
-                            e.title("Deregisteration").description(
-                                "You have been deregistered from the tournament\nYou can safely dismiss this message."
+                            e.title("Deregistration").description(
+                                "You have been deregistered from the tournament\nYou can safely dismiss this message\nOr you can run </index:1181542953542488205> again."
                             )
                         })
                 })
