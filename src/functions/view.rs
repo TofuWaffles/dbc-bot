@@ -26,8 +26,8 @@ pub async fn view_info(
                 s.components(|c|c)
                 .embed(|e| {
                     e.author(|a| a.name(ctx.author().name.clone()))
-                    .title(format!("Step 3: Verify the following account: **{} ({})**", player["name"].as_str().unwrap(), player["tag"].as_str().unwrap()))
-                    .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
+                    .title(format!("**{} ({})**", player["name"].as_str().unwrap(), player["tag"].as_str().unwrap()))
+                    .description("**Here is your information**")
                     .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
                     .fields(vec![
                         ("**Region**", format!("{}",region).as_str(), true),
@@ -47,10 +47,5 @@ pub async fn view_info(
         }
         Err(_) => {}
     };
-    let resp = msg.clone().into_message().await?;
-    let cib = resp
-        .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(TIMEOUT));
-    let mut cic = cib.build();
     Ok(())
 }

@@ -212,14 +212,14 @@ async fn confirm(
         Some(tag) if tag.starts_with('#') => tag[1..].to_string(),
         Some(_) | None => "".to_string(),
     };
-    msg
-    .edit(*ctx, |s| {
-        s.components(|c| c)
-         .embed(|e| {
-            e.title("**You have successfully registered!**")
-                .description(format!("We have collected your information!\nYour player tag {} has been registered with the region {}\n You can safely dismiss this.", tag.to_uppercase(), register.region.clone().unwrap()))
-        })
-    }).await?;
+    prompt(
+        ctx,
+        msg,
+        "You have successfully registered!",
+        format!("Your account **{}** has been registered for the tournament!\nYou can run </index:1181542953542488205> again to see your registration!",tag).as_str(),
+        None,
+        None
+    ).await?;
     add_player(&ctx, &register.player, &register.region).await?;
     assign_role(&ctx, &msg, &register.region).await?;
     Ok(())
