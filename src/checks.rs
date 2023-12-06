@@ -3,49 +3,6 @@ use crate::{Context, Error};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use tracing::{info, instrument};
-
-/// Checks if a tournament has started based on the provided configuration document.
-///
-/// # Arguments
-///
-/// * `config` - A reference to a BSON `Document` containing configuration data.
-///
-/// # Returns
-///
-/// Returns a `Result<bool, Error>`. If the "tournament_started" key is found in the
-/// `config` document and its value is a boolean, it returns `Ok(true)` or `Ok(false)`
-/// depending on the boolean value. If the key is not found or the value is not a boolean,
-/// it returns an `Err` containing an error description.
-///
-/// # Example
-///
-/// ```
-/// let config = doc! {
-///     "tournament_started": Bson::Boolean(true), // Replace with your actual configuration data.
-/// };
-///
-///     // Call the tournament_started function.
-/// match tournament_started(&config) {
-///     Ok(started) => {
-///         if started {
-///             println!("The tournament has started.");
-///         } else {
-///             println!("The tournament has not started.");
-///         }
-///     }
-///     Err(err) => {
-///         eprintln!("Error: {}", err);
-///     }
-/// }
-/// ```
-/// Ensure that your database connection is properly established before calling this function.
-pub async fn tournament_started(config: &Document) -> Result<bool, Error> {
-    println!("tournament_started function runs");
-    let tournament_started = config.get_bool("tournament_started")?;
-
-    Ok(tournament_started)
-}
-
 /// Check if a user is a manager in a specific guild.
 ///
 /// This asynchronous function is used to determine whether a user has manager permissions

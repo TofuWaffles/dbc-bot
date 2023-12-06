@@ -16,6 +16,7 @@ mod bracket_tournament;
 mod checks;
 mod commands;
 mod database_utils;
+mod discord;
 mod functions;
 mod misc;
 mod visual;

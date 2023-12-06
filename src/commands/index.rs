@@ -1,55 +1,68 @@
-use crate::database_utils::find_player::find_player;
-use crate::database_utils::registration_open::registration_open;
-use crate::functions::register::register_menu;
+use poise::ReplyHandle;
+use tracing::info;
+
+use crate::database_utils::find::find_player;
+use crate::database_utils::open::{all_tournaments, registration};
+use crate::discord::menu::registration_menu;
+use crate::discord::prompt::prompt;
 use crate::{Context, Error};
-use poise::{serenity_prelude as serenity, ReplyHandle};
+const DELAY: u64 = 2;
 
 // Tournament all-in-one command
 #[poise::command(slash_command)]
 pub async fn index(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
-    let msg = ctx
-        .send(|s| {
-            s.embed(|e| {
-                e.title("Menu").description(
-                    "Welcome to the menu! Here you can find commands that are available for you!",
-                )
-            })
-        })
-        .await?;
-    let player = find_player(ctx).await?;
-    match player {
-        Some(p) => {
-            todo!()
-        }
-        None => {
-            if !registration_open(ctx).await {
-                msg.edit(ctx, |b| {
-                    b.embed(|e| {
-                        e.title("Registration")
-                            .description("Registration is currently closed")
-                    })
-                })
-                .await?;
-                return Ok(());
-            }
-            return Ok(register_menu(&ctx, &msg).await?);
-        }
-    }
+    return home(ctx, None).await;
 }
 
-pub async fn deregister_menu(ctx: Context<'_>, msg: ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(ctx, |b| {
-        b.components(|c| {
-            c.create_action_row(|a| {
-                a.create_button(|b| {
-                    b.label("Deregister")
-                        .style(serenity::ButtonStyle::Primary)
-                        .custom_id("deregister")
+pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), Error> {
+    let msg = match msg {
+        Some(msg) => msg,
+        None => {
+            ctx.send(|s| {
+                s.embed(|e| {
+                    e.title("Menu").description(
+                    "Welcome to the menu! Here you can find commands that are available for you!",
+                )
                 })
             })
-        })
-    })
-    .await?;
-    Ok(())
+            .await?
+        }
+    };
+
+    std::thread::sleep(std::time::Duration::from_secs(DELAY));
+    if all_tournaments(&ctx).await {
+        match find_player(&ctx).await? {
+            Some(player) => {
+                todo!();
+            }
+            None => {
+                return Ok(prompt(
+                    &ctx,
+                    &msg,
+                    "No registration found :(",
+                    "You are not registered for any tournaments, would you like to register?",
+                    None,
+                    None,
+                )
+                .await?);
+            }
+        }
+    } else {
+        if registration(&ctx).await {
+            match find_player(&ctx).await? {
+                Some(player) => {
+                    info!("Player found: {:?}", player);
+                    return registration_menu(&ctx, &msg, false, true, true, true, Some(player))
+                        .await;
+                }
+                None => {
+                    info!("Player not found");
+                    return registration_menu(&ctx, &msg, true, false, false, true, None).await;
+                }
+            }
+        } else {
+            todo!()
+        }
+    }
 }

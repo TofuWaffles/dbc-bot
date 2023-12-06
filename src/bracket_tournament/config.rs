@@ -4,12 +4,14 @@ use mongodb::{
 };
 use poise::serenity_prelude::json::Value;
 
+use crate::Context;
+
 use super::region::Region;
 
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": false,
-      "tournament_started": false,
+      "tournament": false,
       "round": 0,
       "mode": Null,
       "map": Null,
@@ -21,9 +23,9 @@ pub fn make_config() -> Document {
 }
 
 pub fn make_player_doc(player: &Value, discord_id: &str, region: &Region) -> Document {
-    let name_color = match player["nameColor"]{
+    let name_color = match player["nameColor"] {
         Value::Null => "0xFFFFFF",
-        _ => player["nameColor"].as_str().unwrap()
+        _ => player["nameColor"].as_str().unwrap(),
     };
     let player = doc! {
         "name": player["name"].as_str(),
@@ -47,7 +49,8 @@ pub fn set_config(key: &str, value: Option<&str>) -> Document {
     config
 }
 
-pub async fn get_config(database: &Database) -> Document {
+pub async fn get_config(ctx: &Context<'_>, region: &Region) -> Document {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
     collection.find_one(None, None).await.unwrap().unwrap()
 }
@@ -67,7 +70,7 @@ pub fn start_tournament_config(total: &u32) -> Document {
     let config = doc! {
       "$set": {
         "round": 1,
-        "tournament_started": true,
+        "tournament": true,
         "registration": false,
         "total": total
       }
@@ -110,7 +113,7 @@ pub fn reset_config() -> Document {
     let config = doc! {
         "$set": {
             "registration": false,
-            "tournament_started": false,
+            "tournament": false,
             "round": 0,
             "mode": Null,
             "map": Null,

@@ -1,19 +1,19 @@
 use crate::bracket_tournament::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
-use crate::database_utils::find_tag::find_tag;
+use crate::database_utils::add::add_player;
+use crate::database_utils::find::find_tag;
+use crate::discord::prompt::prompt;
 use crate::misc::{get_difficulty, CustomError};
 use crate::{Context, Error};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use mongodb::Collection;
 use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::ButtonStyle;
 use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use tracing::{error, info};
-const REGISTRATION_TIME: u64 = 120;
+use tracing::info;
+const TIMEOUT: u64 = 120;
 struct PlayerRegistration {
     tag: Option<String>,
     region: Option<Region>,
@@ -31,24 +31,21 @@ struct TagModal {
 }
 pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     info!("Registering menu is run");
-
     let mut register = PlayerRegistration {
         tag: None,
         region: None,
         player: None,
     };
-    display_register_menu(ctx, msg).await?; //Step 0
+    display_register_region(ctx, msg).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(REGISTRATION_TIME));
+        .timeout(std::time::Duration::from_secs(TIMEOUT));
     let mut cic = cib.build();
+    info!("Registering menu is run");
     while let Some(mci) = &cic.next().await {
+        info!("Inside the loop");
         match mci.data.custom_id.as_str() {
-            "register" => {
-                mci.defer(&ctx.http()).await?;
-                display_register_region(ctx, msg).await?;
-            }
             "APAC" | "EU" | "NASA" => {
                 register.region = Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
                 mci.defer(&ctx.http()).await?;
@@ -56,9 +53,9 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
             }
             "open_modal" => {
                 register.tag = Some(create_modal_tag(ctx, mci.clone()).await?);
-                if account_available(ctx, register.tag.clone().unwrap()).await?{
+                if account_available(ctx, register.tag.clone().unwrap()).await? {
                     register.player = display_confirmation(ctx, msg, &register).await?;
-                } else{
+                } else {
                     already_used(ctx, msg).await?;
                     break;
                 }
@@ -72,31 +69,10 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
                 break;
             }
             _ => {
-                unreachable!("Cannot get here..");
+                continue;
             }
         }
     }
-    Ok(())
-}
-
-//Step 0
-async fn display_register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |b| {
-        b.components(|c| {
-            c.create_action_row(|a| {
-                a.create_button(|b| {
-                    b.label("Register")
-                        .style(ButtonStyle::Primary)
-                        .custom_id("register")
-                })
-            })
-        })
-        .embed(|e| {
-            e.title("Registration")
-                .description("Press the button below to start registration")
-        })
-    })
-    .await?;
     Ok(())
 }
 
@@ -213,19 +189,14 @@ async fn display_confirmation(
             )));
         }
         Err(_) => {
-            msg.edit(*ctx, |s| {
-                s.content("".to_string())
-                    .reply(true)
-                    .components(|c|c)
-                    .embed(|e|{
-                        e.title("**We have tried very hard to find but...**")
-                            .description(format!(
-                                "No player is associated with the tag {}",
-                                register.tag.clone().unwrap().to_uppercase()
-                            ))
-                            .field("Please try again!".to_string(), "".to_string(), true)
-                    })
-            })
+            prompt(
+                ctx,
+                msg,
+                "Failed to find your account!",
+                "Please try again with another account!",
+                None,
+                None,
+            )
             .await?;
             return Ok(None);
         }
@@ -237,15 +208,19 @@ async fn confirm(
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
+    let tag: String = match &register.tag {
+        Some(tag) if tag.starts_with('#') => tag[1..].to_string(),
+        Some(_) | None => "".to_string(),
+    };
     msg
     .edit(*ctx, |s| {
         s.components(|c| c)
          .embed(|e| {
             e.title("**You have successfully registered!**")
-                .description(format!("We have collected your information!\nYour player tag {} has been registered with the region {}\n You can safely dismiss this.", register.tag.clone().unwrap().to_uppercase(), register.region.clone().unwrap()))
+                .description(format!("We have collected your information!\nYour player tag {} has been registered with the region {}\n You can safely dismiss this.", tag.to_uppercase(), register.region.clone().unwrap()))
         })
     }).await?;
-    insert_player(&ctx, &register.player, &register.region).await?;
+    add_player(&ctx, &register.player, &register.region).await?;
     assign_role(&ctx, &msg, &register.region).await?;
     Ok(())
 }
@@ -267,20 +242,20 @@ async fn assign_role(
     msg: &ReplyHandle<'_>,
     region: &Option<Region>,
 ) -> Result<(), Error> {
-    let database = ctx
-        .data()
-        .database
-        .regional_databases
-        .get(&region.clone().unwrap())
-        .unwrap();
-    let config = get_config(database).await;
-    let role_id = config
-        .get("role")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+    let config = get_config(ctx, &region.clone().unwrap()).await;
+    let role = match config.get_str("role") {
+        Ok(role) => Some(role),
+        Err(_) => {
+            msg.edit(*ctx, |s| {
+                s.embed(|e| {
+                    e.title("Failed to assign role!")
+                        .description("Please contact Host or Moderators for this issue!")
+                })
+            })
+            .await?;
+            None
+        }
+    };
     let mut member = match ctx.author_member().await {
         Some(m) => m.deref().to_owned(),
         None => {
@@ -296,7 +271,10 @@ async fn assign_role(
             ))));
         }
     };
-    match member.add_role((*ctx).http(), role_id).await {
+    match member
+        .add_role((*ctx).http(), role.unwrap().parse::<u64>().unwrap())
+        .await
+    {
         Ok(_) => Ok(()),
         Err(_) => {
             let user = *ctx.author().id.as_u64();
@@ -313,38 +291,14 @@ async fn assign_role(
     }
 }
 
-async fn insert_player(
-    ctx: &Context<'_>,
-    player: &Option<Document>,
-    region: &Option<Region>,
-) -> Result<(), Error> {
-    let collection: Collection<Document> =
-        ctx.data().database.regional_databases[&region.clone().unwrap()].collection("Players");
-    match collection.insert_one(player.clone().unwrap(), None).await {
-        Ok(_) => {}
-        Err(err) => match err.kind.as_ref() {
-            mongodb::error::ErrorKind::Command(code) => {
-                error!("Command error: {:?}", code);
-            }
-            mongodb::error::ErrorKind::Write(code) => {
-                error!("Write error: {:?}", code);
-            }
-            _ => {
-                error!("Error: {:?}", err);
-            }
-        },
-    };
-    Ok(())
-}
-
-async fn account_available(ctx: &Context<'_>, tag: String) -> Result<bool, Error>{
-    match find_tag(ctx, tag.as_str()).await{
+async fn account_available(ctx: &Context<'_>, tag: String) -> Result<bool, Error> {
+    match find_tag(ctx, tag.as_str()).await {
         Some(_) => Ok(false),
-        None => Ok(true)
+        None => Ok(true),
     }
 }
 
-async fn already_used(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error>{
+async fn already_used(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.embed(|e|{
             e.title("This account has already been used!")
