@@ -1,3 +1,4 @@
+use crate::bracket_tournament::api::APIResult;
 use crate::bracket_tournament::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::add::add_player;
@@ -145,7 +146,7 @@ async fn display_confirmation(
     register: &PlayerRegistration,
 ) -> Result<Option<Document>, Error> {
     match api::request("player", register.tag.clone().unwrap().as_str()).await {
-        Ok(Some(player)) => {
+        Ok(APIResult::Successful(player)) => {
             let club = player["club"]["name"]
                 .as_str()
                 .map_or("No Club", |name| name);
@@ -197,7 +198,7 @@ async fn display_confirmation(
                 &register.region.clone().unwrap(),
             )));
         }
-        Ok(None) => {
+        Ok(APIResult::APIError(_)) => {
             prompt(
                 ctx,
                 msg,
@@ -209,7 +210,7 @@ async fn display_confirmation(
             .await?;
             Ok(None)
         }
-        Err(_) => {
+        Ok(APIResult::NotFound(_)) | Err(_) => {
             prompt(
                 ctx,
                 msg,
