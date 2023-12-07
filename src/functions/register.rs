@@ -145,53 +145,69 @@ async fn display_confirmation(
     register: &PlayerRegistration,
 ) -> Result<Option<Document>, Error> {
     match api::request("player", register.tag.clone().unwrap().as_str()).await {
-        Ok(player) => {
-            let club = match player["club"]["name"] {
-                serde_json::Value::Null => "No Club",
-                _ => player["club"]["name"].as_str().unwrap(),
-            };
-            msg.edit(*ctx,|s| {
+        Ok(Some(player)) => {
+            let club = player["club"]["name"]
+                .as_str()
+                .map_or("No Club", |name| name);
+    
+            msg.edit(*ctx, |s| {
                 s.components(|c| {
-                        c.create_action_row(|a| {
-                            a.create_button(|b| {
-                                b.label("Confirm")
-                                    .style(poise::serenity_prelude::ButtonStyle::Success)
-                                    .custom_id("confirm")
-                            })
-                            .create_button(|b| {
-                                b.label("Cancel")
-                                    .style(poise::serenity_prelude::ButtonStyle::Danger)
-                                    .custom_id("cancel")
-                            })
+                    c.create_action_row(|a| {
+                        a.create_button(|b| {
+                            b.label("Confirm")
+                                .style(poise::serenity_prelude::ButtonStyle::Success)
+                                .custom_id("confirm")
+                        })
+                        .create_button(|b| {
+                            b.label("Cancel")
+                                .style(poise::serenity_prelude::ButtonStyle::Danger)
+                                .custom_id("cancel")
                         })
                     })
-                    .reply(true)
-                    .ephemeral(true)
-                    .embed(|e| {
-                        e.author(|a| a.name(ctx.author().name.clone()))
-                        .title(format!("Step 3: Verify the following account: **{} ({})**", player["name"].as_str().unwrap(), player["tag"].as_str().unwrap()))
-                        .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
-                        .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
-                        .fields(vec![
-                            ("**Region**", format!("{}",register.region.clone().unwrap()).as_str(), true),
-                            ("Trophies", player["trophies"].to_string().as_str(), true),
-                            ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
-                            ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
-                            ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
-                            ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
-                            ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]),true),
-                            ("Club", club, true),
-                        ])
-                        .timestamp(ctx.created_at())
-                    })
-            }
-          )
+                })
+                .reply(true)
+                .ephemeral(true)
+                .embed(|e| {
+                    e.author(|a| a.name(ctx.author().name.clone()))
+                    .title(format!(
+                        "Step 3: Verify the following account: **{} ({})**",
+                        player["name"].as_str().unwrap(),
+                        player["tag"].as_str().unwrap()
+                    ))
+                    .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
+                    .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
+                    .fields(vec![
+                        ("**Region**", format!("{}", register.region.clone().unwrap()).as_str(), true),
+                        ("Trophies", player["trophies"].to_string().as_str(), true),
+                        ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
+                        ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
+                        ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
+                        ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
+                        ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]), true),
+                        ("Club", club, true),
+                    ])
+                    .timestamp(ctx.created_at())
+                })
+            })
             .await?;
+    
             return Ok(Some(make_player_doc(
                 &player,
                 &ctx.author_member().await.unwrap().user.id.to_string(),
                 &register.region.clone().unwrap(),
             )));
+        }
+        Ok(None) => {
+            prompt(
+                ctx,
+                msg,
+                "The API is so uncanny!",
+                "Please try again later",
+                None,
+                None,
+            )
+            .await?;
+            Ok(None)
         }
         Err(_) => {
             prompt(
@@ -200,11 +216,13 @@ async fn display_confirmation(
                 "Failed to find your account!",
                 "We failed to find your account! Please try again!",
                 None,
-                None
-            ).await?;
-            return Ok(None);
+                None,
+            )
+            .await?;
+            Ok(None)
         }
     }
+    
 }
 
 async fn confirm(

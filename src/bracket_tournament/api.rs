@@ -78,7 +78,7 @@ fn get_battle_log(player_tag: &str) -> String {
 /// }
 /// ```
 
-pub async fn request(option: &str, tag: &str) -> Result<Value, Error> {
+pub async fn request(option: &str, tag: &str) -> Result<Option<Value>, Error> {
     let proper_tag = match tag.starts_with('#') {
         true => &tag[1..],
         false => tag,
@@ -98,13 +98,13 @@ pub async fn request(option: &str, tag: &str) -> Result<Value, Error> {
 
     if response.status().is_success() {
         let data: Value = response.json().await?;
-        Ok(data)
+        Ok(Some(data))
     } else {
         error!(
             "API responded with an unsuccessful status code: {}",
             response.status()
         );
         error!("API response body: {:?}", response.text().await);
-        Err(Box::new(CustomError("Unsuccessful response".to_string())))
+        Ok(None)
     }
 }
