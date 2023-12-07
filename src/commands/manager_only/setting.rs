@@ -86,7 +86,7 @@ async fn display_config(
     } else {
         "Closed"
     };
-    let tournament_status = if config.get("tournament_started").unwrap().as_bool().unwrap() {
+    let tournament_status = if config.get("tournament").unwrap().as_bool().unwrap() {
         "Ongoing"
     } else {
         "Not yet started"
