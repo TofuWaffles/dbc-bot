@@ -1,9 +1,12 @@
-use crate::misc::CustomError;
 use crate::Error;
 use poise::serenity_prelude::json::Value;
 use reqwest;
-use tracing::error;
 
+pub enum APIResult{
+    Successful(Value),
+    NotFound(u16),
+    APIError(u16),
+}
 /// Constructs an API link based on the provided option and tag.
 ///
 /// # Arguments
@@ -64,21 +67,8 @@ fn get_battle_log(player_tag: &str) -> String {
 /// # Panics
 ///
 /// This function will panic if the `BRAWL_STARS_TOKEN` environment variable is not found.
-///
-/// # Examples
-///
-/// ```rust
-/// use serde_json::Value;
-/// use your_module::request;
-///
-/// async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-///     let response = request("player", "#example_tag").await?;
-///     // Process the JSON response data here
-///     Ok(())
-/// }
-/// ```
 
-pub async fn request(option: &str, tag: &str) -> Result<Option<Value>, Error> {
+pub async fn request(option: &str, tag: &str) -> Result<APIResult, Error> {
     let proper_tag = match tag.starts_with('#') {
         true => &tag[1..],
         false => tag,
@@ -98,13 +88,11 @@ pub async fn request(option: &str, tag: &str) -> Result<Option<Value>, Error> {
 
     if response.status().is_success() {
         let data: Value = response.json().await?;
-        Ok(Some(data))
+        Ok(APIResult::Successful(data))
+    } else if response.status().is_client_error() {
+        Ok(APIResult::NotFound(response.status().as_u16()))
     } else {
-        error!(
-            "API responded with an unsuccessful status code: {}",
-            response.status()
-        );
-        error!("API response body: {:?}", response.text().await);
-        Ok(None)
+        Ok(APIResult::APIError(response.status().as_u16()))
     }
+    
 }

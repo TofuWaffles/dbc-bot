@@ -1,5 +1,5 @@
 use crate::{
-    bracket_tournament::{api, region::Region},
+    bracket_tournament::{api::{self, APIResult}, region::Region},
     misc::get_difficulty,
     Context, Error, discord::prompt,
 };
@@ -14,7 +14,7 @@ pub async fn view_info(
     let tag = player.get_str("tag").unwrap();
     let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
     match api::request("player", tag).await {
-        Ok(Some(player)) => {
+        Ok(APIResult::Successful(player)) => {
             let club = player["club"]["name"]
                 .as_str()
                 .map_or("No Club", |name| name);
@@ -41,7 +41,7 @@ pub async fn view_info(
             })
             .await?;
         },
-        Ok(None) | Err(_) => {
+        _ => {
             prompt(
                 ctx,
                 msg, 
