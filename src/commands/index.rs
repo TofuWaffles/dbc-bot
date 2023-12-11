@@ -1,8 +1,12 @@
 use poise::ReplyHandle;
-use crate::database_utils::find::find_player;
+use crate::bracket_tournament::config::get_config;
+use crate::bracket_tournament::region::Region;
+use crate::database_utils::find::{find_player, find_round};
 use crate::database_utils::open::{all_tournaments, registration};
 use crate::discord::menu::registration_menu;
+use crate::discord::menu::tournament_menu;
 use crate::discord::prompt::prompt;
+use crate::database_utils::battle::is_battle;
 use crate::{Context, Error};
 const DELAY: u64 = 1;
 
@@ -32,19 +36,21 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     if all_tournaments(&ctx).await {
         match find_player(&ctx).await? {
             Some(player) => {
-                todo!();
+                if is_battle(&ctx, player.get("tag").unwrap().as_str(), find_round(&get_config(&ctx, Region::from_bson(player.get("region").unwrap()).as_ref().unwrap()).await)).await? {
+                    return tournament_menu(&ctx, &msg, true, true, true, Some(player)).await;
+                } else {
+                    return tournament_menu(&ctx, &msg, false, false, false, None).await;
+                };
             }
-            None => {
-                return Ok(prompt(
-                    &ctx,
-                    &msg,
-                    "No registration found :(",
-                    "You are not registered for any tournaments, would you like to register?",
-                    None,
-                    None,
-                )
-                .await?);
-            }
+            None => return Ok(prompt(
+                &ctx,
+                &msg,
+                "No registration found :(",
+                "You are not registered for any tournaments, would you like to register?",
+                None,
+                None,
+            )
+            .await?),
         }
     } else {
         if registration(&ctx).await {

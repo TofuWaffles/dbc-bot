@@ -80,8 +80,8 @@ async fn run() -> Result<(), Error> {
 
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
-    let owner_id =
-        std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");
+    /*let owner_id =
+        std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");*/
 
     info!("Setting up the bot...");
 
@@ -115,7 +115,7 @@ async fn run() -> Result<(), Error> {
                 );
             })
         },
-        owners: std::collections::HashSet::from([UserId::from_str(&owner_id)?]),
+        //owners: std::collections::HashSet::from([UserId::from_str(&owner_id)?]),
         on_error: |error| Box::pin(on_error(error)),
         ..Default::default()
     };

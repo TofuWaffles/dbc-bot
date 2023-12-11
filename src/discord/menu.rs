@@ -67,7 +67,7 @@ pub async fn registration_menu(
         })
         .embed(|e| {
             e.title("Registration Menu")
-                .description("Below are your available options!")
+                .description("Below are the available options!")
         })
     })
     .await?;
@@ -113,7 +113,7 @@ pub async fn tournament_menu(
     schedule: bool,
     submit: bool,
     help: bool,
-    player: Document,
+    player: Option<Document>,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |e| {
         e.components(|c| {
@@ -141,7 +141,40 @@ pub async fn tournament_menu(
                 })
             })
         })
+        .embed(|e| {
+            e.title("Tournament Menu")
+                .description("Below are the available options!")
+        })
     })
     .await?;
+    let resp = msg.clone().into_message().await?;
+    let cib = resp
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT));
+    let mut cic = cib.build();
+    while let Some(mci) = &cic.next().await {
+        match mci.data.custom_id.as_str() {
+            "enemy" => {
+                mci.defer(&ctx.http()).await?;
+                return register_menu(ctx, msg).await;
+            }
+            "submit" => {
+                mci.defer(&ctx.http()).await?;
+                return deregister_menu(ctx, msg, player.unwrap()).await;
+            }
+            "help" => {
+                mci.defer(&ctx.http()).await?;
+                return prompt(
+                  ctx,
+                  msg,
+                  "This is still under development!", 
+                  "This feature is still under development, please be patient!", 
+                  Some("https://tenor.com/view/josh-hutcherson-josh-hutcherson-whistle-edit-whistle-2014-meme-gif-1242113167680346055"),
+                  None
+              ).await;
+            }
+            _ => {}
+        }
+    }
     Ok(())
 }

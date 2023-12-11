@@ -1,3 +1,5 @@
+use std::str::FromStr;
+use mongodb::bson::Bson;
 use strum_macros::EnumIter;
 
 // Define an enum called `Region` to represent geographical regions.
@@ -18,6 +20,14 @@ impl Region {
             "NASA" => Some(Region::NASA),
             "EU" => Some(Region::EU),
             "APAC" => Some(Region::APAC),
+            _ => None,
+        }
+    }
+    pub fn from_bson(bson: &Bson) -> Option<Self> {
+        match bson {
+            Bson::String(s) => {
+                Some(Self::from_str(s).unwrap())
+            }
             _ => None,
         }
     }

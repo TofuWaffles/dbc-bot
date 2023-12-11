@@ -31,3 +31,23 @@ pub async fn battle_happened(
         }
     }
 }
+
+pub async fn is_battle(
+    ctx: &Context<'_>,
+    tag: Option<&str>,
+    round: String,
+) -> Result<bool, Error> {
+    let collection: mongodb::Collection<mongodb::bson::Document> = ctx.data().database.general.collection(round.as_str());
+    let player = collection.find_one(doc! {"tag": tag}, None).await?;
+    match player {
+        Some(player) => {
+            return Ok(player
+                .get("battle")
+                .and_then(|b| b.as_bool())
+                .unwrap_or(false))
+        }
+        None => {
+            return Ok(false);
+        }
+    }
+}

@@ -116,7 +116,6 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
     result
 }
 
-
 pub fn is_mannequin(enemy: &Document) -> bool {
     enemy.get("tag").unwrap() == &Bson::Null
 }
