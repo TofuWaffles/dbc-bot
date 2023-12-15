@@ -1,11 +1,12 @@
 use std::io::Cursor;
 
 use crate::{
-    bracket_tournament::{config::get_config, region},
+    bracket_tournament::region,
     database_utils::{
         battle::battle_happened,
         find::{find_player, find_enemy, find_round, is_mannequin},
         open::tournament,
+        config::get_config,
     },
     misc::QuoteStripper,
     visual::pre_battle::generate_pre_battle_img,

@@ -1,20 +1,20 @@
-use crate::commands::view::{view_opponent, view_managers};
-use crate::commands::submit::submit_result;
-use crate::functions::disqualify::disqualify_players;
+use crate::bracket_tournament::region::Region;
+use crate::functions::view2::{view_opponent, view_managers};
+use crate::functions::submit::submit_result;
+
 use crate::functions::register::register_menu;
+use crate::host::disqualify::disqualify_players;
+use crate::host::config::configurate;
 use crate::{
     functions::{deregister::deregister_menu, view::view_info},
     Context, Error,
 };
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::CreateActionRow;
 use poise::{
     serenity_prelude::{ButtonStyle, ReactionType},
     ReplyHandle,
 };
-
 use super::prompt::prompt;
 
 const TIMEOUT: u64 = 300;
@@ -197,6 +197,7 @@ pub async fn tournament_menu(
 pub async fn mod_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
+    region: &Region,
     disqualify: bool,
     managers: bool,
     submit: bool,
@@ -236,8 +237,8 @@ pub async fn mod_menu(
             })
         })
         .embed(|e| {
-            e.title("Tournament Menu")
-                .description("Below are the available options!")
+            e.title("Host-only menu")
+                .description(format!("The following mod menu is set for region: {}", region))
         })
     })
     .await?;
@@ -250,7 +251,7 @@ let resp = msg.clone().into_message().await?;
         match mci.data.custom_id.as_str() {
             "disqualify" => {
                 mci.defer(&ctx.http()).await?;
-                return disqualify_players(ctx).await;
+                return disqualify_players(ctx, msg).await;
             }
             "registration" => {
                 mci.defer(&ctx.http()).await?;
@@ -258,7 +259,7 @@ let resp = msg.clone().into_message().await?;
             }
             "configuration" => {
                 mci.defer(&ctx.http()).await?;
-                return todo!();
+                return configurate(ctx, msg, region).await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;

@@ -1,13 +1,12 @@
 use poise::ReplyHandle;
-use crate::bracket_tournament::config::get_config;
+use crate::database_utils::config::get_config;
 use crate::bracket_tournament::region::Region;
 use crate::database_utils::find::{find_player, find_round};
 use crate::database_utils::open::{all_tournaments, registration};
-use crate::discord::menu::{registration_menu, mod_menu};
+use crate::discord::menu::registration_menu;
 use crate::discord::menu::tournament_menu;
 use crate::discord::prompt::prompt;
 use crate::database_utils::battle::is_battle;
-use crate::checks::user_is_manager;
 use crate::{Context, Error};
 const DELAY: u64 = 1;
 
@@ -34,9 +33,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     };
 
     std::thread::sleep(std::time::Duration::from_secs(DELAY));
-    if user_is_manager(ctx).await.unwrap() {
-        return mod_menu(&ctx, &msg, true, true, true, true).await;
-    } else if all_tournaments(&ctx).await {
+          
+    if all_tournaments(&ctx).await {
         match find_player(&ctx).await? {
             Some(player) => {
                 if is_battle(&ctx, player.get("tag").unwrap().as_str(), find_round(&get_config(&ctx, Region::from_bson(player.get("region").unwrap()).as_ref().unwrap()).await)).await? {

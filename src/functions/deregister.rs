@@ -1,4 +1,4 @@
-use crate::bracket_tournament::config::get_config;
+use crate::database_utils::config::get_config;
 use crate::bracket_tournament::region::Region;
 use crate::database_utils::remove::remove_player;
 use crate::misc::CustomError;

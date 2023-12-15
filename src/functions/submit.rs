@@ -1,7 +1,8 @@
 use crate::bracket_tournament::api::APIResult;
 use crate::bracket_tournament::{
-    api, config::get_config, match_id::update_match_id, region, update_battle::update_battle,
+    api, match_id::update_match_id, region, update_battle::update_battle,
 };
+use crate::database_utils::config::get_config;
 use crate::database_utils::battle::battle_happened;
 use crate::database_utils::find::{find_enemy, find_player, find_round, is_mannequin};
 use crate::database_utils::open::tournament;

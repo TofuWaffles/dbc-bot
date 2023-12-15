@@ -1,5 +1,4 @@
 pub mod api;
-pub mod config;
 pub mod mannequin;
 pub mod match_id;
 pub mod region;

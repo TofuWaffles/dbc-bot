@@ -1,5 +1,5 @@
 use crate::bracket_tournament::api::APIResult;
-use crate::bracket_tournament::config::{get_config, make_player_doc};
+use crate::database_utils::config::{get_config, make_player_doc};
 use crate::bracket_tournament::{api, region::Region};
 use crate::database_utils::add::add_player;
 use crate::database_utils::find::{find_tag, self};
@@ -233,7 +233,7 @@ async fn confirm(
 ) -> Result<(), Error> {
    
     info!("Confirming registration");
-    add_player(&ctx, &register.player, &register.region).await?;
+    add_player(&ctx, register.player.clone().unwrap(), &register.region).await?;
     assign_role(&ctx, &msg, &register.region).await?;
     prompt(
         ctx,

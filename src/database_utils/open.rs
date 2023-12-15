@@ -1,4 +1,4 @@
-use crate::bracket_tournament::config::get_config;
+use super::config::get_config;
 use crate::{bracket_tournament::region::Region, Context};
 use strum::IntoEnumIterator;
 

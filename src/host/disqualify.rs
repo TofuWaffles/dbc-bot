@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use mongodb::bson::{doc, Document};
+use mongodb::bson::Document;
 use poise::ReplyHandle;
 use crate::bracket_tournament::region::Region;
 use crate::database_utils::find::find_id;
@@ -25,9 +25,10 @@ struct DisqualifyModal {
 
 pub async fn disqualify_players(
     ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>
 ) -> Result<(), Error> {
-    let msg = ctx
-        .send(|s| {
+   msg
+        .edit(*ctx, |s| {
             s.ephemeral(true)
                 .reply(true)
                 .content("Attempting to disqualify player...")

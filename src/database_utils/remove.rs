@@ -1,5 +1,5 @@
 use crate::Region;
-use crate::bracket_tournament::config::get_config;
+use super::config::get_config;
 use crate::bracket_tournament::mannequin::add_mannequin;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};

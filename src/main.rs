@@ -18,6 +18,7 @@ mod commands;
 mod database_utils;
 mod discord;
 mod functions;
+mod host;
 mod misc;
 mod visual;
 
@@ -57,7 +58,9 @@ async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
     let commands = vec![
-        commands::index::index(), // // commands::battle_log::latest_log(),
+        commands::index::index(),  
+        commands::host::host(),
+        // commands::battle_log::latest_log(),
         // commands::draco::draco(),
         // commands::index::index(),
         // // commands::player::player(),
@@ -68,7 +71,7 @@ async fn run() -> Result<(), Error> {
         // commands::manager_only::registry_open::close_registration(),
         // commands::manager_only::member_info::get_individual_player_data(),
         // commands::manager_only::member_info::get_all_players_data(),
-        commands::manager_only::setting::config(),
+        // commands::manager_only::setting::config(),
         // commands::manager_only::setting2::set_manager(),
         // commands::manager_only::setting2::set_round(),
         // commands::manager_only::start_tournament::start_tournament(),
@@ -184,7 +187,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
     let required_collections = vec!["Players", "Managers"];
-    let required_regional_collections = bracket_tournament::config::make_config();
+    let required_regional_collections = database_utils::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the collection already exists and skips creation
