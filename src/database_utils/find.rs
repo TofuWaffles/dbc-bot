@@ -25,6 +25,23 @@ pub async fn find_player(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
     Ok(None)
 }
 
+pub async fn find_id(ctx: &Context<'_>, region: Region, user_id: u64) -> Result<Option<Document>, Error> {
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let collection: Collection<Document> = database.collection("Players");
+    let filter = doc! {"discord_id": user_id.to_string()};
+    match collection.find_one(filter, None).await {
+        Ok(result) => match result {
+            Some(p) => {
+                return Ok(Some(p));
+            }
+            None => return Ok(None),
+        },
+        Err(_) => {
+            return Ok(None);
+        }
+    };
+}
+
 pub fn find_round(config: &Document) -> String {
     let round = match config.get("round") {
         Some(round) => {

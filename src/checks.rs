@@ -50,7 +50,6 @@ use tracing::{info, instrument};
 ///
 /// Make sure to handle potential errors that may occur during the role check or when
 /// sending a response message.
-#[instrument]
 pub async fn user_is_manager(ctx: Context<'_>) -> Result<bool, Error> {
     info!("Checking permissions...");
     let guild_id = ctx.guild_id().unwrap().to_string();
