@@ -1,4 +1,4 @@
-use crate::misc::get_icon;
+use dbc_bot::get_icon;
 use std::error::Error;
 
 use super::helper::align::{center_x, center_y};

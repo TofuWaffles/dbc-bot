@@ -1,2 +1,2 @@
-pub mod disqualify;
 pub mod config;
+pub mod disqualify;

@@ -1,8 +1,7 @@
 use crate::database_utils::config::get_config;
-use crate::bracket_tournament::region::Region;
 use crate::database_utils::remove::remove_player;
-use crate::misc::CustomError;
 use crate::{Context, Error};
+use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::serenity_prelude::ButtonStyle;

@@ -1,12 +1,13 @@
-use crate::bracket_tournament::region::Region;
-use crate::functions::view2::{view_opponent, view_managers};
-use crate::functions::submit::submit_result;
+use crate::players::submit::submit_result;
+use crate::players::view2::{view_managers, view_opponent};
+use dbc_bot::Region;
 
-use crate::functions::register::register_menu;
-use crate::host::disqualify::disqualify_players;
+use super::prompt::prompt;
 use crate::host::config::configurate;
+use crate::host::disqualify::disqualify_players;
+use crate::players::register::register_menu;
 use crate::{
-    functions::{deregister::deregister_menu, view::view_info},
+    players::{deregister::deregister_menu, view::view_info},
     Context, Error,
 };
 use futures::StreamExt;
@@ -15,7 +16,6 @@ use poise::{
     serenity_prelude::{ButtonStyle, ReactionType},
     ReplyHandle,
 };
-use super::prompt::prompt;
 
 const TIMEOUT: u64 = 300;
 /// Displays a registration menu with various options.
@@ -177,6 +177,10 @@ pub async fn tournament_menu(
                 mci.defer(&ctx.http()).await?;
                 return submit_result(ctx).await;
             }
+            "view" => {
+                mci.defer(&ctx.http()).await?;
+                return todo!();
+            }
             "help" => {
                 mci.defer(&ctx.http()).await?;
                 return prompt(
@@ -237,12 +241,14 @@ pub async fn mod_menu(
             })
         })
         .embed(|e| {
-            e.title("Host-only menu")
-                .description(format!("The following mod menu is set for region: {}", region))
+            e.title("Host-only menu").description(format!(
+                "The following mod menu is set for region: {}",
+                region
+            ))
         })
     })
     .await?;
-let resp = msg.clone().into_message().await?;
+    let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(TIMEOUT));

@@ -3,7 +3,8 @@ use mongodb::bson::Bson;
 use poise::serenity_prelude::{Colour, Timestamp};
 use std::error::Error;
 use std::fmt;
-
+use std::str::FromStr;
+use strum_macros::EnumIter;
 /// A trait for stripping quotes from a string.
 pub trait QuoteStripper {
     /// Strip double quotes from the string and return a new String.
@@ -11,15 +12,6 @@ pub trait QuoteStripper {
 }
 
 impl QuoteStripper for String {
-    /// Strip double quotes from the string and return a new String.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let s = String::from("\"Hello, world!\"");
-    /// let stripped = s.strip_quote();
-    /// assert_eq!(stripped, "Hello, world!");
-    /// ```
     fn strip_quote(&self) -> String {
         let mut result = String::new();
 
@@ -33,27 +25,6 @@ impl QuoteStripper for String {
     }
 }
 
-/// This function converts a difficulty level represented as a serde_json::Value into its corresponding
-/// textual representation.
-///
-/// # Arguments
-///
-/// * `num` - A reference to a serde_json::Value representing the difficulty level.
-///
-/// # Returns
-///
-/// A String representing the textual description of the difficulty level. If the provided numeric value
-/// does not correspond to a recognized difficulty level, a default message is returned.
-///
-/// # Examples
-///
-/// ```
-/// use poise::serenity_prelude::json::json;
-///
-/// let num = json!(3);
-/// let difficulty = get_difficulty(&num);
-/// assert_eq!(difficulty, "Expert");
-/// ```
 pub fn get_difficulty(num: &serde_json::Value) -> String {
     let option: i32 = serde_json::from_value(num.clone()).unwrap();
     match option {
@@ -82,26 +53,6 @@ pub fn get_difficulty(num: &serde_json::Value) -> String {
     }
 }
 
-/// This function returns the URL of a game mode icon based on the provided event name.
-///
-/// # Arguments
-///
-/// * `event_name` - A string slice containing the name of the event.
-///
-/// # Returns
-///
-/// An `Option<&str>` representing the URL of the event icon. If the event name is recognized,
-/// it returns `Some(&str)` with the URL; otherwise, it returns `None`.
-///
-/// # Examples
-///
-/// ```
-/// let event_name = "gemGrab";
-/// match get_mode_icon(event_name) {
-///     Some(url) => println!("URL for {} is {}", event_name, url),
-///     None => println!("Event name {} not found.", event_name),
-/// }
-/// ```
 pub fn get_mode_icon(event_name: String) -> String {
     // Match the event_name to known event names and return the corresponding URL as Some(&str)
     let event = match event_name.as_str() {
@@ -127,27 +78,77 @@ pub fn get_player_icon_url(icon_id: String) -> String {
     format!("https://cdn-old.brawlify.com/profile-low/{}.png", icon_id)
 }
 
-/// `get_icon` function takes an `icon` parameter and returns a closure (boxed function)
-/// that generates an icon URL based on the provided icon type.
-///
-/// # Arguments
-///
-/// * `icon` - A string representing the type of icon. There are 2 options for this: `player`, and `mode`.
-///
-/// # Returns
-///
-/// A boxed closure that takes a string and returns a string, representing the generated icon URL.
-///
-/// # Examples
-/// ```rs
-/// let icon = document.get("icon").unwrap().to_string().strip_quote();
-/// let icon_url = get_icon("player")(icon);
-/// ```
 pub fn get_icon(icon: &str) -> Box<dyn Fn(String) -> String> {
     match icon {
         "player" => Box::new(get_player_icon_url),
         "mode" => Box::new(get_mode_icon),
         _ => unreachable!("Invalid icon type"),
+    }
+}
+
+// Define an enum called `Region` to represent geographical regions.
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq, Clone)]
+pub enum Region {
+    #[name = "North America & South America"]
+    NASA,
+    #[name = "Europe"]
+    EU,
+    #[name = "Asia & Oceania"]
+    APAC,
+}
+
+impl Region {
+    pub fn find_key(name: &str) -> Option<Region> {
+        match name {
+            "NASA" => Some(Region::NASA),
+            "EU" => Some(Region::EU),
+            "APAC" => Some(Region::APAC),
+            _ => None,
+        }
+    }
+    pub fn from_bson(bson: &Bson) -> Option<Self> {
+        match bson {
+            Bson::String(s) => Some(Self::from_str(s).unwrap()),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum Mode {
+    #[name = "Wipeout"]
+    wipeout,
+    #[name = "Brawl Ball"]
+    brawlBall,
+    #[name = "Gem Grab"]
+    gemGrab,
+    #[name = "Heist"]
+    heist,
+    #[name = "Hot Zone"]
+    hotZone,
+    #[name = "Knockout"]
+    knockout,
+    #[name = "Siege"]
+    siege,
+    #[name = "Bounty"]
+    bounty,
+}
+
+impl Mode {
+    pub fn find_key(name: &str) -> Option<Mode> {
+        match name {
+            "Wipeout" | "wipeout" => Some(Mode::wipeout),
+            "Brawl Ball" | "brawlBall" => Some(Mode::brawlBall),
+            "Gem Grab" | "gemGrab" => Some(Mode::gemGrab),
+            "Heist" | "heist" => Some(Mode::heist),
+            "Hot Zone" | "hotZone" => Some(Mode::hotZone),
+            "Knockout" | "knockout" => Some(Mode::knockout),
+            "Siege" | "siege" => Some(Mode::siege),
+            "Bounty" | "bounty" => Some(Mode::bounty),
+            _ => None,
+        }
     }
 }
 

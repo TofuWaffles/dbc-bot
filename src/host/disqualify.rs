@@ -1,11 +1,11 @@
-use futures::StreamExt;
-use mongodb::bson::Document;
-use poise::ReplyHandle;
-use crate::bracket_tournament::region::Region;
 use crate::database_utils::find::find_id;
 use crate::database_utils::remove::remove_player;
 use crate::discord::prompt::prompt;
 use crate::{Context, Error};
+use dbc_bot::Region;
+use futures::StreamExt;
+use mongodb::bson::Document;
+use poise::ReplyHandle;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 const TIMEOUT: u64 = 120;
@@ -23,17 +23,13 @@ struct DisqualifyModal {
     user_id: String,
 }
 
-pub async fn disqualify_players(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>
-) -> Result<(), Error> {
-   msg
-        .edit(*ctx, |s| {
-            s.ephemeral(true)
-                .reply(true)
-                .content("Attempting to disqualify player...")
-        })
-        .await?;
+pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    msg.edit(*ctx, |s| {
+        s.ephemeral(true)
+            .reply(true)
+            .content("Attempting to disqualify player...")
+    })
+    .await?;
     let mut disqualification = PlayerDisqualification {
         user_id: None,
         region: None,
@@ -47,36 +43,55 @@ pub async fn disqualify_players(
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "APAC" | "EU" | "NASA" => {
-                disqualification.region = Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
+                disqualification.region =
+                    Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
                 mci.defer(&ctx.http()).await?;
                 disqualify_id(&ctx, &msg).await?;
                 continue;
             }
             "open_modal" => {
                 disqualification.user_id = Some(create_disqualify_modal(&ctx, mci.clone()).await?);
-                match find_id(&ctx, disqualification.region.clone().unwrap(), disqualification.user_id.clone().unwrap().parse::<u64>().unwrap()).await {
-                    Ok(Some(player)) => {
-                        display_confirmation(&ctx, &msg, &player).await?
-                    }
+                match find_id(
+                    &ctx,
+                    disqualification.region.clone().unwrap(),
+                    disqualification
+                        .user_id
+                        .clone()
+                        .unwrap()
+                        .parse::<u64>()
+                        .unwrap(),
+                )
+                .await
+                {
+                    Ok(Some(player)) => display_confirmation(&ctx, &msg, &player).await?,
                     Ok(None) => {
                         ctx.send(|s| {
                             s.reply(true)
-                            .ephemeral(true)
-                                .embed(|e| {
-                                    e.description("No player is found for this ID")
-                                })
-                        }).await?;
+                                .ephemeral(true)
+                                .embed(|e| e.description("No player is found for this ID"))
+                        })
+                        .await?;
                         return Ok(());
                     }
-                    Err(_) => {},
+                    Err(_) => {}
                 }
             }
             "confirm" => {
-                match find_id(&ctx, disqualification.region.clone().unwrap(), disqualification.user_id.clone().unwrap().parse::<u64>().unwrap()).await {
-                    Ok(Some(player)) => {
-                        match remove_player(&ctx, &player).await {
-                            Ok(round) => {
-                                ctx.send(|s| {
+                match find_id(
+                    &ctx,
+                    disqualification.region.clone().unwrap(),
+                    disqualification
+                        .user_id
+                        .clone()
+                        .unwrap()
+                        .parse::<u64>()
+                        .unwrap(),
+                )
+                .await
+                {
+                    Ok(Some(player)) => match remove_player(&ctx, &player).await {
+                        Ok(round) => {
+                            ctx.send(|s| {
                                     s.reply(true)
                                     .ephemeral(true)
                                         .embed(|e| {
@@ -87,13 +102,12 @@ pub async fn disqualify_players(
                                             round))
                                         })
                                 }).await?;
-                                return Ok(());
-                            }
-                            Err(_) => {},
+                            return Ok(());
                         }
-                    }
-                    Ok(None) => {},
-                    Err(_) => {},
+                        Err(_) => {}
+                    },
+                    Ok(None) => {}
+                    Err(_) => {}
                 }
             }
             "cancel" => {
@@ -104,8 +118,9 @@ pub async fn disqualify_players(
                     "Player disqualification cancelled",
                     "You can return to this menu by running </index:1181542953542488205>",
                     None,
-                    None
-                ).await?;
+                    None,
+                )
+                .await?;
             }
             _ => {
                 continue;
@@ -165,7 +180,7 @@ async fn display_confirmation(
                     b.label("Confirm")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .custom_id("confirm")
-                        })
+                })
                 .create_button(|b| {
                     b.label("Cancel")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
@@ -177,32 +192,40 @@ async fn display_confirmation(
         .ephemeral(true)
         .embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
-            .title(format!(
-                "🔨 Disqualify Players - Step 3: User confirmation",
-            ))
-            .description("**Please confirm this is the player that you would like to disqualify.**")
-            .fields(vec![
-                ("Mention", format!("<@{}>", player.get("discord_id").unwrap().as_str().unwrap()), true),
-                ("Region", player.get("region").unwrap().to_string(), true),
-                ("Name", player.get("name").unwrap().to_string(), true),
-                ("Tag", player.get("tag").unwrap().to_string(), true),
-            ])
-            .timestamp(ctx.created_at())
+                .title(format!("🔨 Disqualify Players - Step 3: User confirmation",))
+                .description(
+                    "**Please confirm this is the player that you would like to disqualify.**",
+                )
+                .fields(vec![
+                    (
+                        "Mention",
+                        format!("<@{}>", player.get("discord_id").unwrap().as_str().unwrap()),
+                        true,
+                    ),
+                    ("Region", player.get("region").unwrap().to_string(), true),
+                    ("Name", player.get("name").unwrap().to_string(), true),
+                    ("Tag", player.get("tag").unwrap().to_string(), true),
+                ])
+                .timestamp(ctx.created_at())
         })
     })
     .await?;
-    
+
     return Ok(());
 }
-    
+
 pub async fn create_disqualify_modal(
     ctx: &Context<'_>,
     mci: Arc<poise::serenity_prelude::MessageComponentInteraction>,
 ) -> Result<String, Error> {
     loop {
-        let result =
-            poise::execute_modal_on_component_interaction::<DisqualifyModal>(ctx, mci.clone(), None, None)
-                .await?;
+        let result = poise::execute_modal_on_component_interaction::<DisqualifyModal>(
+            ctx,
+            mci.clone(),
+            None,
+            None,
+        )
+        .await?;
         match result {
             Some(data) => {
                 return Ok(data.user_id);

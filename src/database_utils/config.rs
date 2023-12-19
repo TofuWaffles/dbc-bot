@@ -1,11 +1,8 @@
-use mongodb::{
-    bson::{doc, Bson::Null, Document},
-    Collection
-};
+use crate::Context;
+use dbc_bot::Region;
+use mongodb::bson::{doc, Bson::Null, Document};
+use mongodb::Collection;
 use poise::serenity_prelude::json::Value;
-
-use crate::{Context, bracket_tournament::region::Region};
-
 
 pub fn make_config() -> Document {
     let config = doc! {

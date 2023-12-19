@@ -29,7 +29,7 @@ pub async fn prompt(
                 .color(c)
                 .image(image.unwrap_or(""))
         })
-        .components(|c|c)
+        .components(|c| c)
     })
     .await?;
     Ok(())

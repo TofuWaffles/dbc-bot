@@ -1,14 +1,14 @@
-use crate::bracket_tournament::api::APIResult;
-use crate::bracket_tournament::{
-    api, match_id::update_match_id, region, update_battle::update_battle,
-};
-use crate::database_utils::config::get_config;
+
+use crate::brawlstars::api::{APIResult, self};
 use crate::database_utils::battle::battle_happened;
+use crate::database_utils::config::get_config;
 use crate::database_utils::find::{find_enemy, find_player, find_round, is_mannequin};
 use crate::database_utils::open::tournament;
-use crate::misc::QuoteStripper;
+use crate::database_utils::update::update_battle;
+use crate::database_utils::update::update_match_id;
 use crate::{Context, Error};
-use mongodb::bson::{doc, Document};
+use dbc_bot::{QuoteStripper, Region};
+use mongodb::bson::Document;
 use mongodb::Collection;
 use poise::serenity_prelude::ChannelId;
 
@@ -38,7 +38,7 @@ pub async fn submit_result(ctx: &Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
     };
-    let region = region::Region::find_key(
+    let region = Region::find_key(
         caller
             .get("region")
             .unwrap()
@@ -174,7 +174,9 @@ async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Doc
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let logs = match api::request("battle_log", &caller_tag).await {
-        Ok(APIResult::Successful(battle_log)) => Some(battle_log["items"].as_array().unwrap().clone()),
+        Ok(APIResult::Successful(battle_log)) => {
+            Some(battle_log["items"].as_array().unwrap().clone())
+        },
         Ok(APIResult::APIError(_)) => None,
         Ok(APIResult::NotFound(_)) | Err(_) => None,
     };

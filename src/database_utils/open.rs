@@ -1,5 +1,6 @@
 use super::config::get_config;
-use crate::{bracket_tournament::region::Region, Context};
+use crate::Context;
+use dbc_bot::Region;
 use strum::IntoEnumIterator;
 
 pub async fn registration(ctx: &Context<'_>) -> bool {

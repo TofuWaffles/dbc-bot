@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
-use crate::{
-    bracket_tournament::region::{Mode, Region},
-    Context, Error,
-};
 use crate::database_utils::config::set_config;
+use crate::{Context, Error};
+use dbc_bot::{Mode, Region};
 use futures::StreamExt;
 use mongodb::{bson::doc, bson::Document, Collection};
+use std::sync::Arc;
 
 use poise::{
     serenity_prelude::{CreateSelectMenuOption, MessageComponentInteraction},
@@ -14,13 +11,11 @@ use poise::{
 };
 use strum::IntoEnumIterator;
 
-
 #[derive(Debug, poise::Modal)]
 #[allow(dead_code)] // fields only used for Debug print
 struct TournamentMap {
     name: String,
 }
-
 
 pub async fn configurate(
     ctx: &Context<'_>,
@@ -29,14 +24,13 @@ pub async fn configurate(
 ) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    msg
-        .edit(*ctx,|s| {
-            s.ephemeral(true).reply(true).embed(|e| {
-                e.title("Awaiting to get config")
-                    .description("Please wait...")
-            })
+    msg.edit(*ctx, |s| {
+        s.ephemeral(true).reply(true).embed(|e| {
+            e.title("Awaiting to get config")
+                .description("Please wait...")
         })
-        .await?;
+    })
+    .await?;
     create_select_menu(&ctx, &msg).await?;
     display_config(&ctx, &msg, &region).await?;
     let resp = msg.clone().into_message().await?;

@@ -1,9 +1,9 @@
 use crate::Document;
 use crate::Region;
 use crate::{Context, Error};
-use mongodb::Collection;
 use mongodb::bson::doc;
 use mongodb::options::UpdateOptions;
+use mongodb::Collection;
 use tracing::error;
 
 pub async fn add_player(
@@ -15,7 +15,10 @@ pub async fn add_player(
     let options = UpdateOptions::builder().upsert(true).build();
     let collection: Collection<Document> =
         ctx.data().database.regional_databases[&region.clone().unwrap()].collection("Players");
-    match collection.update_one(filter, player, options).await {
+    let update = doc! {
+        "$set": player
+    };
+    match collection.update_one(filter, update, options).await {
         Ok(_) => {}
         Err(err) => match err.kind.as_ref() {
             mongodb::error::ErrorKind::Command(code) => {

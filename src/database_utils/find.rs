@@ -1,6 +1,7 @@
-use crate::{bracket_tournament::region::Region, misc::CustomError, Context, Error};
+use crate::{Context, Error};
+use dbc_bot::Region;
 use mongodb::{
-    bson::{doc, Document, Bson},
+    bson::{doc, Bson, Document},
     Collection,
 };
 use strum::IntoEnumIterator;
@@ -25,7 +26,11 @@ pub async fn find_player(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
     Ok(None)
 }
 
-pub async fn find_id(ctx: &Context<'_>, region: Region, user_id: u64) -> Result<Option<Document>, Error> {
+pub async fn find_id(
+    ctx: &Context<'_>,
+    region: Region,
+    user_id: u64,
+) -> Result<Option<Document>, Error> {
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
     let filter = doc! {"discord_id": user_id.to_string()};
@@ -87,9 +92,7 @@ pub async fn find_enemy(
     match collection.find_one(filter, None).await {
         Ok(Some(enemy)) => Some(enemy),
         Ok(None) => None,
-        Err(_err) => {
-            None
-        }
+        Err(_err) => None,
     }
 }
 
@@ -136,4 +139,3 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
 pub fn is_mannequin(enemy: &Document) -> bool {
     enemy.get("tag").unwrap() == &Bson::Null
 }
-

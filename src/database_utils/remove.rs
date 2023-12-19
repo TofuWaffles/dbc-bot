@@ -1,6 +1,6 @@
-use crate::Region;
 use super::config::get_config;
-use crate::bracket_tournament::mannequin::add_mannequin;
+use super::mannequin::add_mannequin;
+use crate::Region;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
 
@@ -30,13 +30,13 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
                 .to_string()
                 .parse::<i32>()
                 .unwrap();
-            let mannequin = add_mannequin(&region, Some(match_id), None);
+            let mannequin = add_mannequin(&region, Some(match_id));
             round_collection
                 .delete_one(doc! {"discord_id": player_id}, None)
                 .await?;
             round_collection.insert_one(mannequin, None).await?;
         }
-        None => {},
+        None => {}
     };
     Ok(find_round(&config))
 }

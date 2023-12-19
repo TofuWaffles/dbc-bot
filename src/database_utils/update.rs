@@ -1,11 +1,11 @@
-use super::mannequin::update_mannequin;
-use super::region::Region;
-use crate::Error;
+use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
     bson::{doc, Document},
     Collection, Database,
 };
+
+use crate::{database_utils::mannequin::update_mannequin, Error};
 
 pub async fn assign_match_id(_region: &Region, database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
@@ -61,4 +61,21 @@ pub fn update_match_id(mut player: Document) -> Document {
     player.insert("match_id", new_match_id);
     println!("Match id is updated!");
     player
+}
+
+pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Result<(), Error> {
+    let current_round: Collection<Document> =
+        database.collection(format!("Round {}", round).as_str());
+    let filter = doc! {
+        "match_id": match_id
+    };
+    let update = doc! {
+        "$set": {
+           "battle": true
+        }
+    };
+    current_round.update_many(filter, update, None).await?;
+    println!("Battle is updated!");
+
+    Ok(())
 }

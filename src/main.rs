@@ -1,3 +1,4 @@
+use dbc_bot::Region;
 use mongodb::{
     bson::Document,
     options::{ClientOptions, ResolverConfig},
@@ -7,22 +8,18 @@ use poise::{
     serenity_prelude::{self as serenity, GatewayIntents, UserId},
     Event, FrameworkError,
 };
-use std::{collections::HashMap, fs::File, str::FromStr, sync::Arc};
+use std::{collections::HashMap, fs::File, sync::Arc};
 use strum::IntoEnumIterator;
 use tracing::{error, info, instrument, trace};
 use tracing_subscriber::{filter, prelude::*};
-
 mod bracket_tournament;
-mod checks;
+mod brawlstars;
 mod commands;
 mod database_utils;
 mod discord;
-mod functions;
 mod host;
-mod misc;
+mod players;
 mod visual;
-
-use crate::bracket_tournament::region::Region;
 
 #[derive(Debug)]
 struct Databases {
@@ -58,7 +55,7 @@ async fn run() -> Result<(), Error> {
     // A list of commands to register. Remember to add the function for the command in this vec, otherwise it won't appear in the command list.
     // Might be better to find a more scalable and flexible solution down the line.
     let commands = vec![
-        commands::index::index(),  
+        commands::index::index(),
         commands::host::host(),
         // commands::battle_log::latest_log(),
         // commands::draco::draco(),
@@ -84,7 +81,7 @@ async fn run() -> Result<(), Error> {
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
     /*let owner_id =
-        std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");*/
+    std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");*/
 
     info!("Setting up the bot...");
 

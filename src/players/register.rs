@@ -1,11 +1,11 @@
-use crate::bracket_tournament::api::APIResult;
-use crate::database_utils::config::{get_config, make_player_doc};
-use crate::bracket_tournament::{api, region::Region};
+use crate::brawlstars::api::{request, APIResult};
+use crate::brawlstars::player::stat;
 use crate::database_utils::add::add_player;
-use crate::database_utils::find::{find_tag, self};
+use crate::database_utils::config::{get_config, make_player_doc};
+use crate::database_utils::find::find_tag;
 use crate::discord::prompt::prompt;
-use crate::misc::{get_difficulty, CustomError};
 use crate::{Context, Error};
+use dbc_bot::{get_difficulty, CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::serenity_prelude as serenity;
@@ -14,6 +14,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 use tracing::info;
+
 const TIMEOUT: u64 = 120;
 struct PlayerRegistration {
     tag: Option<String>,
@@ -67,12 +68,10 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
                     }
                 }
             }
-            "confirm" => {
-                return confirm(ctx, msg, &register).await
-            }
+            "confirm" => return confirm(ctx, msg, &register).await,
             "cancel" => {
                 mci.defer(&ctx.http()).await?;
-                return cancel(ctx, msg).await
+                return cancel(ctx, msg).await;
             }
             _ => {
                 continue;
@@ -145,12 +144,12 @@ async fn display_confirmation(
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<Option<Document>, Error> {
-    match api::request("player", register.tag.clone().unwrap().as_str()).await {
+    match request("player", register.tag.clone().unwrap().as_str()).await {
         Ok(APIResult::Successful(player)) => {
             let club = player["club"]["name"]
                 .as_str()
                 .map_or("No Club", |name| name);
-    
+
             msg.edit(*ctx, |s| {
                 s.components(|c| {
                     c.create_action_row(|a| {
@@ -166,32 +165,32 @@ async fn display_confirmation(
                         })
                     })
                 })
-                .reply(true)
-                .ephemeral(true)
                 .embed(|e| {
                     e.author(|a| a.name(ctx.author().name.clone()))
-                    .title(format!(
-                        "Step 3: Verify the following account: **{} ({})**",
-                        player["name"].as_str().unwrap(),
-                        player["tag"].as_str().unwrap()
-                    ))
-                    .description("**Please confirm this is the correct account that you are going to use during our tournament!**")
-                    .thumbnail(format!("https://cdn-old.brawlify.com/profile-low/{}.png", player["icon"]["id"]))
-                    .fields(vec![
-                        ("**Region**", format!("{}", register.region.clone().unwrap()).as_str(), true),
-                        ("Trophies", player["trophies"].to_string().as_str(), true),
-                        ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
-                        ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
-                        ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
-                        ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
-                        ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]), true),
-                        ("Club", club, true),
-                    ])
-                    .timestamp(ctx.created_at())
+                        .title(format!(
+                            "**{} ({})**",
+                            player["name"].as_str().unwrap(),
+                            player["tag"].as_str().unwrap()
+                        ))
+                        .description("**Here is your information**")
+                        .thumbnail(format!("https://cdn-old.brawlify.com/profile/{}.png",player["icon"]["id"]))
+                        .fields(vec![
+                            ("**Region**", format!("{}", register.region.clone().unwrap()).as_str(), true),
+                            ("Trophies", player["trophies"].to_string().as_str(), true),
+                            ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
+                            ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
+                            ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
+                            ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
+                            ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]), true),
+                            ("Club", club, true),
+                        ])
+                        
+                        .timestamp(ctx.created_at())
                 })
             })
             .await?;
-    
+            // stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
+
             return Ok(Some(make_player_doc(
                 &player,
                 &ctx.author_member().await.unwrap().user.id.to_string(),
@@ -223,7 +222,6 @@ async fn display_confirmation(
             Ok(None)
         }
     }
-    
 }
 
 async fn confirm(
@@ -231,7 +229,6 @@ async fn confirm(
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
-   
     info!("Confirming registration");
     add_player(&ctx, register.player.clone().unwrap(), &register.region).await?;
     assign_role(&ctx, &msg, &register.region).await?;
@@ -251,8 +248,9 @@ async fn cancel(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
         "You have cancelled your registration!",
         "You can always register again by running </index:1181542953542488205>",
         None,
-        None
-    ).await
+        None,
+    )
+    .await
 }
 
 async fn assign_role(
@@ -264,13 +262,15 @@ async fn assign_role(
     let role = match config.get_str("role") {
         Ok(role) => Some(role),
         Err(_) => {
-            prompt(ctx,
+            prompt(
+                ctx,
                 msg,
                 "Failed! Unable to find role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None
-            ).await?;
+                None,
+            )
+            .await?;
             None
         }
     };
@@ -278,13 +278,15 @@ async fn assign_role(
         Some(m) => m.deref().to_owned(),
         None => {
             let user = *ctx.author().id.as_u64();
-            prompt(ctx,
+            prompt(
+                ctx,
                 msg,
                 "Failed! Unable to assign role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None
-            ).await?;
+                None,
+            )
+            .await?;
             info!("Failed to assign role for <@{}>", user);
             return Err(Box::new(CustomError(format!(
                 "Failed to assign role for <@{}>",
@@ -299,13 +301,15 @@ async fn assign_role(
         Ok(_) => Ok(()),
         Err(_) => {
             let user = *ctx.author().id.as_u64();
-            prompt(ctx,
+            prompt(
+                ctx,
                 msg,
                 "Failed! Unable to assign role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None
-            ).await?;
+                None,
+            )
+            .await?;
             info!("Failed to assign role for <@{}>", user);
             Err(Box::new(CustomError(format!(
                 "Failed to assign role for <@{}>",
@@ -315,8 +319,11 @@ async fn assign_role(
     }
 }
 
-
-async fn already_used(ctx: &Context<'_>, msg: &ReplyHandle<'_>, player: Document) -> Result<(), Error> {
+async fn already_used(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    player: Document,
+) -> Result<(), Error> {
     let discord_id = player.get_str("discord_id").unwrap();
     prompt(
         ctx,

@@ -1,24 +1,15 @@
-use std::io::Cursor;
-
-use crate::{
-    bracket_tournament::region,
-    database_utils::{
-        battle::battle_happened,
-        find::{find_player, find_enemy, find_round, is_mannequin},
-        open::tournament,
-        config::get_config,
-    },
-    misc::QuoteStripper,
-    visual::pre_battle::generate_pre_battle_img,
-    Context, Error,
-};
-
+use crate::database_utils::battle::battle_happened;
+use crate::database_utils::config::get_config;
+use crate::database_utils::find::{find_enemy, find_player, find_round, is_mannequin};
+use crate::database_utils::open::tournament;
+use crate::visual::pre_battle::generate_pre_battle_img;
+use crate::{Context, Error};
+use dbc_bot::{QuoteStripper, Region};
 use futures::TryStreamExt;
-use mongodb::{
-    bson::{doc, Document},
-    Collection,
-};
+use mongodb::bson::{doc, Document};
+use mongodb::Collection;
 use poise::serenity_prelude as serenity;
+use std::io::Cursor;
 
 /// View your opponent
 pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
@@ -44,7 +35,7 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
     };
 
     //Checking if the tournament has started
-    let region = region::Region::find_key(
+    let region = Region::find_key(
         caller
             .get("region")
             .unwrap()
@@ -69,7 +60,7 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
-    let region = region::Region::find_key(
+    let region = Region::find_key(
         caller
             .get("region")
             .unwrap()
