@@ -1,5 +1,5 @@
-use crate::database_utils::config::get_config;
-use crate::database_utils::remove::remove_player;
+use crate::database::config::get_config;
+use crate::database::remove::{remove_player, remove_registration};
 use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
@@ -45,7 +45,7 @@ pub async fn deregister_menu(
         match mci.data.custom_id.as_str() {
             "deregister" => {
                 let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
-                remove_player(&ctx, &player).await?;
+                remove_registration(&ctx, &player).await?;
                 remove_role(&ctx, &msg, &get_config(&ctx, &region).await).await?;
                 msg.edit(*ctx, |b| {
                     b.components(|c| c)

@@ -15,7 +15,7 @@ use tracing_subscriber::{filter, prelude::*};
 mod bracket_tournament;
 mod brawlstars;
 mod commands;
-mod database_utils;
+mod database;
 mod discord;
 mod host;
 mod players;
@@ -184,7 +184,7 @@ async fn prepare_databases() -> Result<Databases, Error> {
     regional_database.insert(Region::EU, client.database("EU"));
     regional_database.insert(Region::NASA, client.database("NASA"));
     let required_collections = vec!["Players", "Managers"];
-    let required_regional_collections = database_utils::config::make_config();
+    let required_regional_collections = database::config::make_config();
 
     // We want to preload some of these collections, which is why we create this collection if it does not exist
     // Errors if the collection already exists and skips creation

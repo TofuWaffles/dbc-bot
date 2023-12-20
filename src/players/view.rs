@@ -16,6 +16,10 @@ pub async fn view_info(
     let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
     match api::request("player", tag).await {
         Ok(APIResult::Successful(player)) => {
+            msg.edit(*ctx, |s|{
+                s.components(|c|c)
+                .embed(|e|e.description("Hold on..."))
+            }).await?;
             stat(ctx, msg, &player, &region).await?;
         }
         Ok(APIResult::APIError(_)) => {

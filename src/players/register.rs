@@ -1,14 +1,15 @@
 use crate::brawlstars::api::{request, APIResult};
+use crate::brawlstars::getters::get_difficulty;
 use crate::brawlstars::player::stat;
-use crate::database_utils::add::add_player;
-use crate::database_utils::config::{get_config, make_player_doc};
-use crate::database_utils::find::find_tag;
+use crate::database::add::add_player;
+use crate::database::config::{get_config, make_player_doc};
+use crate::database::find::find_tag;
 use crate::discord::prompt::prompt;
 use crate::{Context, Error};
-use dbc_bot::{get_difficulty, CustomError, Region};
+use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, CreateComponents};
 use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -32,7 +33,6 @@ struct TagModal {
     tag: String,
 }
 pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    info!("Registering menu is run");
     let mut register = PlayerRegistration {
         tag: None,
         region: None,
@@ -44,9 +44,7 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(TIMEOUT));
     let mut cic = cib.build();
-    info!("Registering menu is run");
     while let Some(mci) = &cic.next().await {
-        info!("Inside the loop");
         match mci.data.custom_id.as_str() {
             "APAC" | "EU" | "NASA" => {
                 register.region = Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
@@ -55,14 +53,12 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
                 continue;
             }
             "open_modal" => {
-                register.tag = Some(create_modal_tag(ctx, mci.clone()).await?);
-                info!("Tag is {}", register.tag.clone().unwrap());
+                register.tag = Some(create_modal_tag(ctx, mci.clone()).await?.to_uppercase());
                 match find_tag(&ctx, &register.tag.clone().unwrap()).await {
                     Some(player) => {
                         return already_used(ctx, msg, player).await;
                     }
                     None => {
-                        info!("Tag is {}", register.tag.clone().unwrap());
                         register.player = display_confirmation(ctx, msg, &register).await?;
                         continue;
                     }
@@ -165,31 +161,8 @@ async fn display_confirmation(
                         })
                     })
                 })
-                .embed(|e| {
-                    e.author(|a| a.name(ctx.author().name.clone()))
-                        .title(format!(
-                            "**{} ({})**",
-                            player["name"].as_str().unwrap(),
-                            player["tag"].as_str().unwrap()
-                        ))
-                        .description("**Here is your information**")
-                        .thumbnail(format!("https://cdn-old.brawlify.com/profile/{}.png",player["icon"]["id"]))
-                        .fields(vec![
-                            ("**Region**", format!("{}", register.region.clone().unwrap()).as_str(), true),
-                            ("Trophies", player["trophies"].to_string().as_str(), true),
-                            ("Highest Trophies", player["highestTrophies"].to_string().as_str(), true),
-                            ("3v3 Victories", player["3vs3Victories"].to_string().as_str(), true),
-                            ("Solo Victories", player["soloVictories"].to_string().as_str(), true),
-                            ("Duo Victories", player["duoVictories"].to_string().as_str(), true),
-                            ("Best Robo Rumble Time", &get_difficulty(&player["bestRoboRumbleTime"]), true),
-                            ("Club", club, true),
-                        ])
-                        
-                        .timestamp(ctx.created_at())
-                })
-            })
-            .await?;
-            // stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
+            }).await?;
+            stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
 
             return Ok(Some(make_player_doc(
                 &player,
@@ -224,12 +197,12 @@ async fn display_confirmation(
     }
 }
 
+
 async fn confirm(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
-    info!("Confirming registration");
     add_player(&ctx, register.player.clone().unwrap(), &register.region).await?;
     assign_role(&ctx, &msg, &register.region).await?;
     prompt(

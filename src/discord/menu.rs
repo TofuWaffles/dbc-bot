@@ -1,3 +1,4 @@
+use crate::host::registration::registration_mod_panel;
 use crate::players::submit::submit_result;
 use crate::players::view2::{view_managers, view_opponent};
 use dbc_bot::Region;
@@ -261,7 +262,7 @@ pub async fn mod_menu(
             }
             "registration" => {
                 mci.defer(&ctx.http()).await?;
-                return todo!();
+                return registration_mod_panel(ctx, msg, region).await;
             }
             "configuration" => {
                 mci.defer(&ctx.http()).await?;

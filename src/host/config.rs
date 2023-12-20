@@ -1,4 +1,4 @@
-use crate::database_utils::config::set_config;
+use crate::database::config::set_config;
 use crate::{Context, Error};
 use dbc_bot::{Mode, Region};
 use futures::StreamExt;

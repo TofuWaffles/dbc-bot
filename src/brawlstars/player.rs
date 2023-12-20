@@ -1,6 +1,7 @@
 use crate::{Context, Error};
-use dbc_bot::{get_difficulty, Region};
+use dbc_bot::Region;
 use poise::{ReplyHandle, CreateReply};
+use super::getters::get_difficulty;
 pub async fn stat(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
@@ -11,8 +12,7 @@ pub async fn stat(
         .as_str()
         .map_or("No Club", |name| name);
     msg.edit(*ctx, |s| {
-        s.components(|c| c)
-        .embed(|e| {
+        s.embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
                 .title(format!(
                     "**{} ({})**",

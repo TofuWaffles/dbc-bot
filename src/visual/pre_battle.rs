@@ -1,4 +1,4 @@
-use dbc_bot::get_icon;
+use crate::brawlstars::getters::get_icon;
 use std::error::Error;
 
 use super::helper::align::{center_x, center_y};

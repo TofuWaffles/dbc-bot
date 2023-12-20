@@ -1,11 +1,11 @@
 
 use crate::brawlstars::api::{APIResult, self};
-use crate::database_utils::battle::battle_happened;
-use crate::database_utils::config::get_config;
-use crate::database_utils::find::{find_enemy, find_player, find_round, is_mannequin};
-use crate::database_utils::open::tournament;
-use crate::database_utils::update::update_battle;
-use crate::database_utils::update::update_match_id;
+use crate::database::battle::battle_happened;
+use crate::database::config::get_config;
+use crate::database::find::{find_enemy, find_player, find_round, is_mannequin};
+use crate::database::open::tournament;
+use crate::database::update::update_battle;
+use crate::database::update::update_match_id;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::Document;

@@ -5,7 +5,9 @@ use mongodb::{
     Collection, Database,
 };
 
-use crate::{database_utils::mannequin::update_mannequin, Error};
+use crate::{database::mannequin::update_mannequin, Error, Context};
+
+use super::config::toggle_reg_config;
 
 pub async fn assign_match_id(_region: &Region, database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
@@ -78,4 +80,18 @@ pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Re
     println!("Battle is updated!");
 
     Ok(())
+}
+
+pub async fn toggle_registration(ctx: &Context<'_>, region: &Region, status: bool) -> Result<(), Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let toggle = toggle_reg_config(status);
+    let collection: Collection<Document> = database.collection("Config");
+    match collection.update_one(doc! {}, toggle, None).await{
+        Ok(_) => {
+            Ok(())
+        }
+        Err(err) => {
+            return Err(Box::new(err));
+        }
+    }
 }

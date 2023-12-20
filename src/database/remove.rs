@@ -22,8 +22,8 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
         .unwrap()
         .collection::<Document>(find_round(&config).as_str());
 
-    match player.get("discord_id").unwrap().as_str() {
-        Some(player_id) => {
+    match player.get_str("discord_id").unwrap(){
+        player_id => {
             let match_id = player
                 .get("match_id")
                 .unwrap()
@@ -36,7 +36,16 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
                 .await?;
             round_collection.insert_one(mannequin, None).await?;
         }
-        None => {}
     };
     Ok(find_round(&config))
+}
+
+pub async fn remove_registration(ctx: &Context<'_>, player: &Document) -> Result<(), Error> {
+    let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let players_collection = database.collection::<Document>("Players");
+    players_collection
+        .delete_one(doc! {"_id": player.get("_id")}, None)
+        .await?;
+    Ok(())
 }

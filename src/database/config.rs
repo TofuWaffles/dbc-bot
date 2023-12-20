@@ -51,11 +51,10 @@ pub async fn get_config(ctx: &Context<'_>, region: &Region) -> Document {
     collection.find_one(None, None).await.unwrap().unwrap()
 }
 
-#[allow(dead_code)]
-pub fn disable_registration_config() -> Document {
+pub fn toggle_reg_config(status: bool) -> Document {
     let config = doc! {
       "$set": {
-        "registration": false
+        "registration": status
       }
     };
     config
@@ -69,16 +68,6 @@ pub fn start_tournament_config(total: &u32) -> Document {
         "tournament": true,
         "registration": false,
         "total": total
-      }
-    };
-    config
-}
-
-#[allow(dead_code)]
-pub fn enable_registration_config() -> Document {
-    let config = doc! {
-      "$set": {
-        "registration": true
       }
     };
     config

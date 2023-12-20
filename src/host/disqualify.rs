@@ -1,5 +1,5 @@
-use crate::database_utils::find::find_id;
-use crate::database_utils::remove::remove_player;
+use crate::database::find::find_id;
+use crate::database::remove::remove_player;
 use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::Region;

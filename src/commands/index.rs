@@ -1,7 +1,7 @@
-use crate::database_utils::battle::is_battle;
-use crate::database_utils::config::get_config;
-use crate::database_utils::find::{find_player, find_round};
-use crate::database_utils::open::{all_tournaments, registration};
+use crate::database::battle::is_battle;
+use crate::database::config::get_config;
+use crate::database::find::{find_player, find_round};
+use crate::database::open::{all_tournaments, registration};
 use crate::discord::menu::registration_menu;
 use crate::discord::menu::tournament_menu;
 use crate::discord::prompt::prompt;
@@ -61,8 +61,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                 return Ok(prompt(
                     &ctx,
                     &msg,
-                    "No registration found :(",
-                    "You are not registered for any tournaments, would you like to register?",
+                    "You did not register for the tournament!",
+                    "The tournament has already started, and you did not register in time...",
                     None,
                     None,
                 )
