@@ -82,74 +82,74 @@
 // /////////////////////////////////////////////////////////////////
 // /// Get the current round of the tournament
 // #[poise::command(slash_command, guild_only)]
-// pub async fn set_round(
-//     ctx: Context<'_>,
-//     #[description = "Select the region"] region: Region,
-//     #[description = "(Optional) Set the round. By default, without this parameter, the round is increased by 1"]
-//     round: Option<i32>,
-// ) -> Result<(), Error> {
-//     ctx.defer_ephemeral().await?;
-//     let msg = ctx
-//         .send(|s| {
-//             s.ephemeral(true)
-//                 .reply(true)
-//                 .content("Setting the round...")
-//         })
-//         .await?;
-//     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-//     let config = get_config(database).await;
-//     println!("Config is got!");
-//     if !user_is_manager(ctx).await? {
-//         return Ok(());
-//     }
+pub async fn set_round(
+    ctx: Context<'_>,
+    #[description = "Select the region"] region: Region,
+    #[description = "(Optional) Set the round. By default, without this parameter, the round is increased by 1"]
+    round: Option<i32>,
+) -> Result<(), Error> {
+    ctx.defer_ephemeral().await?;
+    let msg = ctx
+        .send(|s| {
+            s.ephemeral(true)
+                .reply(true)
+                .content("Setting the round...")
+        })
+        .await?;
+    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let config = get_config(database).await;
+    println!("Config is got!");
+    if !user_is_manager(ctx).await? {
+        return Ok(());
+    }
 
-//     if tournament(&ctx, &region).await {
-//         msg.edit(ctx,|s| {
-//             s.content("Unable to set the round for the current tournament: the tournament has not started yet!")
-//         }).await?;
-//         return Ok(());
-//     }
-//     println!("Checking tournament started: DONE");
-//     if !all_battles_occured(&ctx, &msg, database, &config).await? {
-//         return Ok(());
-//     }
-//     println!("Check all battle occured: DONE");
-//     match database
-//         .collection::<Document>("Config")
-//         .update_one(config, update_round(round), None)
-//         .await
-//     {
-//         Ok(_) => {}
-//         Err(_) => {
-//             ctx.say("Error occurred while updating config").await?;
-//             return Ok(());
-//         }
-//     }
+    if tournament(&ctx, &region).await {
+        msg.edit(ctx,|s| {
+            s.content("Unable to set the round for the current tournament: the tournament has not started yet!")
+        }).await?;
+        return Ok(());
+    }
+    println!("Checking tournament started: DONE");
+    if !all_battles_occured(&ctx, &msg, database, &config).await? {
+        return Ok(());
+    }
+    println!("Check all battle occured: DONE");
+    match database
+        .collection::<Document>("Config")
+        .update_one(config, update_round(round), None)
+        .await
+    {
+        Ok(_) => {}
+        Err(_) => {
+            ctx.say("Error occurred while updating config").await?;
+            return Ok(());
+        }
+    }
 
-//     let post_config = get_config(database).await;
-//     match sort_collection(database, &post_config).await {
-//         Ok(_) => {}
-//         Err(_) => {
-//             ctx.send(|s| {
-//                 s.content("Error occurred while sorting collection")
-//                     .ephemeral(true)
-//                     .reply(true)
-//             })
-//             .await?;
-//             return Ok(());
-//         }
-//     };
-//     ctx.send(|s| {
-//         s.ephemeral(true).reply(true).embed(|e| {
-//             e.title("Round is set successfully!").description(format!(
-//                 "Round is set! We are at round {}",
-//                 post_config.get("round").unwrap()
-//             ))
-//         })
-//     })
-//     .await?;
-//     Ok(())
-// }
+    let post_config = get_config(database).await;
+    match sort_collection(database, &post_config).await {
+        Ok(_) => {}
+        Err(_) => {
+            ctx.send(|s| {
+                s.content("Error occurred while sorting collection")
+                    .ephemeral(true)
+                    .reply(true)
+            })
+            .await?;
+            return Ok(());
+        }
+    };
+    ctx.send(|s| {
+        s.ephemeral(true).reply(true).embed(|e| {
+            e.title("Round is set successfully!").description(format!(
+                "Round is set! We are at round {}",
+                post_config.get("round").unwrap()
+            ))
+        })
+    })
+    .await?;
+    Ok(())
+}
 
 // async fn sort_collection(database: &Database, config: &Document) -> Result<(), Error> {
 //     let round = config.get("round").unwrap();

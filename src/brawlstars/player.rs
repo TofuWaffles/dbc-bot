@@ -1,6 +1,6 @@
 use crate::{Context, Error};
 use dbc_bot::Region;
-use poise::{ReplyHandle, CreateReply};
+use poise::ReplyHandle;
 use super::getters::get_difficulty;
 pub async fn stat(
     ctx: &Context<'_>,

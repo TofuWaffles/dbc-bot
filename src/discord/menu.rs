@@ -1,22 +1,20 @@
-use crate::host::registration::registration_mod_panel;
-use crate::players::submit::submit_result;
-use crate::players::view2::{view_managers, view_opponent};
+use crate::Context;
+use crate::Error;
 use dbc_bot::Region;
-
-use super::prompt::prompt;
-use crate::host::config::configurate;
-use crate::host::disqualify::disqualify_players;
-use crate::players::register::register_menu;
-use crate::{
-    players::{deregister::deregister_menu, view::view_info},
-    Context, Error,
-};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::{
-    serenity_prelude::{ButtonStyle, ReactionType},
-    ReplyHandle,
-};
+use poise::ReplyHandle;
+use poise::serenity_prelude::{ButtonStyle, ReactionType};
+use crate::host::config::configurate;
+use crate::host::disqualify::disqualify_players;
+use crate::host::registration::registration_mod_panel;
+use crate::host::tournament::tournament_mod_panel;
+use crate::players::deregister::deregister_menu;
+use crate::players::register::register_menu;
+use crate::players::submit::submit_result;
+use crate::players::view::view_info;
+use crate::players::view2::{view_managers, view_opponent};
+use super::prompt::prompt;
 
 const TIMEOUT: u64 = 300;
 /// Displays a registration menu with various options.
@@ -226,6 +224,13 @@ pub async fn mod_menu(
                         .emoji(ReactionType::Unicode("📥".to_string()))
                 })
                 .create_button(|b| {
+                    b.custom_id("tournament")
+                        .label("Tournament\nOptions")
+                        .disabled(!managers)
+                        .style(ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("🚩".to_string()))
+                })
+                .create_button(|b| {
                     b.custom_id("configuration")
                         .label("Configuration\nROptions")
                         .disabled(!submit)
@@ -263,7 +268,11 @@ pub async fn mod_menu(
             "registration" => {
                 mci.defer(&ctx.http()).await?;
                 return registration_mod_panel(ctx, msg, region).await;
-            }
+            },
+            "tournament" => {
+                mci.defer(&ctx.http()).await?;
+                return tournament_mod_panel(ctx, msg, region).await;
+            },
             "configuration" => {
                 mci.defer(&ctx.http()).await?;
                 return configurate(ctx, msg, region).await;
