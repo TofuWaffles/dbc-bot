@@ -60,20 +60,17 @@ pub fn toggle_reg_config(status: bool) -> Document {
     config
 }
 
-pub fn start_tournament_config(total: &u32) -> Document {
-    println!("There are total of {} rounds", total);
+pub fn open_reg_close_tour() -> Document {
     let config = doc! {
       "$set": {
-        "round": 1,
         "tournament": true,
         "registration": false,
-        "total": total
       }
     };
     config
 }
 
-pub fn update_round(round: Option<i32>) -> Document {
+pub fn update_round(round: Option<u32>) -> Document {
     match round {
         Some(round) => {
             let config = doc! {

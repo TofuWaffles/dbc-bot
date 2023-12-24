@@ -1,5 +1,5 @@
 use crate::database::config::get_config;
-use crate::database::remove::{remove_player, remove_registration};
+use crate::database::remove::remove_registration;
 use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;

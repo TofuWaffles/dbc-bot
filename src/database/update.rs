@@ -1,15 +1,15 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{doc, Document},
-    Collection, Database,
+    bson::{doc, Document, self},
+    Collection, Database, options::AggregateOptions,
 };
 
 use crate::{database::mannequin::update_mannequin, Error, Context};
 
-use super::config::toggle_reg_config;
+use super::config::{toggle_reg_config, update_round, open_reg_close_tour};
 
-pub async fn assign_match_id(_region: &Region, database: &Database) -> Result<(), Error> {
+pub async fn assign_match_id(database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
     let mut byes_counter = collection
         .count_documents(doc! {"name": "Mannequin"}, None)
@@ -94,4 +94,38 @@ pub async fn toggle_registration(ctx: &Context<'_>, region: &Region, status: boo
             return Err(Box::new(err));
         }
     }
+}
+
+pub async fn update_round_config(ctx: &Context<'_>, region: &Region, rounds: Option<u32>) -> Result<(), Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let config = database.collection::<Document>("Config");
+    config
+        .update_one(doc! {}, update_round(rounds), None)
+        .await?; // Set total rounds, tournament_started to true and registration to false
+    Ok(())
+}
+
+pub async fn setting_tournament_config(ctx:  &Context<'_>, region: &Region) -> Result<(), Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let config = database.collection::<Document>("Config");
+    config
+        .update_one(doc! {}, open_reg_close_tour(), None)
+        .await?; // Set total rounds, tournament_started to true and registration to false
+    Ok(())
+}
+
+pub async fn update_round_1(
+    ctx: &Context<'_>,
+    region: &Region,
+) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let players: Collection<Document> = database.collection("Players");
+    let pipeline = vec![
+        bson::doc! { "$match": bson::Document::new() },
+        bson::doc! { "$out": "Round 1" },
+    ];
+    let options = AggregateOptions::builder().allow_disk_use(true).build();
+    players.aggregate(pipeline, Some(options)).await?;
+    assign_match_id(database).await?;
+    Ok(())
 }

@@ -6,15 +6,17 @@ use mongodb::options::UpdateOptions;
 use mongodb::Collection;
 use tracing::error;
 
+use super::mannequin::add_mannequin;
+
 pub async fn add_player(
     ctx: &Context<'_>,
     player: Document,
-    region: &Option<Region>,
+    region: &Region,
 ) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let collection: Collection<Document> = database.collection("Players");
     let filter = doc! { "discord_id": ctx.author().id.to_string()};
     let options = UpdateOptions::builder().upsert(true).build();
-    let collection: Collection<Document> =
-        ctx.data().database.regional_databases[&region.clone().unwrap()].collection("Players");
     let update = doc! {
         "$set": player
     };
@@ -32,5 +34,21 @@ pub async fn add_player(
             }
         },
     };
+    Ok(())
+}
+
+
+pub async fn insert_mannequins(ctx: &Context<'_>, region: &Region, byes: i32) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let collection: Collection<Document> = database.collection("Players");
+    match byes {
+        0 => {}
+        _ => {
+            for _ in 1..=byes {
+                let mannequin = add_mannequin(region, None);
+                collection.insert_one(mannequin, None).await?;
+            }
+        }
+    }
     Ok(())
 }

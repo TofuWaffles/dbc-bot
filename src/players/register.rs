@@ -1,5 +1,4 @@
 use crate::brawlstars::api::{request, APIResult};
-use crate::brawlstars::getters::get_difficulty;
 use crate::brawlstars::player::stat;
 use crate::database::add::add_player;
 use crate::database::config::{get_config, make_player_doc};
@@ -9,7 +8,7 @@ use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::serenity_prelude::{self as serenity, CreateComponents};
+use poise::serenity_prelude as serenity;
 use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -142,10 +141,6 @@ async fn display_confirmation(
 ) -> Result<Option<Document>, Error> {
     match request("player", register.tag.clone().unwrap().as_str()).await {
         Ok(APIResult::Successful(player)) => {
-            let club = player["club"]["name"]
-                .as_str()
-                .map_or("No Club", |name| name);
-
             msg.edit(*ctx, |s| {
                 s.components(|c| {
                     c.create_action_row(|a| {
@@ -203,7 +198,7 @@ async fn confirm(
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
-    add_player(&ctx, register.player.clone().unwrap(), &register.region).await?;
+    add_player(&ctx, register.player.clone().unwrap(), &register.region.clone().unwrap()).await?;
     assign_role(&ctx, &msg, &register.region).await?;
     prompt(
         ctx,

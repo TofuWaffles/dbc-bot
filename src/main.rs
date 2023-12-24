@@ -5,7 +5,7 @@ use mongodb::{
     Client, Collection, Database,
 };
 use poise::{
-    serenity_prelude::{self as serenity, GatewayIntents, UserId},
+    serenity_prelude::{self as serenity, GatewayIntents},
     Event, FrameworkError,
 };
 use std::{collections::HashMap, fs::File, sync::Arc};
