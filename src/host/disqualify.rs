@@ -1,4 +1,4 @@
-use crate::database::find::find_id;
+use crate::database::find::find_player_by_discord_id;
 use crate::database::remove::remove_player;
 use crate::discord::prompt::prompt;
 use crate::{Context, Error};
@@ -51,7 +51,7 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
             }
             "open_modal" => {
                 disqualification.user_id = Some(create_disqualify_modal(&ctx, mci.clone()).await?);
-                match find_id(
+                match find_player_by_discord_id(
                     &ctx,
                     disqualification.region.clone().unwrap(),
                     disqualification
@@ -77,7 +77,7 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                 }
             }
             "confirm" => {
-                match find_id(
+                match find_player_by_discord_id(
                     &ctx,
                     disqualification.region.clone().unwrap(),
                     disqualification

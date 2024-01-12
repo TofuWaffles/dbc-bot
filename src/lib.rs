@@ -25,9 +25,6 @@ impl QuoteStripper for String {
     }
 }
 
-
-
-
 // Define an enum called `Region` to represent geographical regions.
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq, Clone)]
@@ -108,7 +105,6 @@ pub fn get_color(result: String) -> Colour {
 pub struct CustomError(pub String);
 
 impl fmt::Display for CustomError {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "CustomError: {}", self.0)
     }

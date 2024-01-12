@@ -1,6 +1,9 @@
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
-use crate::database::find::{find_enemy, find_player, find_round, is_mannequin};
+use crate::database::find::{
+    find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
+    is_mannequin,
+};
 use crate::database::open::tournament;
 use crate::visual::pre_battle::generate_pre_battle_img;
 use crate::{Context, Error};
@@ -20,7 +23,7 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
                 .content("Getting your opponent...")
         })
         .await?;
-    let caller = match find_player(&ctx).await.unwrap() {
+    let caller = match find_self_by_discord_id(&ctx).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {
@@ -72,13 +75,22 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
 
     //Check if the user has already submitted the result or not yet disqualified
 
-    let current_round: Collection<Document> = database.collection(find_round(&config).as_str());
+    let current_round: Collection<Document> =
+        database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
-    let enemy = match find_enemy(&ctx, &region, &round, &match_id, &caller_tag).await {
+    let enemy = match find_enemy_by_match_id_and_self_tag(
+        &ctx,
+        &region,
+        &round,
+        &match_id,
+        &caller_tag,
+    )
+    .await
+    {
         Some(enemy) => {
             if is_mannequin(&enemy) {
                 msg.edit(*ctx, |s|

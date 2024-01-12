@@ -5,5 +5,5 @@ pub mod find;
 pub mod mannequin;
 pub mod open;
 pub mod remove;
-pub mod update;
 pub mod stat;
+pub mod update;

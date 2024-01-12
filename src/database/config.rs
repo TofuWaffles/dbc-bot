@@ -70,25 +70,13 @@ pub fn open_reg_close_tour() -> Document {
     config
 }
 
-pub fn update_round(round: Option<u32>) -> Document {
-    match round {
-        Some(round) => {
-            let config = doc! {
-              "$set": {
-                "round": round
-              }
-            };
-            config
-        }
-        None => {
-            let config = doc! {
-              "$inc": {
-                "round": 1
-              }
-            };
-            config
-        }
-    }
+pub fn increment_round(round: Option<u32>) -> Document {
+    let config = doc! {
+      "$inc": {
+        "round": round
+      }
+    };
+    config
 }
 
 pub fn reset_config() -> Document {

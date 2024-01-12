@@ -4,7 +4,7 @@ use crate::Region;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
 
-use super::find::find_round;
+use super::find::find_round_from_config;
 
 pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<String, Error> {
     let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
@@ -20,9 +20,9 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
         .regional_databases
         .get(&region)
         .unwrap()
-        .collection::<Document>(find_round(&config).as_str());
+        .collection::<Document>(find_round_from_config(&config).as_str());
 
-    match player.get_str("discord_id").unwrap(){
+    match player.get_str("discord_id").unwrap() {
         player_id => {
             let match_id = player
                 .get("match_id")
@@ -37,7 +37,7 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
             round_collection.insert_one(mannequin, None).await?;
         }
     };
-    Ok(find_round(&config))
+    Ok(find_round_from_config(&config))
 }
 
 pub async fn remove_registration(ctx: &Context<'_>, player: &Document) -> Result<(), Error> {

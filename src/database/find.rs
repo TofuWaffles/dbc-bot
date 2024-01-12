@@ -2,11 +2,13 @@ use crate::{Context, Error};
 use dbc_bot::Region;
 use mongodb::{
     bson::{doc, Bson, Document},
-    Collection,
+    Collection, Cursor,
 };
 use strum::IntoEnumIterator;
 
-pub async fn find_player(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
+use super::config::get_config;
+
+pub async fn find_self_by_discord_id(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let collection: Collection<Document> = database.collection("Players");
@@ -26,7 +28,7 @@ pub async fn find_player(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
     Ok(None)
 }
 
-pub async fn find_id(
+pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: Region,
     user_id: u64,
@@ -47,7 +49,7 @@ pub async fn find_id(
     };
 }
 
-pub fn find_round(config: &Document) -> String {
+pub fn find_round_from_config(config: &Document) -> String {
     let round = match config.get("round") {
         Some(round) => {
             if let Bson::Int32(0) = round {
@@ -74,7 +76,7 @@ pub fn find_round(config: &Document) -> String {
 /// # Returns
 ///
 /// An `Option<Document>` representing enemy if found, or `None` if not found or an error occurred.
-pub async fn find_enemy(
+pub async fn find_enemy_by_match_id_and_self_tag(
     ctx: &Context<'_>,
     region: &Region,
     round: &i32,
@@ -138,4 +140,12 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
 
 pub fn is_mannequin(enemy: &Document) -> bool {
     enemy.get("tag").unwrap() == &Bson::Null
+}
+
+pub async fn find_all_false_battles(ctx: &Context<'_>, region: &Region) -> Cursor<Document> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let collection: Collection<Document> = database.collection(round.as_str());
+    let battles = collection.find(doc! {"battle": false}, None).await.unwrap();
+    battles
 }

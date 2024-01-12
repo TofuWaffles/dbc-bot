@@ -1,13 +1,14 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{doc, Document, self},
-    Collection, Database, options::AggregateOptions,
+    bson::{self, doc, Document},
+    options::AggregateOptions,
+    Collection, Database,
 };
 
-use crate::{database::mannequin::update_mannequin, Error, Context};
+use crate::{database::mannequin::update_mannequin, Context, Error};
 
-use super::config::{toggle_reg_config, update_round, open_reg_close_tour};
+use super::config::{open_reg_close_tour, toggle_reg_config, get_config};
 
 pub async fn assign_match_id(database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
@@ -82,30 +83,37 @@ pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Re
     Ok(())
 }
 
-pub async fn toggle_registration(ctx: &Context<'_>, region: &Region, status: bool) -> Result<(), Error>{
+pub async fn toggle_registration(
+    ctx: &Context<'_>,
+    region: &Region,
+    status: bool,
+) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let toggle = toggle_reg_config(status);
     let collection: Collection<Document> = database.collection("Config");
-    match collection.update_one(doc! {}, toggle, None).await{
-        Ok(_) => {
-            Ok(())
-        }
+    match collection.update_one(doc! {}, toggle, None).await {
+        Ok(_) => Ok(()),
         Err(err) => {
             return Err(Box::new(err));
         }
     }
 }
 
-pub async fn update_round_config(ctx: &Context<'_>, region: &Region, rounds: Option<u32>) -> Result<(), Error>{
+pub async fn update_round_config(
+    ctx: &Context<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
+    let config_doc = get_config(ctx, region).await;
+    let round = config_doc.get_i32("round").unwrap();
     config
-        .update_one(doc! {}, update_round(rounds), None)
-        .await?; // Set total rounds, tournament_started to true and registration to false
+        .update_one(doc! {}, doc! { "$set": { "round" : round + 1 } }, None)
+        .await?; // Set total rounds, tournament_started to true and registration to falseet total rounds, tournament_started to true and registration to false
     Ok(())
 }
 
-pub async fn setting_tournament_config(ctx:  &Context<'_>, region: &Region) -> Result<(), Error>{
+pub async fn setting_tournament_config(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
     config
@@ -114,10 +122,7 @@ pub async fn setting_tournament_config(ctx:  &Context<'_>, region: &Region) -> R
     Ok(())
 }
 
-pub async fn update_round_1(
-    ctx: &Context<'_>,
-    region: &Region,
-) -> Result<(), Error> {
+pub async fn update_round_1(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let players: Collection<Document> = database.collection("Players");
     let pipeline = vec![

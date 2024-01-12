@@ -156,7 +156,8 @@ async fn display_confirmation(
                         })
                     })
                 })
-            }).await?;
+            })
+            .await?;
             stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
 
             return Ok(Some(make_player_doc(
@@ -192,13 +193,17 @@ async fn display_confirmation(
     }
 }
 
-
 async fn confirm(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
-    add_player(&ctx, register.player.clone().unwrap(), &register.region.clone().unwrap()).await?;
+    add_player(
+        &ctx,
+        register.player.clone().unwrap(),
+        &register.region.clone().unwrap(),
+    )
+    .await?;
     assign_role(&ctx, &msg, &register.region).await?;
     prompt(
         ctx,

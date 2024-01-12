@@ -8,11 +8,7 @@ use tracing::error;
 
 use super::mannequin::add_mannequin;
 
-pub async fn add_player(
-    ctx: &Context<'_>,
-    player: Document,
-    region: &Region,
-) -> Result<(), Error> {
+pub async fn add_player(ctx: &Context<'_>, player: Document, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
     let filter = doc! { "discord_id": ctx.author().id.to_string()};
@@ -36,7 +32,6 @@ pub async fn add_player(
     };
     Ok(())
 }
-
 
 pub async fn insert_mannequins(ctx: &Context<'_>, region: &Region, byes: i32) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();

@@ -1,19 +1,23 @@
-use dbc_bot::Region;
-use futures::StreamExt;
-use poise::ReplyHandle;
 use crate::database::open::{registration, tournament};
 use crate::database::stat::count_registers;
 use crate::database::update::toggle_registration;
 use crate::{Context, Error};
+use dbc_bot::Region;
+use futures::StreamExt;
+use poise::ReplyHandle;
 const TIMEOUT: u64 = 300;
-struct Reg{
-  registration: bool,
-  tournament: bool,
-  count: i32,
-  region: Region,
+struct Reg {
+    registration: bool,
+    tournament: bool,
+    count: i32,
+    region: Region,
 }
 
-pub async fn registration_mod_panel(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error>{
+pub async fn registration_mod_panel(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let mut reg = getter(ctx, region).await?;
     display_info(ctx, msg, &reg).await?;
     let resp = msg.clone().into_message().await?;
@@ -40,12 +44,12 @@ pub async fn registration_mod_panel(ctx: &Context<'_>, msg: &ReplyHandle<'_>, re
             }
         }
         reg = getter(ctx, region).await?;
-        display_info(ctx, msg, &reg).await?; 
+        display_info(ctx, msg, &reg).await?;
     }
     Ok(())
 }
 
-async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Result<(), Error>{
+async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Result<(), Error> {
     let flag = if reg.tournament {
         "\n. Tournament is currently running. Toggle is disabled!"
     } else {
@@ -76,27 +80,26 @@ async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Re
     Ok(())
 }
 
-async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error>{
+async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error> {
     let status = registration(ctx).await;
     let tournament_status = tournament(ctx, region).await;
     let count = count_registers(ctx, region).await?;
-    Ok(Reg{
-      registration: status,
-      tournament: tournament_status,
-      count: count,
-      region: region.clone(),
+    Ok(Reg {
+        registration: status,
+        tournament: tournament_status,
+        count: count,
+        region: region.clone(),
     })
 }
 
-async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error>{
-    Ok(( ))
+async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    Ok(())
 }
 
-
-fn term(status: bool) -> String{
-  if status{
-    "Open".to_string()
-  } else {
-    "Closed".to_string()
-  }
+fn term(status: bool) -> String {
+    if status {
+        "Open".to_string()
+    } else {
+        "Closed".to_string()
+    }
 }

@@ -1,7 +1,6 @@
 use crate::{Context, Error};
-use mongodb::bson::doc;
 use dbc_bot::Region;
-
+use mongodb::bson::doc;
 
 pub async fn count_registers(ctx: &Context<'_>, region: &Region) -> Result<i32, Error> {
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
@@ -23,5 +22,3 @@ pub async fn count_registers(ctx: &Context<'_>, region: &Region) -> Result<i32, 
     };
     Ok(count)
 }
-
-

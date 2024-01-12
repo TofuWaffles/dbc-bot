@@ -1,6 +1,6 @@
 use crate::database::battle::is_battle;
 use crate::database::config::get_config;
-use crate::database::find::{find_player, find_round};
+use crate::database::find::{find_round_from_config, find_self_by_discord_id};
 use crate::database::open::{all_tournaments, registration};
 use crate::discord::menu::registration_menu;
 use crate::discord::menu::tournament_menu;
@@ -35,12 +35,12 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     std::thread::sleep(std::time::Duration::from_secs(DELAY));
 
     if all_tournaments(&ctx).await {
-        match find_player(&ctx).await? {
+        match find_self_by_discord_id(&ctx).await? {
             Some(player) => {
                 if is_battle(
                     &ctx,
                     player.get("tag").unwrap().as_str(),
-                    find_round(
+                    find_round_from_config(
                         &get_config(
                             &ctx,
                             Region::from_bson(player.get("region").unwrap())
@@ -71,7 +71,7 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
         }
     } else {
         if registration(&ctx).await {
-            match find_player(&ctx).await? {
+            match find_self_by_discord_id(&ctx).await? {
                 Some(player) => {
                     return registration_menu(&ctx, &msg, false, true, true, true, Some(player))
                         .await;
