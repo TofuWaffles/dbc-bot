@@ -8,7 +8,7 @@ use mongodb::{
 
 use crate::{database::mannequin::update_mannequin, Context, Error};
 
-use super::config::{open_reg_close_tour, toggle_reg_config, get_config};
+use super::config::{get_config, open_reg_close_tour, toggle_reg_config};
 
 pub async fn assign_match_id(database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
@@ -94,15 +94,12 @@ pub async fn toggle_registration(
     match collection.update_one(doc! {}, toggle, None).await {
         Ok(_) => Ok(()),
         Err(err) => {
-            return Err(Box::new(err));
+            Err(Box::new(err))
         }
     }
 }
 
-pub async fn update_round_config(
-    ctx: &Context<'_>,
-    region: &Region,
-) -> Result<(), Error> {
+pub async fn update_round_config(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
     let config_doc = get_config(ctx, region).await;

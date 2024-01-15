@@ -18,15 +18,11 @@ pub async fn prompt(
     image: Option<&str>,
     color: Option<u32>,
 ) -> Result<(), Error> {
-    let c = match color {
-        Some(c) => c,
-        None => 0xFFFFFF,
-    };
     msg.edit(*ctx, |b| {
         b.embed(|e| {
             e.title(title.into())
                 .description(description.into())
-                .color(c)
+                .color(color.unwrap_or(0xFFFFFF))
                 .image(image.unwrap_or(""))
         })
         .components(|c| c)

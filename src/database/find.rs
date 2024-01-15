@@ -30,23 +30,23 @@ pub async fn find_self_by_discord_id(ctx: &Context<'_>) -> Result<Option<Documen
 
 pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
-    region: Region,
+    region: &Region,
     user_id: u64,
 ) -> Result<Option<Document>, Error> {
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
     let filter = doc! {"discord_id": user_id.to_string()};
     match collection.find_one(filter, None).await {
         Ok(result) => match result {
             Some(p) => {
-                return Ok(Some(p));
+                Ok(Some(p))
             }
-            None => return Ok(None),
+            None => Ok(None),
         },
         Err(_) => {
-            return Ok(None);
+            Ok(None)
         }
-    };
+    }
 }
 
 pub fn find_round_from_config(config: &Document) -> String {
@@ -146,6 +146,5 @@ pub async fn find_all_false_battles(ctx: &Context<'_>, region: &Region) -> Curso
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let round = find_round_from_config(&get_config(ctx, region).await);
     let collection: Collection<Document> = database.collection(round.as_str());
-    let battles = collection.find(doc! {"battle": false}, None).await.unwrap();
-    battles
+    collection.find(doc! {"battle": false}, None).await.unwrap()
 }

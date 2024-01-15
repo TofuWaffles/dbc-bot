@@ -21,9 +21,8 @@ async fn display_deregister_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Re
             })
         })
         .embed(|e| {
-            e.title("Deregisteration").description(format!(
-                "Are you sure you want to deregister from the tournament?"
-            ))
+            e.title("Deregisteration")
+            .description("Are you sure you want to deregister from the tournament?".to_string())
         })
     })
     .await?;
@@ -41,12 +40,12 @@ pub async fn deregister_menu(
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(REGISTRATION_TIME));
     let mut cic = cib.build();
-    while let Some(mci) = &cic.next().await {
+    if let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "deregister" => {
                 let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
-                remove_registration(&ctx, &player).await?;
-                remove_role(&ctx, &msg, &get_config(&ctx, &region).await).await?;
+                remove_registration(ctx, &player).await?;
+                remove_role(ctx, msg, &get_config(ctx, &region).await).await?;
                 msg.edit(*ctx, |b| {
                     b.components(|c| c)
                         .embed(|e| {
@@ -56,7 +55,6 @@ pub async fn deregister_menu(
                         })
                 })
                 .await?;
-                break;
             }
             _ => {
                 unreachable!("This should never happen!")

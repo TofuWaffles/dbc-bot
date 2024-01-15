@@ -5,16 +5,17 @@ use crate::database::open::{all_tournaments, registration};
 use crate::discord::menu::registration_menu;
 use crate::discord::menu::tournament_menu;
 use crate::discord::prompt::prompt;
+use crate::discord::role::get_roles_from_user;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use poise::ReplyHandle;
 const DELAY: u64 = 1;
 
 // Tournament all-in-one command
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn index(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
-    return home(ctx, None).await;
+   home(ctx, None).await
 }
 
 pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), Error> {
@@ -34,6 +35,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
 
     std::thread::sleep(std::time::Duration::from_secs(DELAY));
 
+    // match get_region_from_role(&ctx, ctx.author_member()
+    let roles = get_roles_from_user(&ctx, None).await.unwrap();
     if all_tournaments(&ctx).await {
         match find_self_by_discord_id(&ctx).await? {
             Some(player) => {
@@ -52,13 +55,13 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                 )
                 .await?
                 {
-                    return tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await;
+                    tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
                 } else {
-                    return tournament_menu(&ctx, &msg, false, true, false, false, None).await;
-                };
+                    tournament_menu(&ctx, &msg, false, true, false, false, None).await
+                }
             }
             None => {
-                return Ok(prompt(
+               prompt(
                     &ctx,
                     &msg,
                     "You did not register for the tournament!",
@@ -66,22 +69,22 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                     None,
                     None,
                 )
-                .await?)
+                .await
             }
         }
-    } else {
-        if registration(&ctx).await {
+    } else if registration(&ctx).await {
             match find_self_by_discord_id(&ctx).await? {
                 Some(player) => {
-                    return registration_menu(&ctx, &msg, false, true, true, true, Some(player))
-                        .await;
+                    registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
                 }
                 None => {
-                    return registration_menu(&ctx, &msg, true, false, false, true, None).await;
+                    registration_menu(&ctx, &msg, true, false, false, true, None).await
                 }
             }
         } else {
             todo!()
         }
-    }
 }
+
+        
+

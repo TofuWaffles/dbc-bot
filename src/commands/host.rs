@@ -2,7 +2,7 @@ use crate::{discord::menu::mod_menu, Context, Error};
 use dbc_bot::Region;
 
 // Host all-in-one command
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only, required_permissions = "MANAGE_MESSAGES")]
 pub async fn host(
     ctx: Context<'_>,
     #[description = "Select region to configurate"] region: Region,
@@ -20,5 +20,5 @@ pub async fn host(
             })
         })
         .await?;
-    return mod_menu(&ctx, &msg, &region, true, true, true, true).await;
+    mod_menu(&ctx, &msg, &region, true, true, true, true).await
 }

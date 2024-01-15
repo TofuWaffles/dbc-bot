@@ -57,25 +57,7 @@ async fn run() -> Result<(), Error> {
     let commands = vec![
         commands::index::index(),
         commands::host::host(),
-        // commands::battle_log::latest_log(),
-        // commands::draco::draco(),
-        // commands::index::index(),
-        // // commands::player::player(),
-        // commands::submit::submit(),
-        // commands::view::view_managers(),
-        // commands::view::view_opponent(),
-        // commands::manager_only::registry_open::open_registration(),
-        // commands::manager_only::registry_open::close_registration(),
-        // commands::manager_only::member_info::get_individual_player_data(),
-        // commands::manager_only::member_info::get_all_players_data(),
-        // commands::manager_only::setting::config(),
-        // commands::manager_only::setting2::set_manager(),
-        // commands::manager_only::setting2::set_round(),
-        // commands::manager_only::start_tournament::start_tournament(),
-        // commands::manager_only::statistics::region_proportion(),
-        // commands::manager_only::reset::reset(),
-        // commands::manager_only::fill_manequins::fill_mannequins(),
-        // commands::manager_only::disqualify::disqualify(),
+        commands::context_menu::get_individual_player_data(),
     ];
 
     let token = std::env::var("DISCORD_TOKEN")

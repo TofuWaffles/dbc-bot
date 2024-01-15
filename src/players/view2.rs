@@ -11,19 +11,18 @@ use dbc_bot::{QuoteStripper, Region};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
-use poise::serenity_prelude as serenity;
+use poise::{serenity_prelude as serenity, ReplyHandle};
 use std::io::Cursor;
 
 /// View your opponent
-pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
-    let msg = ctx
-        .send(|s| {
+pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    msg.edit(*ctx,|s| {
             s.ephemeral(true)
                 .reply(true)
                 .content("Getting your opponent...")
         })
         .await?;
-    let caller = match find_self_by_discord_id(&ctx).await.unwrap() {
+    let caller = match find_self_by_discord_id(ctx).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {
@@ -48,8 +47,8 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
     )
     .unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(&ctx, &region).await;
-    if !tournament(&ctx, &region).await {
+    let config = get_config(ctx, &region).await;
+    if !tournament(ctx, &region).await {
         msg.edit(*ctx, |s| {
             s.embed(|e| {
                 e.title("Tournament has not started yet!").description(
@@ -78,12 +77,12 @@ pub async fn view_opponent(ctx: &Context<'_>) -> Result<(), Error> {
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
+    let caller = match battle_happened(ctx, &caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
     let enemy = match find_enemy_by_match_id_and_self_tag(
-        &ctx,
+        ctx,
         &region,
         &round,
         &match_id,

@@ -44,7 +44,7 @@ pub async fn is_battle(ctx: &Context<'_>, tag: Option<&str>, round: String) -> R
                 .unwrap_or(false))
         }
         None => {
-            return Ok(false);
+            Ok(false)
         }
     }
 }

@@ -12,22 +12,22 @@ use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::Document;
 use mongodb::Collection;
+use poise::ReplyHandle;
 use poise::serenity_prelude::ChannelId;
 
 /// If you are a participant, run this command once you have finished your match round.
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
 
-pub async fn submit_result(ctx: &Context<'_>) -> Result<(), Error> {
-    let msg = ctx
-        .send(|s| {
+pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    msg.edit(*ctx,|s| {
             s.ephemeral(true)
                 .reply(true)
                 .content("Checking your match result...")
         })
         .await?;
     //Check if the user is in the tournament
-    let caller = match find_self_by_discord_id(&ctx).await.unwrap() {
+    let caller = match find_self_by_discord_id(ctx).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {
@@ -51,9 +51,9 @@ pub async fn submit_result(ctx: &Context<'_>) -> Result<(), Error> {
     .unwrap();
 
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(&ctx, &region).await;
+    let config = get_config(ctx, &region).await;
 
-    if !tournament(&ctx, &region).await {
+    if !tournament(ctx, &region).await {
         msg.edit(*ctx, |s| {
             s.embed(|e| {
                 e.title("Tournament has not started yet!").description(
@@ -73,13 +73,13 @@ pub async fn submit_result(ctx: &Context<'_>) -> Result<(), Error> {
     let mode = config.get("mode").unwrap().as_str().unwrap();
     // let map = config.get("map").unwrap().as_str().unwrap();
     let current_round: Collection<Document> =
-        database.collection(&find_round_from_config(&config).as_str());
+        database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(&ctx, &caller_tag, current_round, &msg).await? {
+    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
-    let enemy = find_enemy_by_match_id_and_self_tag(&ctx, &region, &round, &match_id, &caller_tag)
+    let enemy = find_enemy_by_match_id_and_self_tag(ctx, &region, &round, &match_id, caller_tag)
         .await
         .unwrap();
     if is_mannequin(&enemy) {
@@ -176,7 +176,7 @@ pub async fn submit_result(ctx: &Context<'_>) -> Result<(), Error> {
 async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Document> {
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
-    let logs = match api::request("battle_log", &caller_tag).await {
+    let logs = match api::request("battle_log", caller_tag).await {
         Ok(APIResult::Successful(battle_log)) => {
             Some(battle_log["items"].as_array().unwrap().clone())
         }

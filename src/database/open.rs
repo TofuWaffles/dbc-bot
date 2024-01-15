@@ -19,7 +19,7 @@ pub async fn registration(ctx: &Context<'_>) -> bool {
 }
 
 pub async fn tournament(ctx: &Context<'_>, region: &Region) -> bool {
-    get_config(ctx, &region)
+    get_config(ctx, region)
         .await
         .get_bool("tournament")
         .unwrap()

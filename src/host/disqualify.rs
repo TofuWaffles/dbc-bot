@@ -34,7 +34,7 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
         user_id: None,
         region: None,
     };
-    disqualify_region(&ctx, &msg).await?;
+    disqualify_region(ctx, msg).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
@@ -46,14 +46,14 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                 disqualification.region =
                     Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
                 mci.defer(&ctx.http()).await?;
-                disqualify_id(&ctx, &msg).await?;
+                disqualify_id(ctx, msg).await?;
                 continue;
             }
             "open_modal" => {
-                disqualification.user_id = Some(create_disqualify_modal(&ctx, mci.clone()).await?);
+                disqualification.user_id = Some(create_disqualify_modal(ctx, mci.clone()).await?);
                 match find_player_by_discord_id(
-                    &ctx,
-                    disqualification.region.clone().unwrap(),
+                    ctx,
+                    &(disqualification.region.clone().unwrap()),
                     disqualification
                         .user_id
                         .clone()
@@ -63,9 +63,9 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                 )
                 .await
                 {
-                    Ok(Some(player)) => display_confirmation(&ctx, &msg, &player).await?,
+                    Ok(Some(player)) => display_confirmation(ctx, msg, &player).await?,
                     Ok(None) => {
-                        ctx.send(|s| {
+                        msg.edit(*ctx, |s| {
                             s.reply(true)
                                 .ephemeral(true)
                                 .embed(|e| e.description("No player is found for this ID"))
@@ -78,8 +78,8 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
             }
             "confirm" => {
                 match find_player_by_discord_id(
-                    &ctx,
-                    disqualification.region.clone().unwrap(),
+                    ctx,
+                    &disqualification.region.clone().unwrap(),
                     disqualification
                         .user_id
                         .clone()
@@ -89,22 +89,22 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                 )
                 .await
                 {
-                    Ok(Some(player)) => match remove_player(&ctx, &player).await {
-                        Ok(round) => {
-                            ctx.send(|s| {
-                                    s.reply(true)
-                                    .ephemeral(true)
-                                        .embed(|e| {
-                                            e.description(format!("Successfully disqualified player: {}({}) with respective Discord <@{}> at round {}", 
-                                            player.get("name").unwrap().as_str().unwrap(), 
-                                            player.get("tag").unwrap().as_str().unwrap(),
-                                            &disqualification.user_id.unwrap().to_string(),
-                                            round))
-                                        })
-                                }).await?;
-                            return Ok(());
-                        }
-                        Err(_) => {}
+                    Ok(Some(player)) => if let Ok(round) = remove_player(ctx, &player).await {
+                        ctx.send(|s| {
+                            s.reply(true)
+                                .ephemeral(true)
+                                .embed(|e| {
+                                    e.description(format!(
+                                        "Successfully disqualified player: {}({}) with respective Discord <@{}> at round {}",
+                                        player.get("name").unwrap().as_str().unwrap(),
+                                        player.get("tag").unwrap().as_str().unwrap(),
+                                        &disqualification.user_id.unwrap().to_string(),
+                                        round
+                                    ))
+                                })
+                        })
+                        .await?;
+                        return Ok(());
                     },
                     Ok(None) => {}
                     Err(_) => {}
@@ -113,8 +113,8 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
             "cancel" => {
                 mci.defer(&ctx.http()).await?;
                 prompt(
-                    &ctx,
-                    &msg,
+                    ctx,
+                    msg,
                     "Player disqualification cancelled",
                     "You can return to this menu by running </index:1181542953542488205>",
                     None,
@@ -192,7 +192,7 @@ async fn display_confirmation(
         .ephemeral(true)
         .embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
-                .title(format!("🔨 Disqualify Players - Step 3: User confirmation",))
+                .title("🔨 Disqualify Players - Step 3: User confirmation")
                 .description(
                     "**Please confirm this is the player that you would like to disqualify.**",
                 )
@@ -211,7 +211,7 @@ async fn display_confirmation(
     })
     .await?;
 
-    return Ok(());
+    Ok(())
 }
 
 pub async fn create_disqualify_modal(

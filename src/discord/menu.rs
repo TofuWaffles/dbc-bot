@@ -166,7 +166,7 @@ pub async fn tournament_menu(
         match mci.data.custom_id.as_str() {
             "enemy" => {
                 mci.defer(&ctx.http()).await?;
-                return view_opponent(ctx).await;
+                return view_opponent(ctx, msg).await;
             }
             "managers" => {
                 mci.defer(&ctx.http()).await?;
@@ -174,7 +174,7 @@ pub async fn tournament_menu(
             }
             "submit" => {
                 mci.defer(&ctx.http()).await?;
-                return submit_result(ctx).await;
+                return submit_result(ctx, msg).await;
             }
             "view" => {
                 mci.defer(&ctx.http()).await?;

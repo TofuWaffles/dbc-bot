@@ -1,32 +1,33 @@
+use crate::database::find::find_all_false_battles;
+use crate::database::update::update_round_config;
+use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
 use poise::ReplyHandle;
 use std::collections::HashMap;
-use crate::database::find::find_all_false_battles;
-use crate::database::update::update_round_config;
-use crate::{Context, Error};
 const TIMEOUT: u64 = 300;
-pub async fn display_next_round(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+pub async fn display_next_round(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let battles = display_false_battles(ctx, region).await;
     if battles.is_empty() {
-        msg.edit(*ctx,|m| {
-            m.embed(|e|{
-              e.title("All matches are finished!")
-              .description("You can safely continue to next round of the tournament!")
+        msg.edit(*ctx, |m| {
+            m.embed(|e| {
+                e.title("All matches are finished!")
+                    .description("You can safely continue to next round of the tournament!")
             })
-            .components(|c|{
-              c.create_action_row(|a|{
-                a.create_button(|b|{
-                  b.label("Next Round")
-                  .disabled(false)
-                  .custom_id("continue")
+            .components(|c| {
+                c.create_action_row(|a| {
+                    a.create_button(|b| b.label("Next Round").disabled(false).custom_id("continue"))
                 })
-              })
             })
-        }).await?;
+        })
+        .await?;
     } else {
-      msg.edit(*ctx,|m| {
+        msg.edit(*ctx,|m| {
         m.embed(|e|{
           e.title("Some matches are not finished!")
           .description("Please require the players to finish their matches before continuing to next round!")
@@ -42,21 +43,18 @@ pub async fn display_next_round(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region
           })
         })
     }).await?;
-    let resp = msg.clone().into_message().await?;
-    let cib = resp
-        .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(TIMEOUT));
-    let mut cic = cib.build();
-    while let Some(mci) = &cic.next().await {
-        match mci.data.custom_id.as_str() {
-            "continue" => {
+        let resp = msg.clone().into_message().await?;
+        let cib = resp
+            .await_component_interactions(&ctx.serenity_context().shard)
+            .timeout(std::time::Duration::from_secs(TIMEOUT));
+        let mut cic = cib.build();
+        while let Some(mci) = &cic.next().await {
+            if mci.data.custom_id.as_str() == "continue" {
                 mci.defer(&ctx.http()).await?;
                 update_round_config(ctx, region).await?;
                 return Ok(());
             }
-            _ => {}
         }
-    }
     }
     Ok(())
 }
@@ -81,7 +79,7 @@ pub async fn display_false_battles(
         if let Some(match_id) = player.get("match_id").and_then(bson::Bson::as_i32) {
             match_groups
                 .entry(match_id)
-                .or_insert(Vec::new())
+                .or_default()
                 .push(player);
         }
     }

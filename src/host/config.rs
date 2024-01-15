@@ -22,7 +22,7 @@ pub async fn configurate(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
     msg.edit(*ctx, |s| {
         s.ephemeral(true).reply(true).embed(|e| {
@@ -31,8 +31,8 @@ pub async fn configurate(
         })
     })
     .await?;
-    create_select_menu(&ctx, &msg).await?;
-    display_config(&ctx, &msg, &region).await?;
+    create_select_menu(ctx, msg).await?;
+    display_config(ctx, msg, region).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
@@ -42,23 +42,23 @@ pub async fn configurate(
         match mci.data.values[0].as_str() {
             "mode" => {
                 mci.defer(&ctx.http()).await?;
-                mode_option(&ctx, &msg, &collection).await?;
+                mode_option(ctx, msg, &collection).await?;
             }
             "role" => {
                 mci.defer(&ctx.http()).await?;
-                role_option(&ctx, &msg, &collection).await?;
+                role_option(ctx, msg, &collection).await?;
             }
             "channel" => {
                 mci.defer(&ctx.http()).await?;
-                channel_option(&ctx, &msg, &collection).await?;
+                channel_option(ctx, msg, &collection).await?;
             }
             "map" => {
                 mci.defer(&ctx.http()).await?;
-                map_option(&ctx, &msg, mci.clone(), &collection).await?;
+                map_option(ctx, msg, mci.clone(), &collection).await?;
             }
-            _ => create_select_menu(&ctx, &msg).await?,
+            _ => create_select_menu(ctx, msg).await?,
         };
-        display_config(&ctx, &msg, &region).await?;
+        display_config(ctx, msg, region).await?;
     }
     Ok(())
 }
@@ -81,10 +81,7 @@ async fn display_config(
     } else {
         "Not yet started"
     };
-    let map = match config.get("map").unwrap().as_str() {
-        Some(map) => map,
-        None => "Not yet set",
-    };
+    let map = config.get("map").unwrap().as_str().unwrap_or("Not yet set");
     let mode = match config.get("mode").unwrap().as_str() {
         Some(mode) => format!("{}", Mode::find_key(mode).unwrap()),
         None => "Not yet set".to_string(),
@@ -184,7 +181,7 @@ async fn mode_option(
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(120));
     let mut cic = cib.build();
-    while let Some(mci2) = &cic.next().await {
+    if let Some(mci2) = &cic.next().await {
         mci2.defer(ctx.http()).await?;
         let mode = Mode::find_key(mci2.data.values[0].as_str()).unwrap();
         collection
@@ -204,7 +201,6 @@ async fn mode_option(
             })
         })
         .await?;
-        break;
     }
     std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
     Ok(())
@@ -242,7 +238,7 @@ async fn role_option(
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(120));
     let mut cic = cib.build();
-    while let Some(mci2) = &cic.next().await {
+    if let Some(mci2) = &cic.next().await {
         mci2.defer(ctx.http()).await?;
         let role_id = mci2.data.values[0].as_str();
         collection
@@ -258,7 +254,6 @@ async fn role_option(
             })
         })
         .await?;
-        break;
     }
     std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
     Ok(())
@@ -298,7 +293,7 @@ async fn channel_option(
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(120));
     let mut cic = cib.build();
-    while let Some(mci2) = &cic.next().await {
+    if let Some(mci2) = &cic.next().await {
         mci2.defer(ctx.http()).await?;
         let channel_id = mci2.data.values[0].as_str();
         collection
@@ -314,7 +309,6 @@ async fn channel_option(
             })
         })
         .await?;
-        break;
     }
     Ok(())
 }

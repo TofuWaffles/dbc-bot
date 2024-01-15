@@ -87,7 +87,7 @@ async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error> {
     Ok(Reg {
         registration: status,
         tournament: tournament_status,
-        count: count,
+        count,
         region: region.clone(),
     })
 }

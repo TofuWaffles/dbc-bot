@@ -11,7 +11,7 @@ pub async fn start_tournament(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    let prompts = vec![
+    let prompts = [
         "<:tick:1187839626338111600> Closed! Registration is now closed!", //0
         "<:tick:1187839626338111600> Opened! Tournament is opened!",       //1
         "<a:loading:1187839622680690689> Counting players...",             //2

@@ -53,7 +53,7 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
             }
             "open_modal" => {
                 register.tag = Some(create_modal_tag(ctx, mci.clone()).await?.to_uppercase());
-                match find_tag(&ctx, &register.tag.clone().unwrap()).await {
+                match find_tag(ctx, &register.tag.clone().unwrap()).await {
                     Some(player) => {
                         return already_used(ctx, msg, player).await;
                     }
@@ -160,11 +160,11 @@ async fn display_confirmation(
             .await?;
             stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
 
-            return Ok(Some(make_player_doc(
+            Ok(Some(make_player_doc(
                 &player,
                 &ctx.author_member().await.unwrap().user.id.to_string(),
                 &register.region.clone().unwrap(),
-            )));
+            )))
         }
         Ok(APIResult::APIError(_)) => {
             prompt(
@@ -199,12 +199,12 @@ async fn confirm(
     register: &PlayerRegistration,
 ) -> Result<(), Error> {
     add_player(
-        &ctx,
+        ctx,
         register.player.clone().unwrap(),
         &register.region.clone().unwrap(),
     )
     .await?;
-    assign_role(&ctx, &msg, &register.region).await?;
+    assign_role(ctx, msg, &register.region).await?;
     prompt(
         ctx,
         msg,
