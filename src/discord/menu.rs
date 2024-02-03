@@ -1,5 +1,6 @@
 use super::prompt::prompt;
-use crate::host::config::configurate;
+use crate::host::utilities::config::configurate;
+use crate::host::utilities::announcement::announcement;
 use crate::host::disqualify::disqualify_players;
 use crate::host::registration::registration_mod_panel;
 use crate::host::tournament::tournament_mod_panel;
@@ -231,6 +232,13 @@ pub async fn mod_menu(
                         .emoji(ReactionType::Unicode("🚩".to_string()))
                 })
                 .create_button(|b| {
+                    b.custom_id("announcement")
+                        .label("Announcement\nOptions")
+                        .disabled(!managers)
+                        .style(ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("📢".to_string()))
+                })
+                .create_button(|b| {
                     b.custom_id("configuration")
                         .label("Configuration\nROptions")
                         .disabled(!submit)
@@ -272,6 +280,10 @@ pub async fn mod_menu(
             "tournament" => {
                 mci.defer(&ctx.http()).await?;
                 return tournament_mod_panel(ctx, msg, region).await;
+            }
+            "announcement" => {
+                mci.defer(&ctx.http()).await?;
+                return announcement(ctx, msg).await;
             }
             "configuration" => {
                 mci.defer(&ctx.http()).await?;
