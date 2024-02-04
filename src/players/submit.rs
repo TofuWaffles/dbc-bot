@@ -13,20 +13,20 @@ use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::Document;
 use mongodb::Collection;
-use poise::ReplyHandle;
 use poise::serenity_prelude::ChannelId;
+use poise::ReplyHandle;
 
 /// If you are a participant, run this command once you have finished your match round.
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
 
 pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx,|s| {
-            s.ephemeral(true)
-                .reply(true)
-                .content("Checking your match result...")
-        })
-        .await?;
+    msg.edit(*ctx, |s| {
+        s.ephemeral(true)
+            .reply(true)
+            .content("Checking your match result...")
+    })
+    .await?;
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx).await.unwrap() {
         Some(caller) => caller,

@@ -93,9 +93,7 @@ pub async fn toggle_registration(
     let collection: Collection<Document> = database.collection("Config");
     match collection.update_one(doc! {}, toggle, None).await {
         Ok(_) => Ok(()),
-        Err(err) => {
-            Err(Box::new(err))
-        }
+        Err(err) => Err(Box::new(err)),
     }
 }
 

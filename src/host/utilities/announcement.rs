@@ -1,9 +1,9 @@
-use crate::{Context, Error};
 use crate::discord::prompt::prompt;
+use crate::{Context, Error};
 use dbc_bot::CustomError;
+use futures::StreamExt;
 use poise::ReplyHandle;
 use std::sync::Arc;
-use futures::StreamExt;
 use tracing::info;
 const TIMEOUT: u64 = 150;
 
@@ -36,8 +36,7 @@ struct EditAnnouncementModal {
     message_id: String,
 }
 
-pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(), Error> {
-
+pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     let mut announcement_data = AnnouncementData {
         title: None,
         description: None,
@@ -53,39 +52,39 @@ pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "create_announcement" => {
+                info!("Create announcement modal");
                 mci.defer(&ctx.http()).await?;
                 match Some(create_announcement_modal(ctx, mci.clone()).await?) {
-                    Some(announcement_modal) => {
-                        match announcement_modal.channel_id {
-                            Some(channel_id) => {
-                                match poise::serenity_prelude::id::ChannelId(channel_id).to_channel(&ctx.http()).await {
-                                    Ok(_) => {
-                                        announcement_data = announcement_modal;
-                                        display_confirmation(ctx, msg, &announcement_data).await?;
-                                    }
-                                    Err(_) => {
-                                        msg.edit(*ctx, |s| {
-                                            s.reply(true)
-                                                .ephemeral(true)
-                                                .embed(|e| {
-                                                    e.description(format!("Invalid channel ID provided."))
-                                                })
-                                        }).await?;
-                                        continue;
-                                    }
+                    Some(announcement_modal) => match announcement_modal.channel_id {
+                        Some(channel_id) => {
+                            match poise::serenity_prelude::id::ChannelId(channel_id)
+                                .to_channel(&ctx.http())
+                                .await
+                            {
+                                Ok(_) => {
+                                    announcement_data = announcement_modal;
+                                    display_confirmation(ctx, msg, &announcement_data).await?;
+                                }
+                                Err(_) => {
+                                    msg.edit(*ctx, |s| {
+                                        s.reply(true).ephemeral(true).embed(|e| {
+                                            e.description(format!("Invalid channel ID provided."))
+                                        })
+                                    })
+                                    .await?;
+                                    continue;
                                 }
                             }
-                            None => {}
                         }
-                    }
+                        None => {}
+                    },
                     None => {
                         msg.edit(*ctx, |s| {
-                            s.reply(true)
-                                .ephemeral(true)
-                                .embed(|e| {
-                                    e.description(format!("Failed to create announcement modal."))
-                                })
-                        }).await?;
+                            s.reply(true).ephemeral(true).embed(|e| {
+                                e.description(format!("Failed to create announcement modal."))
+                            })
+                        })
+                        .await?;
                         info!("Failed to create announcement modal.");
                         return Err(Box::new(CustomError(format!(
                             "Failed to create announcement modal."
@@ -99,19 +98,25 @@ pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(
                     Some(announcement_modal) => {
                         match (announcement_modal.channel_id, announcement_modal.message_id) {
                             (Some(channel_id), Some(message_id)) => {
-                                match (poise::serenity_prelude::id::ChannelId(channel_id).to_channel(&ctx.http()).await, ctx.http().get_message(channel_id, message_id).await) {
+                                match (
+                                    poise::serenity_prelude::id::ChannelId(channel_id)
+                                        .to_channel(&ctx.http())
+                                        .await,
+                                    ctx.http().get_message(channel_id, message_id).await,
+                                ) {
                                     (Ok(_channel), Ok(_message)) => {
                                         announcement_data = announcement_modal;
                                         display_confirmation(ctx, msg, &announcement_data).await?;
                                     }
                                     (Err(_), _) => {
                                         msg.edit(*ctx, |s| {
-                                            s.reply(true)
-                                                .ephemeral(true)
-                                                .embed(|e| {
-                                                    e.description(format!("Invalid channel ID provided."))
-                                                })
-                                        }).await?;
+                                            s.reply(true).ephemeral(true).embed(|e| {
+                                                e.description(format!(
+                                                    "Invalid channel ID provided."
+                                                ))
+                                            })
+                                        })
+                                        .await?;
                                         continue;
                                     }
                                     (_, Err(_)) => {
@@ -126,19 +131,18 @@ pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(
                                     }
                                 }
                             }
-                            (None, Some(_)) => {},
-                            (Some(_), None) => {},
-                            (None, None) => {},
+                            (None, Some(_)) => {}
+                            (Some(_), None) => {}
+                            (None, None) => {}
                         }
                     }
                     None => {
                         msg.edit(*ctx, |s| {
-                            s.reply(true)
-                                .ephemeral(true)
-                                .embed(|e| {
-                                    e.description(format!("Failed to create announcement modal."))
-                                })
-                        }).await?;
+                            s.reply(true).ephemeral(true).embed(|e| {
+                                e.description(format!("Failed to create announcement modal."))
+                            })
+                        })
+                        .await?;
                         info!("Failed to create announcement modal.");
                         return Err(Box::new(CustomError(format!(
                             "Failed to create announcement modal."
@@ -158,72 +162,82 @@ pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(
                 )
                 .await?;
             }
-            "confirm" => {
-                match announcement_data.message_id {
-                    Some(message_id) => {
-                        match poise::serenity_prelude::id::ChannelId(announcement_data.channel_id.clone().unwrap()).edit_message(&ctx.http(), message_id, |m| {
-                            m.embed(|e| {
-                                e.title(announcement_data.title.clone().unwrap())
+            "confirm" => match announcement_data.message_id {
+                Some(message_id) => {
+                    match poise::serenity_prelude::id::ChannelId(
+                        announcement_data.channel_id.clone().unwrap(),
+                    )
+                    .edit_message(&ctx.http(), message_id, |m| {
+                        m.embed(|e| {
+                            e.title(announcement_data.title.clone().unwrap())
                                 .description(announcement_data.description.clone().unwrap())
+                        })
+                    })
+                    .await
+                    {
+                        Ok(message) => {
+                            msg.edit(*ctx, |s| {
+                                s.reply(true).ephemeral(true).embed(|e| {
+                                    e.description(format!(
+                                        "Announcement successfully edited in <#{}>",
+                                        message.channel_id
+                                    ))
+                                })
                             })
-                        }).await {
-                            Ok(message) => {
-                                msg.edit(*ctx, |s| {
-                                    s.reply(true)
-                                        .ephemeral(true)
-                                        .embed(|e| {
-                                            e.description(format!("Announcement successfully edited in <#{}>", message.channel_id))
-                                        })
-                                }).await?;
-                            }
-                            Err(_) => {
-                                msg.edit(*ctx, |s| {
-                                    s.reply(true)
-                                        .ephemeral(true)
-                                        .embed(|e| {
-                                            e.description(format!("Failed to edit announcement."))
-                                        })
-                                }).await?;
-                                info!("Failed to edit announcement.");
-                                return Err(Box::new(CustomError(format!(
-                                    "Failed to edit announcement."
-                                ))));
-                            }
+                            .await?;
                         }
-                    }
-                    None => {
-                        match poise::serenity_prelude::id::ChannelId(announcement_data.channel_id.clone().unwrap()).send_message(&ctx.http(), |m| {
-                            m.embed(|e| {
-                                e.title(announcement_data.title.clone().unwrap())
-                                .description(announcement_data.description.clone().unwrap())
+                        Err(_) => {
+                            msg.edit(*ctx, |s| {
+                                s.reply(true).ephemeral(true).embed(|e| {
+                                    e.description(format!("Failed to edit announcement."))
+                                })
                             })
-                        }).await {
-                            Ok(message) => {
-                                msg.edit(*ctx, |s| {
-                                    s.reply(true)
-                                        .ephemeral(true)
-                                        .embed(|e| {
-                                            e.description(format!("Announcement successfully posted in <#{}>", message.channel_id))
-                                        })
-                                }).await?;
-                            }
-                            Err(_) => {
-                                msg.edit(*ctx, |s| {
-                                    s.reply(true)
-                                        .ephemeral(true)
-                                        .embed(|e| {
-                                            e.description(format!("Failed to post announcement."))
-                                        })
-                                }).await?;
-                                info!("Failed to post announcement.");
-                                return Err(Box::new(CustomError(format!(
-                                    "Failed to post announcement."
-                                ))));
-                            }
+                            .await?;
+                            info!("Failed to edit announcement.");
+                            return Err(Box::new(CustomError(format!(
+                                "Failed to edit announcement."
+                            ))));
                         }
                     }
                 }
-            }
+                None => {
+                    match poise::serenity_prelude::id::ChannelId(
+                        announcement_data.channel_id.clone().unwrap(),
+                    )
+                    .send_message(&ctx.http(), |m| {
+                        m.embed(|e| {
+                            e.title(announcement_data.title.clone().unwrap())
+                                .description(announcement_data.description.clone().unwrap())
+                        })
+                    })
+                    .await
+                    {
+                        Ok(message) => {
+                            msg.edit(*ctx, |s| {
+                                s.reply(true).ephemeral(true).embed(|e| {
+                                    e.description(format!(
+                                        "Announcement successfully posted in <#{}>",
+                                        message.channel_id
+                                    ))
+                                })
+                            })
+                            .await?;
+                        }
+                        Err(_) => {
+                            msg.edit(*ctx, |s| {
+                                s.reply(true).ephemeral(true).embed(|e| {
+                                    e.description(format!("Failed to post announcement."))
+                                })
+                            })
+                            .await?;
+                            info!("Failed to post announcement.");
+                            return Err(Box::new(CustomError(format!(
+                                "Failed to post announcement."
+                            ))));
+                        }
+                    }
+                }
+            },
             _ => {
                 continue;
             }
@@ -233,44 +247,50 @@ pub async fn announcement(ctx: &Context<'_>, msg: & ReplyHandle<'_>) -> Result<(
 }
 
 async fn announcement_options(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |b|{
-        b.embed(|e|{
+    msg.edit(*ctx, |b| {
+        b.embed(|e| {
             e.title("Create or edit an existing announcement")
-            .description("Please choose whether to create an announcement or edit an existing one.")
+                .description(
+                    "Please choose whether to create an announcement or edit an existing one.",
+                )
         })
-        .components(|c|{
-            c.create_action_row(|a|{
-                a.create_button(|b|{
+        .components(|c| {
+            c.create_action_row(|a| {
+                a.create_button(|b| {
                     b.custom_id("create_announcement")
-                    .label("Create Announcement")
+                        .label("Create Announcement")
                 })
-                .create_button(|b|{
-                    b.custom_id("edit_announcement")
-                    .label("Edit Announcement")
-                })
+                .create_button(|b| b.custom_id("edit_announcement").label("Edit Announcement"))
+            })
         })
-    })}).await?;
+    })
+    .await?;
     Ok(())
 }
 
-async fn display_confirmation(ctx: &Context<'_>, msg: &ReplyHandle<'_>, announcement_data: &AnnouncementData) -> Result<(), Error> {
-    msg.edit(*ctx, |b|{
-        b.embed(|e|{
+async fn display_confirmation(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    announcement_data: &AnnouncementData,
+) -> Result<(), Error> {
+    msg.edit(*ctx, |b| {
+        b.embed(|e| {
             e.title(format!("Announcement creation - Confirmation"))
-            .description(format!("Announcement title: {}\nAnnouncement content: {}\nAnnouncement channel: {}", announcement_data.title.clone().unwrap(), announcement_data.description.clone().unwrap(), announcement_data.channel_id.clone().unwrap()))
+                .description(format!(
+                    "Announcement title: {}\nAnnouncement content: {}\nAnnouncement channel: {}",
+                    announcement_data.title.clone().unwrap(),
+                    announcement_data.description.clone().unwrap(),
+                    announcement_data.channel_id.clone().unwrap()
+                ))
         })
-        .components(|c|{
-            c.create_action_row(|a|{
-                a.create_button(|b|{
-                    b.custom_id("confirm")
-                    .label("Confirm")
-                })
-                .create_button(|b|{
-                    b.custom_id("cancel")
-                    .label("Cancel")
-                })
+        .components(|c| {
+            c.create_action_row(|a| {
+                a.create_button(|b| b.custom_id("confirm").label("Confirm"))
+                    .create_button(|b| b.custom_id("cancel").label("Cancel"))
+            })
         })
-    })}).await?;
+    })
+    .await?;
     Ok(())
 }
 

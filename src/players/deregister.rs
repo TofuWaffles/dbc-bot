@@ -22,7 +22,7 @@ async fn display_deregister_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Re
         })
         .embed(|e| {
             e.title("Deregisteration")
-            .description("Are you sure you want to deregister from the tournament?".to_string())
+                .description("Are you sure you want to deregister from the tournament?".to_string())
         })
     })
     .await?;

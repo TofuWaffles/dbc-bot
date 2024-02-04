@@ -89,8 +89,9 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                 )
                 .await
                 {
-                    Ok(Some(player)) => if let Ok(round) = remove_player(ctx, &player).await {
-                        ctx.send(|s| {
+                    Ok(Some(player)) => {
+                        if let Ok(round) = remove_player(ctx, &player).await {
+                            ctx.send(|s| {
                             s.reply(true)
                                 .ephemeral(true)
                                 .embed(|e| {
@@ -104,8 +105,9 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
                                 })
                         })
                         .await?;
-                        return Ok(());
-                    },
+                            return Ok(());
+                        }
+                    }
                     Ok(None) => {}
                     Err(_) => {}
                 }
