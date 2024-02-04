@@ -3,3 +3,4 @@
 .vscode/
 vscode/
 debug.log
+Cargo.lock
