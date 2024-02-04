@@ -1,0 +1,11 @@
+version: '3'
+services:
+  dbc-bot:
+    image: dbc-bot
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
+      - BRAWL_STARS_TOKEN=${BRAWL_STARS_TOKEN}
+    build: 
+      context: .
+      dockerfile: Dockerfile
