@@ -16,12 +16,12 @@ use std::io::Cursor;
 
 /// View your opponent
 pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx,|s| {
-            s.ephemeral(true)
-                .reply(true)
-                .content("Getting your opponent...")
-        })
-        .await?;
+    msg.edit(*ctx, |s| {
+        s.ephemeral(true)
+            .reply(true)
+            .content("Getting your opponent...")
+    })
+    .await?;
     let caller = match find_self_by_discord_id(ctx).await.unwrap() {
         Some(caller) => caller,
         None => {

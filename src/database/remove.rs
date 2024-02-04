@@ -22,25 +22,24 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document) -> Result<Strin
         .unwrap()
         .collection::<Document>(find_round_from_config(&config).as_str());
 
-        let player_id = player.get_str("discord_id").unwrap();
+    let player_id = player.get_str("discord_id").unwrap();
 
-        {
-            let match_id = player
-                .get("match_id")
-                .unwrap()
-                .to_string()
-                .parse::<i32>()
-                .unwrap();
-        
-            let mannequin = add_mannequin(&region, Some(match_id));
-        
-            round_collection
-                .delete_one(doc! {"discord_id": player_id}, None)
-                .await?;
-        
-            round_collection.insert_one(mannequin, None).await?;
-        }
-        
+    {
+        let match_id = player
+            .get("match_id")
+            .unwrap()
+            .to_string()
+            .parse::<i32>()
+            .unwrap();
+
+        let mannequin = add_mannequin(&region, Some(match_id));
+
+        round_collection
+            .delete_one(doc! {"discord_id": player_id}, None)
+            .await?;
+
+        round_collection.insert_one(mannequin, None).await?;
+    }
 
     Ok(find_round_from_config(&config))
 }

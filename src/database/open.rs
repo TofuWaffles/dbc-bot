@@ -3,7 +3,7 @@ use crate::Context;
 use dbc_bot::Region;
 use strum::IntoEnumIterator;
 
-pub async fn registration(ctx: &Context<'_>) -> bool {
+pub async fn registration_open(ctx: &Context<'_>) -> bool {
     for region in Region::iter() {
         if get_config(ctx, &region)
             .await
@@ -16,6 +16,13 @@ pub async fn registration(ctx: &Context<'_>) -> bool {
         }
     }
     false
+}
+
+pub async fn registration_region_open(ctx: &Context<'_>, region: &Region) -> bool {
+    get_config(ctx, region)
+        .await
+        .get_bool("registration")
+        .unwrap()
 }
 
 pub async fn tournament(ctx: &Context<'_>, region: &Region) -> bool {

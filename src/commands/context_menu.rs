@@ -16,20 +16,21 @@ pub async fn get_individual_player_data(
     let msg = ctx
         .send(|s| s.content("Getting player info...").reply(true))
         .await?;
-    let roles = match get_roles_from_user(&ctx, Some(&user)).await{
+    let roles = match get_roles_from_user(&ctx, Some(&user)).await {
         Some(roles) => roles,
         None => {
             return prompt(
-                &ctx, 
-                &msg, 
-                "Failed to fetch roles from user", 
-                "Please only use this feature in a server", 
-                None, 
-                None
-            ).await;
+                &ctx,
+                &msg,
+                "Failed to fetch roles from user",
+                "Please only use this feature in a server",
+                None,
+                None,
+            )
+            .await;
         }
     };
-    let region = match get_region_from_role(&ctx, roles).await {
+    let region = match get_region_from_role(&ctx, roles) {
         Some(region) => region,
         None => {
             return prompt(
@@ -73,11 +74,9 @@ pub async fn get_individual_player_data(
     };
     let player = request("player", player_from_db.get_str("tag").unwrap()).await?;
     match player {
-        APIResult::Successful(p) => {
-            stat(&ctx, &msg, &p, &region).await
-        }
+        APIResult::Successful(p) => stat(&ctx, &msg, &p, &region).await,
         APIResult::NotFound(_) => {
-           prompt(
+            prompt(
                 &ctx,
                 &msg,
                 "Could not find player from API",

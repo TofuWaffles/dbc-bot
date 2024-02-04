@@ -1,9 +1,11 @@
 use super::prompt::prompt;
-use crate::host::utilities::config::configurate;
-use crate::host::utilities::announcement::announcement;
 use crate::host::disqualify::disqualify_players;
 use crate::host::registration::registration_mod_panel;
 use crate::host::tournament::tournament_mod_panel;
+use crate::host::utilities;
+use crate::host::utilities::announcement::announcement;
+use crate::host::utilities::config::configurate;
+use crate::host::utilities::utilities::utilities_mod_panel;
 use crate::players::deregister::deregister_menu;
 use crate::players::register::register_menu;
 use crate::players::submit::submit_result;
@@ -159,10 +161,10 @@ pub async fn tournament_menu(
     })
     .await?;
     let resp = msg.clone().into_message().await?;
-    let cib = resp
+    let mut cic = resp
         .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(TIMEOUT));
-    let mut cic = cib.build();
+        .timeout(std::time::Duration::from_secs(TIMEOUT))
+        .build();
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "enemy" => {
@@ -210,48 +212,56 @@ pub async fn mod_menu(
     msg.edit(*ctx, |e| {
         e.components(|c| {
             c.create_action_row(|r| {
-                r.create_button(|b| {
-                    b.custom_id("disqualify")
-                        .label("Disqualify\nPlayer")
-                        .disabled(!disqualify)
-                        .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("🔨".to_string()))
-                })
-                .create_button(|b| {
-                    b.custom_id("registration")
-                        .label("Registration\nOptions")
-                        .disabled(!managers)
-                        .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("📥".to_string()))
-                })
-                .create_button(|b| {
-                    b.custom_id("tournament")
-                        .label("Tournament\nOptions")
-                        .disabled(!managers)
-                        .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("🚩".to_string()))
-                })
-                .create_button(|b| {
-                    b.custom_id("announcement")
-                        .label("Announcement\nOptions")
-                        .disabled(!managers)
-                        .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("📢".to_string()))
-                })
-                .create_button(|b| {
-                    b.custom_id("configuration")
-                        .label("Configuration\nROptions")
-                        .disabled(!submit)
-                        .style(ButtonStyle::Success)
-                        .emoji(ReactionType::Unicode("⚙️".to_string()))
-                })
-                .create_button(|b| {
-                    b.custom_id("help")
-                        .label("Help")
-                        .disabled(!help)
-                        .style(ButtonStyle::Secondary)
-                        .emoji(ReactionType::Unicode("❓".to_string()))
-                })
+                r
+                    // .create_button(|b| {
+                    //     b.custom_id("disqualify")
+                    //         .label("Disqualify\nPlayer")
+                    //         .disabled(!disqualify)
+                    //         .style(ButtonStyle::Danger)
+                    //         .emoji(ReactionType::Unicode("🔨".to_string()))
+                    // })
+                    .create_button(|b| {
+                        b.custom_id("registration")
+                            .label("Registration")
+                            .disabled(!managers)
+                            .style(ButtonStyle::Primary)
+                            .emoji(ReactionType::Unicode("📥".to_string()))
+                    })
+                    .create_button(|b| {
+                        b.custom_id("tournament")
+                            .label("Tournament")
+                            .disabled(!managers)
+                            .style(ButtonStyle::Primary)
+                            .emoji(ReactionType::Unicode("🚩".to_string()))
+                    })
+                    .create_button(|b| {
+                        b.custom_id("setting")
+                            .label("Utilities")
+                            .disabled(!managers)
+                            .style(ButtonStyle::Primary)
+                            .emoji(ReactionType::Unicode("⚙️".to_string()))
+                    })
+                // .create_button(|b| {
+                //     b.custom_id("announcement")
+                //         .label("Announcement\nOptions")
+                //         .disabled(!managers)
+                //         .style(ButtonStyle::Danger)
+                //         .emoji(ReactionType::Unicode("📢".to_string()))
+                // })
+                // .create_button(|b| {
+                //     b.custom_id("configuration")
+                //         .label("Configuration\nROptions")
+                //         .disabled(!submit)
+                //         .style(ButtonStyle::Success)
+                //         .emoji(ReactionType::Unicode("⚙️".to_string()))
+                // })
+                // .create_button(|b| {
+                //     b.custom_id("help")
+                //         .label("Help")
+                //         .disabled(!help)
+                //         .style(ButtonStyle::Secondary)
+                //         .emoji(ReactionType::Unicode("❓".to_string()))
+                // })
             })
         })
         .embed(|e| {
@@ -281,13 +291,9 @@ pub async fn mod_menu(
                 mci.defer(&ctx.http()).await?;
                 return tournament_mod_panel(ctx, msg, region).await;
             }
-            "announcement" => {
+            "setting" => {
                 mci.defer(&ctx.http()).await?;
-                return announcement(ctx, msg).await;
-            }
-            "configuration" => {
-                mci.defer(&ctx.http()).await?;
-                return configurate(ctx, msg, region).await;
+                return utilities_mod_panel(ctx, msg, region).await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;
@@ -304,4 +310,8 @@ pub async fn mod_menu(
         }
     }
     Ok(())
+}
+
+async fn host_registration_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    registration_menu(ctx, msg, true, true, true, true, None).await
 }

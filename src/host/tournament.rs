@@ -111,8 +111,8 @@ async fn display_start_buttons(
 async fn prerequisite(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !(config.get("mode").is_none()
-    || config.get("role").is_none()
-    || config.get("channel").is_none())
+        || config.get("role").is_none()
+        || config.get("channel").is_none())
 }
 
 async fn tournamet_available(ctx: &Context<'_>, region: &Region) -> bool {

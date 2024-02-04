@@ -38,14 +38,10 @@ pub async fn find_player_by_discord_id(
     let filter = doc! {"discord_id": user_id.to_string()};
     match collection.find_one(filter, None).await {
         Ok(result) => match result {
-            Some(p) => {
-                Ok(Some(p))
-            }
+            Some(p) => Ok(Some(p)),
             None => Ok(None),
         },
-        Err(_) => {
-            Ok(None)
-        }
+        Err(_) => Ok(None),
     }
 }
 

@@ -1,9 +1,9 @@
-use crate::database::open::{registration, tournament};
-use crate::database::stat::count_registers;
-use crate::database::update::toggle_registration;
+use crate::brawlstars::getters::get_icon;
 use crate::database::config::get_config;
 use crate::database::find::find_round_from_config;
-use crate::brawlstars::getters::get_icon;
+use crate::database::open::{registration_open, tournament};
+use crate::database::stat::count_registers;
+use crate::database::update::toggle_registration;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
@@ -83,7 +83,7 @@ async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Re
 }
 
 async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error> {
-    let status = registration(ctx).await;
+    let status = registration_open(ctx).await;
     let tournament_status = tournament(ctx, region).await;
     let count = count_registers(ctx, region).await?;
     Ok(Reg {
@@ -96,10 +96,9 @@ async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error> {
 
 async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
-        s.embed(|e| {
-            e.description("Getting player info...")
-        })
-    }).await?;
+        s.embed(|e| e.description("Getting player info..."))
+    })
+    .await?;
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, region).await;
     let round = find_round_from_config(&config);
@@ -108,10 +107,9 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
     let total = match collection.count_documents(doc! {}, None).await? as i32 {
         0 => {
             msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.description("No player found in database.")
-                })
-            }).await?;
+                s.embed(|e| e.description("No player found in database."))
+            })
+            .await?;
             return Ok(());
         }
         total => total,
@@ -124,13 +122,17 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
                 a.create_button(|b| {
                     b.custom_id("previous")
                         .label("Prev")
-                        .emoji(poise::serenity_prelude::ReactionType::Unicode("⬅️".to_string()))
+                        .emoji(poise::serenity_prelude::ReactionType::Unicode(
+                            "⬅️".to_string(),
+                        ))
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                 })
                 .create_button(|b| {
                     b.custom_id("next")
                         .label("Next")
-                        .emoji(poise::serenity_prelude::ReactionType::Unicode("➡️".to_string()))
+                        .emoji(poise::serenity_prelude::ReactionType::Unicode(
+                            "➡️".to_string(),
+                        ))
                         .style(poise::serenity_prelude::ButtonStyle::Success)
                 })
             })
@@ -154,18 +156,14 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
     let mut cic = cib.build();
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
-            "next" => {
-                match index {
-                    _ if index == total => index = 1,
-                    _ => index += 1,
-                }
-            }
-            "previous" => {
-                match index {
-                    1 => index = total,
-                    _ => index -= 1
-                }
-            }
+            "next" => match index {
+                _ if index == total => index = 1,
+                _ => index += 1,
+            },
+            "previous" => match index {
+                1 => index = total,
+                _ => index -= 1,
+            },
             _ => {
                 continue;
             }
@@ -211,7 +209,6 @@ async fn get_player_data(
             .thumbnail(icon_url)
             .fields(vec![
                 ("**Discord ID**", format!("<@{}>", discord_id), true),
-
                 ("**Match**", match_id.to_string(), true),
                 ("**Battle**", battle.to_string(), true),
             ])

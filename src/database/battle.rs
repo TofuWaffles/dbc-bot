@@ -43,8 +43,6 @@ pub async fn is_battle(ctx: &Context<'_>, tag: Option<&str>, round: String) -> R
                 .and_then(|b| b.as_bool())
                 .unwrap_or(false))
         }
-        None => {
-            Ok(false)
-        }
+        None => Ok(false),
     }
 }

@@ -77,10 +77,7 @@ pub async fn display_false_battles(
     let mut match_groups: HashMap<i32, Vec<&Document>> = HashMap::new();
     for player in &players {
         if let Some(match_id) = player.get("match_id").and_then(bson::Bson::as_i32) {
-            match_groups
-                .entry(match_id)
-                .or_default()
-                .push(player);
+            match_groups.entry(match_id).or_default().push(player);
         }
     }
     let mut battles: Vec<(String, String, bool)> = match_groups

@@ -53,11 +53,11 @@ impl Region {
         }
     }
     /// Returns the short name of the region, e.g. `NASA`, `EU`, `APAC`.
-    pub fn short(&self) -> String{
+    pub fn short(&self) -> String {
         format!("{:?}", self)
     }
     /// Returns the full name of the region, e.g. `North America & South America`, `Europe`, `Asia & Oceania`.
-    pub fn full(&self) -> String{
+    pub fn full(&self) -> String {
         format!("{}", self)
     }
 }

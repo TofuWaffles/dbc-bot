@@ -1,21 +1,22 @@
 use crate::database::battle::is_battle;
 use crate::database::config::get_config;
 use crate::database::find::{find_round_from_config, find_self_by_discord_id};
-use crate::database::open::{all_tournaments, registration};
+use crate::database::open::{registration_open, registration_region_open};
 use crate::discord::menu::registration_menu;
 use crate::discord::menu::tournament_menu;
 use crate::discord::prompt::prompt;
-use crate::discord::role::get_roles_from_user;
+use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use dbc_bot::Region;
 use poise::ReplyHandle;
+use tracing::info;
 const DELAY: u64 = 1;
 
 // Tournament all-in-one command
 #[poise::command(slash_command, guild_only)]
 pub async fn index(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
-   home(ctx, None).await
+    home(ctx, None).await
 }
 
 pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), Error> {
@@ -35,33 +36,62 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
 
     std::thread::sleep(std::time::Duration::from_secs(DELAY));
 
-    // match get_region_from_role(&ctx, ctx.author_member()
+    // Checking participation status with regional roles
+    // Found role => check registration status to display either registration menu or tournament menu
+    // No role => check registration status to display either register or nothing
     let roles = get_roles_from_user(&ctx, None).await.unwrap();
-    if all_tournaments(&ctx).await {
-        match find_self_by_discord_id(&ctx).await? {
-            Some(player) => {
-                if is_battle(
-                    &ctx,
-                    player.get("tag").unwrap().as_str(),
-                    find_round_from_config(
-                        &get_config(
+    let region = get_region_from_role(&ctx, roles);
+    match region {
+        Some(region) => {
+            let player = match find_self_by_discord_id(&ctx).await.unwrap() {
+                Some(player) => player,
+                None => {
+                    prompt(
+                        &ctx,
+                        &msg,
+                        "You did not register for the tournament!",
+                        "The tournament has already started, and you did not register in time...",
+                        None,
+                        None,
+                    )
+                    .await?;
+                    return Ok(());
+                }
+            };
+            if registration_region_open(&ctx, &region).await {
+                registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
+            } else {
+                match find_self_by_discord_id(&ctx).await.unwrap() {
+                    Some(player) => {
+                        if is_battle(
                             &ctx,
-                            Region::from_bson(player.get("region").unwrap())
-                                .as_ref()
-                                .unwrap(),
+                            player.get("tag").unwrap().as_str(),
+                            find_round_from_config(&get_config(&ctx, &region).await),
                         )
-                        .await,
-                    ),
-                )
-                .await?
-                {
-                    tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
-                } else {
-                    tournament_menu(&ctx, &msg, false, true, false, false, None).await
+                        .await?
+                        {
+                            tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
+                        } else {
+                            tournament_menu(&ctx, &msg, false, true, false, false, None).await
+                        }
+                    }
+                    None => prompt(
+                        &ctx,
+                        &msg,
+                        "You did not register for the tournament!",
+                        "The tournament has already started, and you did not register in time...",
+                        None,
+                        None,
+                    )
+                    .await,
                 }
             }
-            None => {
-               prompt(
+        }
+        None => {
+            if registration_open(&ctx).await {
+                registration_menu(&ctx, &msg, true, false, false, true, None).await
+            } else {
+                prompt(
                     &ctx,
                     &msg,
                     "You did not register for the tournament!",
@@ -72,19 +102,54 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                 .await
             }
         }
-    } else if registration(&ctx).await {
-            match find_self_by_discord_id(&ctx).await? {
-                Some(player) => {
-                    registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
-                }
-                None => {
-                    registration_menu(&ctx, &msg, true, false, false, true, None).await
-                }
-            }
-        } else {
-            todo!()
-        }
+    }
+
+    // if all_tournaments(&ctx).await {
+    //     info!("It reaches here...");
+    //     match find_self_by_discord_id(&ctx).await? {
+    //         Some(player) => {
+    //             if is_battle(
+    //                 &ctx,
+    //                 player.get("tag").unwrap().as_str(),
+    //                 find_round_from_config(
+    //                     &get_config(
+    //                         &ctx,
+    //                         Region::from_bson(player.get("region").unwrap())
+    //                             .as_ref()
+    //                             .unwrap(),
+    //                     )
+    //                     .await,
+    //                 ),
+    //             )
+    //             .await?
+    //             {
+    //                 tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
+    //             } else {
+    //                 tournament_menu(&ctx, &msg, false, true, false, false, None).await
+    //             }
+    //         }
+    //         None => {
+    //            prompt(
+    //                 &ctx,
+    //                 &msg,
+    //                 "You did not register for the tournament!",
+    //                 "The tournament has already started, and you did not register in time...",
+    //                 None,
+    //                 None,
+    //             )
+    //             .await
+    //         }
+    //     }
+    // } else if registration(&ctx).await {
+    //         match find_self_by_discord_id(&ctx).await? {
+    //             Some(player) => {
+    //                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
+    //             }
+    //             None => {
+    //                 registration_menu(&ctx, &msg, true, false, false, true, None).await
+    //             }
+    //         }
+    //     } else {
+    //         todo!()
+    //     }
 }
-
-        
-
