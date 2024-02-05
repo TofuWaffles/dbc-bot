@@ -2,9 +2,6 @@ use super::prompt::prompt;
 use crate::host::disqualify::disqualify_players;
 use crate::host::registration::registration_mod_panel;
 use crate::host::tournament::tournament_mod_panel;
-use crate::host::utilities;
-use crate::host::utilities::announcement::announcement;
-use crate::host::utilities::config::configurate;
 use crate::host::utilities::utilities::utilities_mod_panel;
 use crate::players::deregister::deregister_menu;
 use crate::players::register::register_menu;
@@ -119,7 +116,7 @@ pub async fn tournament_menu(
     managers: bool,
     submit: bool,
     help: bool,
-    player: Option<Document>,
+    _player: Option<Document>,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |e| {
         e.components(|c| {
@@ -181,18 +178,27 @@ pub async fn tournament_menu(
             }
             "view" => {
                 mci.defer(&ctx.http()).await?;
-                return todo!();
+                return prompt(
+                    ctx,
+                    msg,
+                    "This is still under development!",
+                    "This feature is still under development, please be patient!",
+                    None,
+                    None,
+                )
+                .await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;
                 return prompt(
-                  ctx,
-                  msg,
-                  "This is still under development!", 
-                  "This feature is still under development, please be patient!", 
-                  Some("https://tenor.com/view/josh-hutcherson-josh-hutcherson-whistle-edit-whistle-2014-meme-gif-1242113167680346055"),
-                  None
-              ).await;
+                    ctx,
+                    msg,
+                    "This is still under development!",
+                    "This feature is still under development, please be patient!",
+                    None,
+                    None,
+                )
+                .await;
             }
             _ => {}
         }
@@ -204,10 +210,10 @@ pub async fn mod_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
-    disqualify: bool,
+    _disqualify: bool,
     managers: bool,
-    submit: bool,
-    help: bool,
+    _submit: bool,
+    _help: bool,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |e| {
         e.components(|c| {
@@ -312,6 +318,7 @@ pub async fn mod_menu(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn host_registration_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     registration_menu(ctx, msg, true, true, true, true, None).await
 }

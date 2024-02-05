@@ -159,6 +159,7 @@ pub struct Time {
 
 impl Time {
     pub fn standardising(time: &str) -> Time {
+        #[allow(non_snake_case)]
         let T = time.find('T').unwrap();
         let mut time = Time {
             years: time[0..T - 4].parse::<u32>().unwrap(),
