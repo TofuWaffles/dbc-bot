@@ -12,7 +12,7 @@ pub async fn utilities_mod_panel(
 ) -> Result<(), Error> {
     msg.edit(*ctx, |m| {
         m.embed(|e| {
-            e.title(format!("Utilities menu ({})", region.to_string()))
+            e.title(format!("Utilities menu ({})", region.short()))
                 .description(
                     r#"
         Announcement: Set an announcement for the tournament.

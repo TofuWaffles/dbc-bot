@@ -1,5 +1,4 @@
-pub mod deregister;
-pub mod register;
-pub mod submit;
+
 pub mod view;
-pub mod view2;
+pub mod tournament;
+pub mod registration;

@@ -2,15 +2,12 @@ use super::prompt::prompt;
 use crate::host::disqualify::disqualify_players;
 use crate::host::registration::registration_mod_panel;
 use crate::host::tournament::tournament_mod_panel;
-use crate::host::utilities;
-use crate::host::utilities::announcement::announcement;
-use crate::host::utilities::config::configurate;
 use crate::host::utilities::utilities::utilities_mod_panel;
-use crate::players::deregister::deregister_menu;
-use crate::players::register::register_menu;
-use crate::players::submit::submit_result;
+use crate::players::registration::deregister::deregister_menu;
+use crate::players::registration::register::register_menu;
+use crate::players::tournament::submit::submit_result;
 use crate::players::view::view_info;
-use crate::players::view2::{view_managers, view_opponent};
+use crate::players::tournament::view2::{view_managers, view_opponent};
 use crate::Context;
 use crate::Error;
 use dbc_bot::Region;
@@ -119,7 +116,6 @@ pub async fn tournament_menu(
     managers: bool,
     submit: bool,
     help: bool,
-    player: Option<Document>,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |e| {
         e.components(|c| {

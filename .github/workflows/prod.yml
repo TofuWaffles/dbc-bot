@@ -6,9 +6,9 @@ on:
       - master
 
 env:
-  BRAWL_STARS_TOKEN = ${{ secrets.BRAWL_STARS_TOKEN }}
-  DISCORD_TOKEN = ${{ secrets.DISCORD_TOKEN }}
-  DATABASE_URL = ${{ secrets.DATABASE_URL }}
+  BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
+  DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
   build:
