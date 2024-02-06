@@ -12,10 +12,7 @@ pub async fn host(
         .send(|s| {
             s.embed(|e| {
                 e.title("Host-only menu")
-                    .description(format!(
-                        "The following mod menu is set for region: {}",
-                        region
-                    ))
+                    .description(format!("The following mod menu is set for region: {region}"))
                     .image("")
             })
         })
