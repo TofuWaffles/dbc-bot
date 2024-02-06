@@ -13,7 +13,8 @@ pub fn make_config() -> Document {
       "map": Null,
       "total": 0,
       "role": Null,
-      "channel": Null
+      "channel": Null,
+      "bracket_channel": Null
     };
     config
 }
@@ -70,6 +71,7 @@ pub fn open_reg_close_tour() -> Document {
     config
 }
 
+#[allow(dead_code)]
 pub fn reset_config() -> Document {
     let config = doc! {
         "$set": {
@@ -80,7 +82,8 @@ pub fn reset_config() -> Document {
             "map": Null,
             "total": 0,
             "role": Null,
-            "channel": Null
+            "channel": Null,
+            "bracket_channel": Null
         }
     };
     config

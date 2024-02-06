@@ -12,7 +12,7 @@ const TIMEOUT: u64 = 120;
 
 struct PlayerDisqualification {
     user_id: Option<String>,
-    region: Option<Region>,
+    region: Region,
 }
 
 #[derive(Debug, poise::Modal)]
@@ -23,7 +23,11 @@ struct DisqualifyModal {
     user_id: String,
 }
 
-pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+pub async fn disqualify_players(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
@@ -32,9 +36,9 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
     .await?;
     let mut disqualification = PlayerDisqualification {
         user_id: None,
-        region: None,
+        region: region.clone(),
     };
-    disqualify_region(ctx, msg).await?;
+    disqualify_id(ctx, msg).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
@@ -42,18 +46,11 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
     let mut cic = cib.build();
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
-            "APAC" | "EU" | "NASA" => {
-                disqualification.region =
-                    Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
-                mci.defer(&ctx.http()).await?;
-                disqualify_id(ctx, msg).await?;
-                continue;
-            }
             "open_modal" => {
                 disqualification.user_id = Some(create_disqualify_modal(ctx, mci.clone()).await?);
                 match find_player_by_discord_id(
                     ctx,
-                    &(disqualification.region.clone().unwrap()),
+                    &(disqualification.region.clone()),
                     disqualification
                         .user_id
                         .clone()
@@ -79,7 +76,7 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Res
             "confirm" => {
                 match find_player_by_discord_id(
                     ctx,
-                    &disqualification.region.clone().unwrap(),
+                    &disqualification.region.clone(),
                     disqualification
                         .user_id
                         .clone()

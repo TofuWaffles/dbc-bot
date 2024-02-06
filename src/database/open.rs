@@ -32,6 +32,7 @@ pub async fn tournament(ctx: &Context<'_>, region: &Region) -> bool {
         .unwrap()
 }
 
+#[allow(dead_code)]
 pub async fn all_tournaments(ctx: &Context<'_>) -> bool {
     for region in Region::iter() {
         if tournament(ctx, &region).await {

@@ -8,6 +8,7 @@ use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
 
+use super::disqualify::disqualify_players;
 use super::next::display_next_round;
 use super::setup::start_tournament;
 const TIMEOUT: u64 = 300;
@@ -33,6 +34,10 @@ pub async fn tournament_mod_panel(
                 mci.defer(&ctx.http()).await?;
                 return display_next_round(ctx, msg, region).await;
             }
+            "disqualify" => {
+                mci.defer(&ctx.http()).await?;
+                return disqualify_players(ctx, msg, region).await;
+            }
             _ => {}
         }
     }
@@ -46,7 +51,7 @@ async fn display_start_menu(
     region: &Region,
 ) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
-    let valid = tournamet_available(ctx, region).await || prerequisite(ctx, region).await;
+    let valid = tournament_available(ctx, region).await || prerequisite(ctx, region).await;
     match round.as_str() {
         "Players" => {
             let count_prompt = format!(
@@ -103,6 +108,14 @@ async fn display_start_buttons(
                         .disabled(!next)
                 })
             })
+            .create_action_row(|row| {
+                row.create_button(|b| {
+                    b.custom_id("disqualify")
+                        .label("Disqualify players")
+                        .style(poise::serenity_prelude::ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("🔨".to_string()))
+                })
+            })
         })
     })
     .await?;
@@ -112,10 +125,11 @@ async fn prerequisite(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !(config.get("mode").is_none()
         || config.get("role").is_none()
-        || config.get("channel").is_none())
+        || config.get("channel").is_none()
+        || config.get("bracket_channel").is_none())
 }
 
-async fn tournamet_available(ctx: &Context<'_>, region: &Region) -> bool {
+async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !config.get_bool("tournament").unwrap()
 }
