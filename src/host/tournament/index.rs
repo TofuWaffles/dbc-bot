@@ -51,7 +51,7 @@ async fn display_start_menu(
     region: &Region,
 ) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
-    let valid = tournamet_available(ctx, region).await || prerequisite(ctx, region).await;
+    let valid = tournament_available(ctx, region).await || prerequisite(ctx, region).await;
     match round.as_str() {
         "Players" => {
             let count_prompt = format!(
@@ -125,10 +125,11 @@ async fn prerequisite(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !(config.get("mode").is_none()
         || config.get("role").is_none()
-        || config.get("channel").is_none())
+        || config.get("channel").is_none()
+        || config.get("bracket_channel").is_none())
 }
 
-async fn tournamet_available(ctx: &Context<'_>, region: &Region) -> bool {
+async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !config.get_bool("tournament").unwrap()
 }
