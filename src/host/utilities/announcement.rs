@@ -20,7 +20,7 @@ struct CreateAnnouncementModal {
     title: String,
     #[name = "Enter the description of the announcement"]
     description: String,
-    #[name = "Enter the ID of the channel you want the announcement to be sent in"]
+    #[name = "Enter the ID of the announcement channel"]
     channel_id: String,
 }
 #[derive(Debug, poise::Modal)]
@@ -30,7 +30,7 @@ struct EditAnnouncementModal {
     title: String,
     #[name = "Enter the new description of the announcement"]
     description: String,
-    #[name = "Enter the ID of the channel the announcement was originally sent in"]
+    #[name = "Enter the announcement channel ID was originally sent in"]
     channel_id: String,
     #[name = "Enter the ID of the announcement message"]
     message_id: String,
@@ -53,8 +53,9 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
         match mci.data.custom_id.as_str() {
             "create_announcement" => {
                 info!("Create announcement modal");
-                mci.defer(&ctx.http()).await?;
-                match Some(create_announcement_modal(ctx, mci.clone()).await?) {
+                let modal = create_announcement_modal(ctx, mci.clone()).await?;
+                info!("End of create announcement modal");
+                match Some(modal) {
                     Some(announcement_modal) => match announcement_modal.channel_id {
                         Some(channel_id) => {
                             match poise::serenity_prelude::id::ChannelId(channel_id)
@@ -214,7 +215,8 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                     {
                         Ok(message) => {
                             msg.edit(*ctx, |s| {
-                                s.reply(true).ephemeral(true).embed(|e| {
+                                s.components(|c|c)
+                                .embed(|e| {
                                     e.description(format!(
                                         "Announcement successfully posted in <#{}>",
                                         message.channel_id
@@ -247,11 +249,18 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
 }
 
 async fn announcement_options(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    info!("Start to display nnouncement options");
     msg.edit(*ctx, |b| {
         b.embed(|e| {
             e.title("Create or edit an existing announcement")
                 .description(
-                    "Please choose whether to create an announcement or edit an existing one.",
+                    r#"Please choose whether to create an announcement or edit an existing announcement!
+Please prepare these requirements before you proceed to one of the options:
+# Create Announcement:
+- `channel id`: The ID of the channel where the announcement will be sent.
+# Edit Announcement:
+- `channel id`: The ID of the channel where the announcement was originally sent in.
+- `message id`: The ID of the announcement message that you want to edit."#
                 )
         })
         .components(|c| {
@@ -259,12 +268,18 @@ async fn announcement_options(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Resul
                 a.create_button(|b| {
                     b.custom_id("create_announcement")
                         .label("Create Announcement")
+                        .style(poise::serenity_prelude::ButtonStyle::Primary)
                 })
-                .create_button(|b| b.custom_id("edit_announcement").label("Edit Announcement"))
+                .create_button(|b| 
+                    b.custom_id("edit_announcement")
+                    .label("Edit Announcement")
+                    .style(poise::serenity_prelude::ButtonStyle::Primary)
+                )
             })
         })
     })
     .await?;
+    info!("End to display nnouncement options");
     Ok(())
 }
 
@@ -274,13 +289,13 @@ async fn display_confirmation(
     announcement_data: &AnnouncementData,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |b| {
-        b.embed(|e| {
-            e.title(format!("Announcement creation - Confirmation"))
+        b.content(format!("**Announcement Creation Preview**. Press confirm to send this announcement to <#{}>", announcement_data.channel_id.clone().unwrap()))
+        .embed(|e| {
+            e.title(announcement_data.title.clone().unwrap_or("".to_string()))
                 .description(format!(
-                    "Announcement title: {}\nAnnouncement content: {}\nAnnouncement channel: {}",
+                    "{}{}",
                     announcement_data.title.clone().unwrap(),
                     announcement_data.description.clone().unwrap(),
-                    announcement_data.channel_id.clone().unwrap()
                 ))
         })
         .components(|c| {

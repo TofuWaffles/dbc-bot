@@ -68,9 +68,9 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                         )
                         .await?
                         {
-                            tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
+                            tournament_menu(&ctx, &msg, true, true, true, true).await
                         } else {
-                            tournament_menu(&ctx, &msg, false, true, false, false, None).await
+                            tournament_menu(&ctx, &msg, false, true, false, false).await
                         }
                     }
                     None => prompt(
@@ -101,53 +101,4 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             }
         }
     }
-
-    // if all_tournaments(&ctx).await {
-    //     info!("It reaches here...");
-    //     match find_self_by_discord_id(&ctx).await? {
-    //         Some(player) => {
-    //             if is_battle(
-    //                 &ctx,
-    //                 player.get("tag").unwrap().as_str(),
-    //                 find_round_from_config(
-    //                     &get_config(
-    //                         &ctx,
-    //                         Region::from_bson(player.get("region").unwrap())
-    //                             .as_ref()
-    //                             .unwrap(),
-    //                     )
-    //                     .await,
-    //                 ),
-    //             )
-    //             .await?
-    //             {
-    //                 tournament_menu(&ctx, &msg, true, true, true, true, Some(player)).await
-    //             } else {
-    //                 tournament_menu(&ctx, &msg, false, true, false, false, None).await
-    //             }
-    //         }
-    //         None => {
-    //            prompt(
-    //                 &ctx,
-    //                 &msg,
-    //                 "You did not register for the tournament!",
-    //                 "The tournament has already started, and you did not register in time...",
-    //                 None,
-    //                 None,
-    //             )
-    //             .await
-    //         }
-    //     }
-    // } else if registration(&ctx).await {
-    //         match find_self_by_discord_id(&ctx).await? {
-    //             Some(player) => {
-    //                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
-    //             }
-    //             None => {
-    //                 registration_menu(&ctx, &msg, true, false, false, true, None).await
-    //             }
-    //         }
-    //     } else {
-    //         todo!()
-    //     }
 }
