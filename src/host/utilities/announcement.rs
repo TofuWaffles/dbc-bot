@@ -215,8 +215,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                     {
                         Ok(message) => {
                             msg.edit(*ctx, |s| {
-                                s.components(|c|c)
-                                .embed(|e| {
+                                s.components(|c| c).embed(|e| {
                                     e.description(format!(
                                         "Announcement successfully posted in <#{}>",
                                         message.channel_id
@@ -270,7 +269,7 @@ Please prepare these requirements before you proceed to one of the options:
                         .label("Create Announcement")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                 })
-                .create_button(|b| 
+                .create_button(|b|
                     b.custom_id("edit_announcement")
                     .label("Edit Announcement")
                     .style(poise::serenity_prelude::ButtonStyle::Primary)
@@ -289,7 +288,10 @@ async fn display_confirmation(
     announcement_data: &AnnouncementData,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |b| {
-        b.content(format!("**Announcement Creation Preview**. Press confirm to send this announcement to <#{}>", announcement_data.channel_id.clone().unwrap()))
+        b.content(format!(
+            "**Announcement Creation Preview**. Press confirm to send this announcement to <#{}>",
+            announcement_data.channel_id.clone().unwrap()
+        ))
         .embed(|e| {
             e.title(announcement_data.title.clone().unwrap_or("".to_string()))
                 .description(format!(

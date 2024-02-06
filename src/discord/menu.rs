@@ -1,13 +1,13 @@
 use super::prompt::prompt;
-use crate::host::tournament::disqualify::disqualify_players;
 use crate::host::registration::index::registration_mod_panel;
+use crate::host::tournament::disqualify::disqualify_players;
 use crate::host::tournament::index::tournament_mod_panel;
 use crate::host::utilities::index::utilities_mod_panel;
 use crate::players::registration::deregister::deregister_menu;
 use crate::players::registration::register::register_menu;
 use crate::players::tournament::submit::submit_result;
-use crate::players::view::view_info;
 use crate::players::tournament::view2::{view_managers, view_opponent};
+use crate::players::view::view_info;
 use crate::Context;
 use crate::Error;
 use dbc_bot::Region;
