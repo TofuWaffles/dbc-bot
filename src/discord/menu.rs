@@ -1,8 +1,8 @@
 use super::prompt::prompt;
 use crate::host::tournament::disqualify::disqualify_players;
-use crate::host::registration::registration::registration_mod_panel;
-use crate::host::tournament::tournament::tournament_mod_panel;
-use crate::host::utilities::utilities::utilities_mod_panel;
+use crate::host::registration::index::registration_mod_panel;
+use crate::host::tournament::index::tournament_mod_panel;
+use crate::host::utilities::index::utilities_mod_panel;
 use crate::players::registration::deregister::deregister_menu;
 use crate::players::registration::register::register_menu;
 use crate::players::tournament::submit::submit_result;
@@ -284,10 +284,6 @@ pub async fn mod_menu(
     let mut cic = cib.build();
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
-            "disqualify" => {
-                mci.defer(&ctx.http()).await?;
-                return disqualify_players(ctx, msg).await;
-            }
             "registration" => {
                 mci.defer(&ctx.http()).await?;
                 return registration_mod_panel(ctx, msg, region).await;

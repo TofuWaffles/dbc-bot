@@ -8,6 +8,7 @@ use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
 
+use super::disqualify::disqualify_players;
 use super::next::display_next_round;
 use super::setup::start_tournament;
 const TIMEOUT: u64 = 300;
@@ -32,6 +33,10 @@ pub async fn tournament_mod_panel(
             "next" => {
                 mci.defer(&ctx.http()).await?;
                 return display_next_round(ctx, msg, region).await;
+            }
+            "disqualify" => {
+                mci.defer(&ctx.http()).await?;
+                return disqualify_players(ctx, msg, region).await;
             }
             _ => {}
         }
@@ -101,6 +106,14 @@ async fn display_start_buttons(
                         .emoji(ReactionType::Unicode("▶️".to_string()))
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                         .disabled(!next)
+                })
+            })
+            .create_action_row(|row| {
+                row.create_button(|b| {
+                    b.custom_id("disqualify")
+                        .label("Disqualify players")
+                        .style(poise::serenity_prelude::ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("🔨".to_string()))
                 })
             })
         })
