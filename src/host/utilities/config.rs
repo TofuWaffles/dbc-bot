@@ -56,6 +56,10 @@ pub async fn configurate(
                 mci.defer(&ctx.http()).await?;
                 map_option(ctx, msg, mci.clone(), &collection).await?;
             }
+            "bracket_channel" => {
+                mci.defer(&ctx.http()).await?;
+                bracket_channel_option(ctx, msg, &collection).await?;
+            }
             _ => create_select_menu(ctx, msg).await?,
         };
         display_config(ctx, msg, region).await?;
@@ -96,6 +100,10 @@ async fn display_config(
         Some(channel) => format!("<#{}>", channel),
         None => "Not yet set".to_string(),
     };
+    let bracket_channel = match config.get("bracket_channel").unwrap().as_str() {
+        Some(bracket_channel) => format!("<#{}>", bracket_channel),
+        None => "Not yet set".to_string(),
+    };
     msg.edit(*ctx, |s| {
         s.reply(true).ephemeral(true).embed(|e| {
             e.title("Current Configuration").description(format!(
@@ -104,8 +112,9 @@ async fn display_config(
                     **Mode:** {}
                     **Map:** {}
                     **Role assigned to players:** {}
-                    **Channel to publish results of matches:** {}",
-                registration_status, tournament_status, mode, map, role, channel
+                    **Channel to publish results of matches:** {}
+                    **Channel to publish the tournament bracket:** {}",
+                registration_status, tournament_status, mode, map, role, channel, bracket_channel
             ))
         })
     })
@@ -140,6 +149,11 @@ async fn create_select_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<
                                 o.label("Channel")
                                     .value("channel")
                                     .description("Set the channel to send the tournament updates")
+                            })
+                            .create_option(|o| {
+                                o.label("Bracket Channel")
+                                    .value("bracket_channel")
+                                    .description("Set the channel to send the tournament bracket")
                             })
                         })
                 })
@@ -346,3 +360,58 @@ async fn map_option(
     std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
     Ok(())
 }
+
+async fn bracket_channel_option(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    collection: &Collection<Document>,
+) -> Result<(), Error> {
+    let channels = ctx.guild_id().unwrap().channels(ctx.http()).await?;
+    msg.edit(*ctx, |s| {
+        s.content("Setting a channel to publish the tournament bracket!")
+            .ephemeral(false)
+            .components(|c| {
+                c.create_action_row(|c| {
+                    c.create_select_menu(|m| {
+                        m.custom_id("menu")
+                            .placeholder("Select a channel")
+                            .options(|o| {
+                                for (channel_id, channel) in channels.iter() {
+                                    let mut option = CreateSelectMenuOption::default();
+                                    option
+                                        .label(channel.clone().name)
+                                        .value(channel_id.to_string());
+                                    o.add_option(option);
+                                }
+                                o
+                            })
+                    })
+                })
+            })
+    })
+    .await?;
+    let resp = msg.clone().into_message().await?;
+    let cib = resp
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(120));
+    let mut cic = cib.build();
+    if let Some(mci2) = &cic.next().await {
+        mci2.defer(ctx.http()).await?;
+        let channel_id = mci2.data.values[0].as_str();
+        collection
+            .update_one(doc! {}, set_config("bracket_channel", Some(channel_id)), None)
+            .await?;
+        msg.edit(*ctx, |s| {
+            s.components(|c| c).embed(|e| {
+                e.title("Channel has been set!").description(format!(
+                    "All tournament bracket updates will be posted in <#{}>.
+                    Directing back to configuration menu...",
+                    channel_id
+                ))
+            })
+        })
+        .await?;
+    }
+    Ok(())
+}
+

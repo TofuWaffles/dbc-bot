@@ -13,7 +13,8 @@ pub fn make_config() -> Document {
       "map": Null,
       "total": 0,
       "role": Null,
-      "channel": Null
+      "channel": Null,
+      "bracket_channel": Null
     };
     config
 }
@@ -81,7 +82,8 @@ pub fn reset_config() -> Document {
             "map": Null,
             "total": 0,
             "role": Null,
-            "channel": Null
+            "channel": Null,
+            "bracket_channel": Null
         }
     };
     config

@@ -1,4 +1,3 @@
-use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::brawlstars::api::{self, APIResult};
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
@@ -9,6 +8,7 @@ use crate::database::find::{
 use crate::database::open::tournament;
 use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
+use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::Document;
@@ -86,7 +86,7 @@ pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round.insert_one(update_match_id(caller), None).await?;
-        update_bracket(ctx).await?;
+        update_bracket(ctx, None).await?;
         msg.edit(*ctx, |s| {
             s.embed(|e| {
                 e.title("Bye! See you next... round!").description(
@@ -116,7 +116,7 @@ pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
                     .insert_one(update_match_id(winner.clone()), None)
                     .await?;
                 update_battle(database, round, match_id).await?;
-                update_bracket(ctx).await?;
+                update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!").description(format!(

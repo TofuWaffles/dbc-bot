@@ -1,3 +1,4 @@
+use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::database::add::insert_mannequins;
 use crate::database::stat::count_registers;
 use crate::database::update::{setting_tournament_config, update_round_1, update_round_config};
@@ -22,6 +23,7 @@ pub async fn start_tournament(
         "<:tick:1187839626338111600> Calculated! Rounds: ", //7
         "<a:loading:1187839622680690689> Setting up first round", //8
         "<:tick:1187839626338111600> Done! First round is set!", //9
+        "<:tick:1187839626338111600> Done! Tournament bracket image generated!", //10
     ];
     msg.edit(*ctx, |s| {
         s.embed(|e| {
@@ -114,6 +116,25 @@ pub async fn start_tournament(
                 prompts[5],
                 &byes,
                 prompts[9]
+            ))
+        })
+    })
+    .await?;
+    update_bracket(ctx, Some(region)).await?;
+    msg.edit(*ctx, |s| {
+        s.embed(|e| {
+            e.title("Setting up tournament").description(format!(
+                "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
+                prompts[0],
+                prompts[1],
+                prompts[3],
+                &count,
+                prompts[7],
+                &rounds,
+                prompts[5],
+                &byes,
+                prompts[9],
+                prompts[10]
             ))
         })
     })
