@@ -23,7 +23,11 @@ struct DisqualifyModal {
     user_id: String,
 }
 
-pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+pub async fn disqualify_players(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
@@ -32,7 +36,7 @@ pub async fn disqualify_players(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region
     .await?;
     let mut disqualification = PlayerDisqualification {
         user_id: None,
-        region: region.clone()
+        region: region.clone(),
     };
     disqualify_id(ctx, msg).await?;
     let resp = msg.clone().into_message().await?;
