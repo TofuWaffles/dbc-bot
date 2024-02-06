@@ -28,7 +28,9 @@ def generate_bracket_image(region, total_rounds, args):
     image_width = 2000
     image_height = 1000
     horizontal_padding = 80
-    game_box_width_height_ratio = 10
+    reference_rounds = 6
+    reference_ratio = 10
+    game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
     _size = int(total_rounds)
     _columns = _size + 1
@@ -45,7 +47,8 @@ def generate_bracket_image(region, total_rounds, args):
         x_center = _column_width * (i + 0.5)
         y_size = image_height / games
         font_face = cv2.FONT_HERSHEY_PLAIN
-        font_scale = 0.5
+        reference_font_scale = 0.5
+        font_scale = (reference_rounds / total_rounds) * reference_font_scale
         font_thickness = 1
         for j in range(games):
             y_center = y_size * (j + 0.5)

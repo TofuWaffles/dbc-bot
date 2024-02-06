@@ -46,7 +46,7 @@ pub async fn update_bracket(
     let collection: mongodb::Collection<mongodb::bson::Document> = database.collection("Config");
     let config = collection.find_one(None, None).await.unwrap().unwrap();
     
-    let mut rounds: Vec<(String, String, String, String)> = Vec::new();
+    let mut player_data: Vec<(String, String, String, String)> = Vec::new();
 
     for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
 
@@ -56,12 +56,13 @@ pub async fn update_bracket(
             let match_id = current_document
                 .get("match_id")
                 .and_then(|n| n.as_i32())
-                .unwrap();
-            let tag = current_document
-                .get("tag")
-                .and_then(|n| n.as_str())
-                .unwrap();
-            rounds.push((round_number.to_string(),
+                .unwrap_or(0);
+            let tag = if let Some(tag) = current_document.get("tag").and_then(|n| n.as_str()) {
+                tag
+            } else {
+                continue;
+            };
+            player_data.push((round_number.to_string(),
                 match_id.to_string(),
                 current_document.get("tag").unwrap().to_string(),
                 (find_enemy_by_match_id_and_self_tag(ctx, region.unwrap(), &round_number, &match_id, tag).await).unwrap().get("tag").unwrap().to_string(),
@@ -73,7 +74,10 @@ pub async fn update_bracket(
         .arg("bracket_tournament/bracket_generation.py")
         .arg(region.unwrap().to_string())
         .arg(config.get("total").unwrap().to_string())
-        .arg(rounds.iter().map(|(round, match_id, player1_tag, player2_tag)| format!("{}|{}|{}|{}", round, match_id, player1_tag, player2_tag)).collect::<Vec<String>>().join(","))
+        .arg(match player_data.is_empty() {
+            true => " | | | ".to_string(),
+            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag)| format!("{}|{}|{}|{}", round, match_id, player1_tag, player2_tag)).collect::<Vec<String>>().join(",")
+        })
         .stdout(Stdio::piped())
         .current_dir("src")
         .spawn()?;
