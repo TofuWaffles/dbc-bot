@@ -18,7 +18,7 @@ def generate_bracket_image(region, total_rounds, args):
 
     region = region
     
-    total_rounds = total_rounds
+    total_rounds = int(total_rounds)
 
     results = []
     for arg in args.split(","):
@@ -32,7 +32,7 @@ def generate_bracket_image(region, total_rounds, args):
     reference_ratio = 10
     game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
-    _size = int(total_rounds)
+    _size = total_rounds
     _columns = _size + 1
     _column_width = image_width / _columns
     _game_box_width = _column_width - horizontal_padding
