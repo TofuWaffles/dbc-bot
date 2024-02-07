@@ -28,12 +28,13 @@ ENV DATABASE_URL = ${DATABASE_URL}
 WORKDIR /dbc-bot
 
 COPY . .
+RUN apt-get update && apt-get install pkg-config -y
 RUN apt-get update && apt-get install musl-tools -y
-RUN rustup target add x86_64-unknown-linux-gnu
-RUN cargo build --release --target x86_64-unknown-linux-gnu
+RUN rustup target add x86_64-unknown-linux-musl
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
 FROM scratch
-COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-gnu/release/dbc-bot /dbc-bot
+COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
 ENTRYPOINT ["/dbc-bot"]
 
 
