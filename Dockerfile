@@ -30,7 +30,7 @@ WORKDIR /dbc-bot
 COPY . .
 RUN apt-get update && apt-get install musl-tools -y
 RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo build --release
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
 FROM scratch
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
