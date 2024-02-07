@@ -28,8 +28,7 @@ ENV DATABASE_URL = ${DATABASE_URL}
 WORKDIR /dbc-bot
 
 COPY . .
-RUN apt-get update && apt-get install pkg-config -y
-RUN apt-get update && apt-get install musl-tools -y
+RUN apt-get update && apt-get install musl-tools && apt-get install pkg-config && apt-get libssl-dev -y
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
