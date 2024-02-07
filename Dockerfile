@@ -3,22 +3,18 @@ ARG Python_VERSION=3.9.7
 ARG APP_NAME=dbc-bot
 
 FROM python:${Python_VERSION}-alpine AS python
-COPY src/bracket_tournament/bracket_generation.py /app/bracket_generation.py
+COPY /src/bracket_tournament/bracket_generation.py /src/bracket_tournament/bracket_generation.py
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ################################################################################
 # Create a stage for building the Rust application.
-FROM rust:${RUST_VERSION}-alpine AS rust
+FROM messense/rust-musl-cross:x86_64-musl as builder
 ARG APP_NAME
 WORKDIR /dbc-bot
 
-RUN apk add --no-cache \
-    openssl-dev \
-    musl-dev
-
 COPY . .
-
+COPY --from=python /src/bracket_tournament/bracket_generation.py /src/bracket_tournament/bracket_generation.py
 RUN cargo build --release
 
 ################################################################################
@@ -36,9 +32,6 @@ ENV DISCORD_TOKEN=${DISCORD_TOKEN} \
 
 # Copy the Rust executable
 COPY --from=rust /dbc-bot/target/release/${APP_NAME} /bin/${APP_NAME}
-
-# Copy the Python script
-COPY --from=python /app/bracket_generation.py /app/bracket_generation.py
 
 # Switch to non-privileged user
 USER appuser
