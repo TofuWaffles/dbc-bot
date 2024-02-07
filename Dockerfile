@@ -36,6 +36,8 @@ RUN cargo build --release --target x86_64-unknown-linux-musl
 FROM scratch
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
 ENTRYPOINT ["/dbc-bot"]
+# Temp add
+RUN docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} 
 
 
 
