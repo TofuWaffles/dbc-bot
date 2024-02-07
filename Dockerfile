@@ -29,6 +29,7 @@ WORKDIR /dbc-bot
 
 COPY . .
 RUN apt-get update && apt-get install musl-tools pkg-config libssl-dev -y
+RUN export OPENSSL_DIR="/usr/lib/openssl"
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
