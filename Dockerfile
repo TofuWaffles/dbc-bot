@@ -37,7 +37,7 @@ RUN cargo build --release --target x86_64-unknown-linux-musl
 FROM python:3.9-slim
 WORKDIR /dbc-bot
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
-COPY src/script/myscript.py src/script/myscript.py
+COPY src/bracket_tournament/bracket_generation.py src/bracket_tournament/bracket_generation.py
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 ENTRYPOINT ["/dbc-bot"]
