@@ -15,6 +15,8 @@ WORKDIR /dbc-bot
 
 COPY . .
 COPY --from=python /src/bracket_tournament/bracket_generation.py /src/bracket_tournament/bracket_generation.py
+RUN apt-get update
+RUN apt-get install -y pkg-config openssl libssl-dev curl
 RUN cargo build --release
 
 ################################################################################

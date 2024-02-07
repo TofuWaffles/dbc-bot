@@ -9,13 +9,15 @@
 # https://github.com/docker/awesome-compose
 version: '3'
 services:
-  image:
+  dbc-bot:
+    image: ${DOCKER_USERNAME}/dbc-bot
     environment:
       - DISCORD_TOKEN: ${DISCORD_TOKEN}
       - DATABASE_URL: ${DATABASE_URL}
       - BRAWL_STARS_TOKEN: ${BRAWL_STARS_TOKEN}
     build:
       context: .
+      dockerfile: Dockerfile
       target: final
 
 
