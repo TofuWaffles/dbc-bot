@@ -30,7 +30,8 @@ RUN adduser -D -u ${UID} appuser
 # Set environment variables
 ENV DISCORD_TOKEN=${DISCORD_TOKEN} \
     BRAWL_STARS_TOKEN=${BRAWL_STARS_TOKEN} \
-    DATABASE_URL=${DATABASE_URL}
+    DATABASE_URL=${DATABASE_URL} \
+    DOCKER_USERNAME=${DOCKER_USERNAME} 
 
 # Copy the Rust executable
 COPY --from=rust /dbc-bot/target/release/${APP_NAME} /bin/${APP_NAME}
