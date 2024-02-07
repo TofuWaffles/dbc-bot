@@ -1,7 +1,7 @@
 version: '3'
 services:
   dbc-bot:
-    image: MY_DOCKER_USERNAME/dbc-bot
+    image: dbc-bot
     environment:
       - DISCORD_TOKEN: ${DISCORD_TOKEN}
       - DATABASE_URL: ${DATABASE_URL}
