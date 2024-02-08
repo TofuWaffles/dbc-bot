@@ -42,11 +42,12 @@ pub async fn update_bracket(
         }
     }
     
-    let database = ctx.data().database.regional_databases.get(&Region::find_key(current_region.clone().unwrap().to_string().as_str()).unwrap()).unwrap();
+    let database = ctx.data().database.regional_databases.get(&current_region.as_ref().unwrap()).unwrap();
     let collection: mongodb::Collection<mongodb::bson::Document> = database.collection("Config");
     let config = collection.find_one(None, None).await.unwrap().unwrap();
     
-    let mut player_data: Vec<(String, String, String, String)> = Vec::new();
+    let mut player_data: Vec<(i32, i32, String, String, bool, bool)> = Vec::new();
+    let mut match_ids = Vec::new();
 
     for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
 
@@ -57,26 +58,33 @@ pub async fn update_bracket(
                 .get("match_id")
                 .and_then(|n| n.as_i32())
                 .unwrap_or(0);
+            if match_ids.contains(&match_id) {
+                continue;
+            }
             let tag = if let Some(tag) = current_document.get("tag").and_then(|n| n.as_str()) {
                 tag
             } else {
                 continue;
             };
-            player_data.push((round_number.to_string(),
-                match_id.to_string(),
-                current_document.get("tag").unwrap().to_string(),
-                (find_enemy_by_match_id_and_self_tag(ctx, region.unwrap(), &round_number, &match_id, tag).await).unwrap().get("tag").unwrap().to_string(),
+            match_ids.push(match_id);
+            player_data.push((round_number,
+                match_id,
+                current_document.get("name").map_or(" ".to_string(), |name| name.to_string().strip_quote()),
+                (find_enemy_by_match_id_and_self_tag(ctx, current_region.as_ref().unwrap(), &round_number, &match_id, tag).await).map_or(" ".to_string(), |document| document.get("name").unwrap().to_string().strip_quote()),
+                current_document.get("winner").map_or(false, |is_winner| is_winner.as_bool().unwrap()),
+                (find_enemy_by_match_id_and_self_tag(ctx, current_region.as_ref().unwrap(), &round_number, &match_id, tag).await).map_or(false, |document| document.get("winner").map_or(false, |is_winner| is_winner.as_bool().unwrap()))
             ));
         }
+        match_ids.clear();
     }
 
     let output = Command::new("python")
         .arg("bracket_tournament/bracket_generation.py")
-        .arg(region.unwrap().to_string())
+        .arg(current_region.as_ref().unwrap().to_string())
         .arg(config.get("total").unwrap().to_string())
         .arg(match player_data.is_empty() {
-            true => " | | | ".to_string(),
-            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag)| format!("{}|{}|{}|{}", round, match_id, player1_tag, player2_tag)).collect::<Vec<String>>().join(",")
+            true => "1|1| | | | ".to_string(),
+            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| format!("{}|{}|{}|{}|{}|{}", round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)).collect::<Vec<String>>().join(",")
         })
         .stdout(Stdio::piped())
         .current_dir("src")
