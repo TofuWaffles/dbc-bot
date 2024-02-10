@@ -90,6 +90,9 @@ jobs:
     - name: Build Docker image
       run: docker build -t dbc-bot .
 
+    - name: Add Docker tag
+      run: docker tag dbc-bot:latest ${{ secrets.DOCKER_USERNAME }}/dockerhub:dbc-bot
+
     - name: Push Docker image to Docker Hub
       run: docker push ${{ secrets.DOCKER_USERNAME }}/dbc-bot
 
