@@ -15,9 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+        uses: digitalocean/action-doctl@v2.5.1
         with:
           token: ${{ secrets.DO_TOKEN }}
+
       - name: Generate GITHUB_SHA
         id: github-sha
         shell: bash
