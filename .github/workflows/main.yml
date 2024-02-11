@@ -1,0 +1,32 @@
+name: Build, Test and Deploy to Test
+
+on:
+  push:
+    branches:
+      - do_test
+
+env:
+  BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
+  DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_TOKEN }}
+      - name: Generate GITHUB_SHA
+        id: github-sha
+        shell: bash
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "::set-output name=sha::$SHORT_SHA"
+      - name: Publish Image to Digital Ocean Container Registry
+        shell: bash
+        run: |
+          doctl registry login --expiry-seconds 600
+          docker build . -t registry.digitalocean.com/dbc-bot/production:${{steps.github-sha.outputs.sha}}
+          docker push registry.digitalocean.com/dbc-bot/production:${{steps.github-sha.outputs.sha}}
