@@ -3,7 +3,7 @@ name: Build, Test and Deploy to Prod
 on:
   push:
     branches:
-      - main
+      - ihatethis
 
 jobs:
   build:
