@@ -4,12 +4,11 @@ on:
   push:
     branches:
       - do_test
-
-env:
-  BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
-  DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  DO_TOKEN: ${{ secrets.DO_TOKEN }}
+    paths:
+      - 'config/**'
+      - src
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 jobs:
   deploy:
@@ -19,7 +18,7 @@ jobs:
         uses: digitalocean/app_action@v1.1.6
         with:
           app_name: dbc-bot
-          token: ${{ secrets.DO_TOKEN }}
+          token: ${{ env.DO_TOKEN }}
           images: '[{
             "name": "dbc-bot",
             "repository": "registry.digitalocean.com/production/bc-bot",
