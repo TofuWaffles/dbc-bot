@@ -1,8 +1,8 @@
-name: sample-dockerfile
+name: dbc-bot-Dockerfile
 services:
 - dockerfile_path: Dockerfile
   github:
-    branch: main
+    branch: do_test
     deploy_on_push: true
-    repo: digitalocean/sample-dockerfile
-  name: sample-dockerfile
+    repo: digitalocean/production
+  name: dbc-bot-Dockerfile
