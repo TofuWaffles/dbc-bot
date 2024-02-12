@@ -178,7 +178,7 @@ async fn display_confirmation(
             .await?;
             Ok(None)
         }
-        Ok(APIResult::NotFound(_)) | Err(_) => {
+        Ok(APIResult::NotFound(_))  => {
             prompt(
                 ctx,
                 msg,
@@ -188,6 +188,18 @@ async fn display_confirmation(
                 None,
             )
             .await?;
+            Ok(None)
+        },
+        Err(e) => {
+            info!("Failed to find player: {}", e);
+            prompt(
+                ctx,
+                msg,
+                "Something went wrong!",
+                "Please try again later!",
+                None,
+                None,
+            ).await?;
             Ok(None)
         }
     }
