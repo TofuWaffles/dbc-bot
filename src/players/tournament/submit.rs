@@ -209,7 +209,7 @@ async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Doc
         let mut count_victory = 0;
         let mut count_defeat = 0;
 
-        for result in results.iter().rev() {
+        for result in results.iter(){
             match result.as_str() {
                 "defeat" => count_defeat += 1,
                 "victory" => count_victory += 1,
