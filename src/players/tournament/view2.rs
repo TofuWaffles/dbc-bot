@@ -48,17 +48,6 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
     .unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, &region).await;
-    if !tournament(ctx, &region).await {
-        msg.edit(*ctx, |s| {
-            s.embed(|e| {
-                e.title("Tournament has not started yet!").description(
-                    "Please wait for the tournament to start before using this command!",
-                )
-            })
-        })
-        .await?;
-        return Ok(());
-    }
     //Get player document via their discord_id
     let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
     let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
@@ -105,7 +94,7 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
             }
         }
         None => {
-            ctx.send(|s| {
+            msg.edit(*ctx, |s| {
                 s.reply(true).ephemeral(true).embed(|e| {
                     e.title("An error occurred!")
                         .description("Please run this command later.")
@@ -125,20 +114,24 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
         data: bytes.into(),
         filename: "pre_battle.png".to_string(),
     };
-    let message = "Please plan with your opponent to schedule at least 2 games in the friendly battle mode (please turn off all bots).";
-    ctx.send(|s| {
+    msg.edit(*ctx,|s| {
         s.reply(true)
             .ephemeral(true)
             .embed(|e| {
                 e.title("**DISCORD BRAWL CUP TOURNAMENT**")
                     .description(format!(
-                        "Round {} - Match {}\n<@{}> vs. <@{}\n{}>",
-                        round,
-                        match_id,
-                        caller.get("discord_id").unwrap().as_str().unwrap(),
-                        enemy.get("discord_id").unwrap().as_str().unwrap(),
-                        message
-                    ))
+"# Round {round} - Match {match_id}
+**<@{}> vs. <@{}>**\
+Please plan with your opponent to schedule at least 2 games in the friendly battle mode (please turn off all bots).
+Once the battle if finished, please wait for 30s and call the bot again and hit submit button to submit the result.
+Only 2 **LATEST** matches with the opponent are considered once you submit the result.
+We are only able to fetch up to 25 latest battle reports only so please make sure to submit the result after the battle is finished.
+Good luck!
+",
+                        caller.get_str("discord_id").unwrap(),
+                        enemy.get_str("discord_id").unwrap()
+                    )
+                    )
             })
             .attachment(attachment)
     })
