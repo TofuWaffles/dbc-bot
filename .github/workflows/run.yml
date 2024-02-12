@@ -1,0 +1,21 @@
+name: Run deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  shutdown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+        
+      - name: Start deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.DROPLET_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~
+            docker-compose up
