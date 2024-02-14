@@ -1,3 +1,5 @@
+use std::{fs::File, io::Read};
+
 use crate::Error;
 use poise::serenity_prelude::json::Value;
 use reqwest;
@@ -30,7 +32,12 @@ pub async fn request(option: &str, tag: &str) -> Result<APIResult, Error> {
     };
 
     let token = std::env::var("BRAWL_STARS_TOKEN").expect("Brawl Stars API token not found.");
-    let response = reqwest::Client::new()
+    let mut buf = Vec::new();
+    File::open("cacert.pem")?.read_to_end(&mut buf)?;
+    let cert = reqwest::Certificate::from_pem(&buf)?;
+    let builder = reqwest::Client::builder().add_root_certificate(cert);
+    
+    let response = builder.build().unwrap()
         .get(endpoint)
         .header("Authorization", format!("Bearer {}", token))
         .send()
