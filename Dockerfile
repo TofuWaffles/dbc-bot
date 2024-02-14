@@ -5,6 +5,10 @@ ENV DATABASE_URL = ${DATABASE_URL}
 RUN cargo install cargo-chef
 WORKDIR /dbc-bot
 
+RUN apt-get update
+RUN apt-get install -y pkg-config openssl libssl-dev curl
+RUN export OPENSSL_DIR="/usr/lib/openssl"
+
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
@@ -15,8 +19,6 @@ COPY --from=planner /dbc-bot/recipe.json recipe.json
 RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
 
 COPY . .
-RUN apt-get update && apt-get install musl-tools pkg-config openssl libssl-dev -y
-RUN export OPENSSL_DIR="/usr/lib/openssl"
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
