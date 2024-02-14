@@ -6,6 +6,7 @@ RUN cargo install cargo-chef
 WORKDIR /dbc-bot
 
 RUN apt-get update && apt-get install musl-tools pkg-config openssl libssl-dev -y
+RUN export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
 
 FROM chef AS planner
 COPY . .
