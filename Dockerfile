@@ -6,6 +6,7 @@ RUN cargo install cargo-chef
 WORKDIR /dbc-bot
 
 RUN apt-get update
+RUN apt-get install -y ca-certificates
 RUN apk add openssl-dev musl-dev
 RUN export OPENSSL_DIR="/usr/lib/openssl"
 
