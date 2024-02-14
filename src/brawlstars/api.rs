@@ -8,12 +8,12 @@ pub enum APIResult {
     APIError(u16),
 }
 fn get_player(player_tag: &str) -> String {
-    format!("https://bsproxy.royaleapi.dev/v1/players/%23{}", player_tag)
+    format!("https://api.brawlstars.com/v1/players/%23{}", player_tag)
 }
 
 fn get_battle_log(player_tag: &str) -> String {
     format!(
-        "https://bsproxy.royaleapi.dev/v1/players/%23{}/battlelog",
+        "https://api.brawlstars.com/v1/players/%23{}/battlelog",
         player_tag
     )
 }
