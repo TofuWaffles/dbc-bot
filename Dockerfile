@@ -5,9 +5,12 @@ ENV DATABASE_URL = ${DATABASE_URL}
 RUN cargo install cargo-chef
 WORKDIR /dbc-bot
 
-RUN apt-get update
-RUN apt-get install -y ca-certificates
-RUN export OPENSSL_DIR="/usr/lib/openssl"
+RUN \
+  apt-get update && \
+  apt-get install -y ca-certificates && \
+  export OPENSSL_DIR="/usr/lib/openssl" && \
+  apt-get install -y ca-certificates && \
+  apt-get clean
 
 FROM chef AS planner
 COPY . .
