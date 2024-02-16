@@ -1,7 +1,7 @@
 version: '3'
 services:
   dbc-bot:
-    image: darkie12/dbc-bot-dev
+    image: shawnpandev/dbc-bot
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DATABASE_URL: ${DATABASE_URL}
