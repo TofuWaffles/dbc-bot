@@ -1,11 +1,13 @@
 version: '3'
 services:
   dbc-bot:
-    image: shawnpandev/dbc-bot-dev
+    image: darkie12/dbc-bot-dev
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DATABASE_URL: ${DATABASE_URL}
       BRAWL_STARS_TOKEN: ${BRAWL_STARS_TOKEN}
+    volumes:
+      - /etc/ssl/certs/:/etc/ssl/certs:ro
     build: 
       context: .
       dockerfile: Dockerfile
