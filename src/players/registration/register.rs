@@ -191,7 +191,7 @@ async fn display_confirmation(
             Ok(None)
         },
         Err(e) => {
-            info!("Failed to find player: {}", e);
+            info!(e);
             prompt(
                 ctx,
                 msg,

@@ -3,7 +3,7 @@ name: Build, Test and Deploy to Prod
 on:
   push:
     branches:
-      - main
+      - bracket
 
 env:
   BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
@@ -93,7 +93,6 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd ~
-          echo "BRAWL_STARS_TOKEN = ${{secrets.BRAWL_STARS_TOKEN}}" > .env
           docker-compose down
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker-compose pull
