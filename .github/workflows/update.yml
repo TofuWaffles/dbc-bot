@@ -85,6 +85,18 @@ jobs:
         source: docker-compose.yml
         target:  /root/
 
+    - name: Create .env file on droplet
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ vars.DROPLET_IP }}
+        username: root
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ~
+          echo "BRAWL_STARS_TOKEN=${{ secrets.BRAWL_STARS_TOKEN }}" > ~/.env
+          echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}" >> ~/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> ~/.env
+
     - name: Deploy
       uses: appleboy/ssh-action@master
       with:
@@ -93,7 +105,6 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd ~
-          echo "BRAWL_STARS_TOKEN = ${{secrets.BRAWL_STARS_TOKEN}}" > .env
           docker-compose down
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker-compose pull
