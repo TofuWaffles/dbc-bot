@@ -1,7 +1,7 @@
 use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::database::add::insert_mannequins;
 use crate::database::stat::count_registers;
-use crate::database::update::{setting_tournament_config, update_round_1, update_round_config};
+use crate::database::update::{resetting_tournament_config, setting_tournament_config, update_round_1, update_round_config};
 use crate::{Context, Error};
 use dbc_bot::Region;
 use poise::ReplyHandle;
@@ -52,6 +52,7 @@ pub async fn start_tournament(
             })
         })
         .await?;
+        resetting_tournament_config(ctx, region).await?;
         return Ok(());
     }
     msg.edit(*ctx, |s| {

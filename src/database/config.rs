@@ -61,7 +61,7 @@ pub fn toggle_reg_config(status: bool) -> Document {
     config
 }
 
-pub fn open_reg_close_tour() -> Document {
+pub fn open_tour_close_reg() -> Document {
     let config = doc! {
       "$set": {
         "tournament": true,
@@ -71,7 +71,7 @@ pub fn open_reg_close_tour() -> Document {
     config
 }
 
-#[allow(dead_code)]
+
 pub fn reset_config() -> Document {
     let config = doc! {
         "$set": {
