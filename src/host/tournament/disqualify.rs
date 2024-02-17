@@ -7,7 +7,6 @@ use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::ReplyHandle;
 use std::sync::Arc;
-use strum::IntoEnumIterator;
 const TIMEOUT: u64 = 120;
 
 struct PlayerDisqualification {
@@ -129,26 +128,6 @@ pub async fn disqualify_players(
     Ok(())
 }
 
-async fn disqualify_region(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |b|{
-        b.embed(|e|{
-            e.title("🔨 Disqualify Players - Step 1: Select their region")
-            .description("Select the region of the player you would like to disqualify from the tournament.")
-        })
-        .components(|c|{
-            c.create_action_row(|a|{
-                for region in Region::iter(){
-                    a.create_button(|b|{
-                        b.custom_id(format!("{:?}", region))
-                        .label(format!("{}", region))
-                    });
-                };
-                a
-            })
-        })
-    }).await?;
-    Ok(())
-}
 
 async fn disqualify_id(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     msg.edit(*ctx, |b|{
