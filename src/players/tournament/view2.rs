@@ -4,7 +4,6 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::database::open::tournament;
 use crate::visual::pre_battle::generate_pre_battle_img;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};

@@ -99,7 +99,7 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
         s.embed(|e| e.description("Getting player info..."))
     })
     .await?;
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;
     let round = find_round_from_config(&config);
     let round_number = round.parse::<i32>().unwrap_or(0);
@@ -140,9 +140,9 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
     })
     .await?;
     get_player_data(
-        &ctx,
-        &msg,
-        &region,
+        ctx,
+        msg,
+        region,
         first_player,
         &round_number,
         &index,
@@ -172,7 +172,7 @@ async fn detail(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Re
             .skip(Some((index - 1) as u64))
             .build();
         let player = collection.find_one(doc! {}, option).await?.unwrap();
-        get_player_data(&ctx, &msg, &region, player, &round_number, &index, &total).await?;
+        get_player_data(ctx, msg, region, player, &round_number, &index, &total).await?;
     }
     Ok(())
 }
@@ -189,10 +189,7 @@ async fn get_player_data(
     let name = player.get("name").unwrap().as_str().unwrap();
     let tag = player.get("tag").unwrap().as_str().unwrap();
     let discord_id = player.get("discord_id").unwrap().as_str().unwrap();
-    let match_id = match player.get("match_id").unwrap().as_str() {
-        Some(match_id) => match_id,
-        None => "Not yet assigned.",
-    };
+    let match_id = player.get("match_id").unwrap().as_str().unwrap_or("Not yet assigned.");
     let battle = match player.get("battle").unwrap().as_bool().unwrap() {
         true => "Already played",
         false => "Not yet played",

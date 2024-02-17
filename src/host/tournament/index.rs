@@ -10,6 +10,7 @@ use poise::ReplyHandle;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
+use super::reset::reset;
 use super::setup::start_tournament;
 const TIMEOUT: u64 = 300;
 
@@ -37,6 +38,10 @@ pub async fn tournament_mod_panel(
             "disqualify" => {
                 mci.defer(&ctx.http()).await?;
                 return disqualify_players(ctx, msg, region).await;
+            }
+            "reset" => {
+                mci.defer(&ctx.http()).await?;
+                return reset(ctx, msg, Some(region)).await;
             }
             _ => {}
         }
@@ -112,6 +117,12 @@ async fn display_start_buttons(
                 row.create_button(|b| {
                     b.custom_id("disqualify")
                         .label("Disqualify players")
+                        .style(poise::serenity_prelude::ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("🔨".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("reset")
+                        .label("Reset tournament")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🔨".to_string()))
                 })

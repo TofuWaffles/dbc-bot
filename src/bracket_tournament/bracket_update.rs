@@ -7,7 +7,7 @@ use crate::database::find::{find_self_by_discord_id, find_enemy_by_match_id_and_
 use crate::database::config::set_config;
 use std::process::Command;
 use futures::TryStreamExt;
-use base64::{Engine as _, engine::{self, general_purpose}};
+use base64::{Engine as _, engine:: general_purpose};
 
 pub async fn update_bracket(
     ctx: &Context<'_>,
@@ -25,9 +25,9 @@ pub async fn update_bracket(
                 Some(caller) => caller,
                 None => {
                     info!("Player is not in a tournament, but the function did not return early.");
-                    return Err(Box::new(CustomError(format!(
-                        "Player is not in a tournament, but the function did not return early."
-                    ))));
+                    return Err(Box::new(CustomError(
+                        "Player is not in a tournament, but the function did not return early.".to_string()
+                    )));
                 }
             };
             current_region = Region::find_key(
@@ -37,12 +37,11 @@ pub async fn update_bracket(
                     .to_string()
                     .strip_quote()
                     .as_str()
-                    .as_ref(),
             )
         }
     }
     
-    let database = ctx.data().database.regional_databases.get(&current_region.as_ref().unwrap()).unwrap();
+    let database = ctx.data().database.regional_databases.get(current_region.as_ref().unwrap()).unwrap();
     let collection: mongodb::Collection<mongodb::bson::Document> = database.collection("Config");
     let config = collection.find_one(None, None).await.unwrap().unwrap();
     
@@ -51,7 +50,7 @@ pub async fn update_bracket(
 
     for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
 
-        let mut database: mongodb::Cursor<mongodb::bson::Document> = ctx.data().database.regional_databases.get(&current_region.as_ref().unwrap()).unwrap().collection(format!("Round {}", round_number).as_str()).find(None, None).await?;
+        let mut database: mongodb::Cursor<mongodb::bson::Document> = ctx.data().database.regional_databases.get(current_region.as_ref().unwrap()).unwrap().collection(format!("Round {}", round_number).as_str()).find(None, None).await?;
 
         while let Some(current_document) = database.try_next().await? {
             let match_id = current_document
@@ -94,7 +93,7 @@ pub async fn update_bracket(
     let mut buffer = String::new();
     stdout.read_to_string(&mut buffer)?;
     
-    let image_bytes = general_purpose::STANDARD.decode(&buffer.trim_end()).unwrap();
+    let image_bytes = general_purpose::STANDARD.decode(buffer.trim_end()).unwrap();
     let attachment = poise::serenity_prelude::AttachmentType::Bytes {
         data: image_bytes.into(),
         filename: "Tournament_Bracket.png".to_string(),
@@ -144,17 +143,17 @@ pub async fn update_bracket(
                 }
                 _ => {
                     info!("Failed to retrieve bracket results channel data.");
-                    return Err(Box::new(CustomError(format!(
-                        "Failed to retrieve bracket results channel data."
-                    ))));
+                    return Err(Box::new(CustomError(
+                        "Failed to retrieve bracket results channel data.".to_string()
+                    )));
                 }
             }
         }
         _ => {
             info!("Failed to retrieve bracket results channel data.");
-            return Err(Box::new(CustomError(format!(
-                "Failed to retrieve bracket results channel data."
-            ))));
+            return Err(Box::new(CustomError(
+                "Failed to retrieve bracket results channel data.".to_string()
+            )));
         }
     };
 
