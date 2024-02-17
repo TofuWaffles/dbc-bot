@@ -18,7 +18,7 @@ struct PlayerDisqualification {
 #[derive(Debug, poise::Modal)]
 #[name = "Disqualify Modal"]
 struct DisqualifyModal {
-    #[name = "Enter the user ID of the player you want to disqualify"]
+    #[name = "Disqualify Player whose ID is:"]
     #[placeholder = "Make sure the user ID is provided, not the username"]
     user_id: String,
 }

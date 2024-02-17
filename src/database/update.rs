@@ -1,14 +1,14 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, Document},
+    bson::{self, doc, Document, Bson::Null},
     options::AggregateOptions,
     Collection, Database,
 };
 
 use crate::{database::mannequin::update_mannequin, Context, Error};
 
-use super::config::{get_config, open_reg_close_tour, toggle_reg_config};
+use super::config::{get_config, open_tour_close_reg, reset_config, toggle_reg_config};
 
 pub async fn assign_match_id(database: &Database) -> Result<(), Error> {
     let collection: Collection<Document> = database.collection("Round 1");
@@ -112,7 +112,7 @@ pub async fn setting_tournament_config(ctx: &Context<'_>, region: &Region) -> Re
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
     config
-        .update_one(doc! {}, open_reg_close_tour(), None)
+        .update_one(doc! {}, open_tour_close_reg(), None)
         .await?; // Set total rounds, tournament_started to true and registration to false
     Ok(())
 }
@@ -127,5 +127,15 @@ pub async fn update_round_1(ctx: &Context<'_>, region: &Region) -> Result<(), Er
     let options = AggregateOptions::builder().allow_disk_use(true).build();
     players.aggregate(pipeline, Some(options)).await?;
     assign_match_id(database).await?;
+    Ok(())
+}
+
+pub async fn resetting_tournament_config(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let config = database.collection::<Document>("Config");
+    config
+        .update_one(doc! {}, reset_config(), None)
+        .await?; 
+    config.delete_many(doc!{"discord_id": Null}, None).await?;
     Ok(())
 }
