@@ -16,9 +16,9 @@ async fn create_battle_image(
     mode: &str,
 ) -> DynamicImage {
     // Open the background image
-    let base = image::open("src\\visual\\asset\\battle_background.jpg")
+    let base = image::open("src/visual/asset/battle_background.jpg")
         .expect("Failed to open background image");
-    let vs = image::open("src\\visual\\asset\\versus.png")
+    let vs = image::open("src/visual/asset/versus.png")
         .expect("Failed to open vs image")
         .resize(150, 150, Nearest);
     // Fetch player icons and mode icon asynchronously

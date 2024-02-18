@@ -21,9 +21,15 @@ COPY --from=planner /dbc-bot/recipe.json recipe.json
 # Build cache dependencies
 RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
 
+# Copy assets and presets
+COPY src/visual/asset ./src/visual/asset
+COPY src/bracket_tournament/presets ./src/bracket_tournament/presets
 COPY . .
+
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
+
+
 
 # Create a minimal image
 FROM scratch
