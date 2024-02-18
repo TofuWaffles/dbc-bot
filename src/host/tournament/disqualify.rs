@@ -1,4 +1,5 @@
-use crate::database::find::find_player_by_discord_id;
+use crate::database::config::get_config;
+use crate::database::find::{find_player_by_discord_id, find_round_from_config};
 use crate::database::remove::remove_player;
 use crate::discord::prompt::prompt;
 use crate::discord::role::get_region_role_id;
@@ -58,6 +59,7 @@ pub async fn disqualify_players(
                         .unwrap()
                         .parse::<u64>()
                         .unwrap(),
+                        find_round_from_config(&get_config(ctx, region).await)
                 ).await
                 {
                     Ok(Some(player)) => display_confirmation(ctx, msg, &player).await?,
@@ -85,6 +87,8 @@ pub async fn disqualify_players(
                         .unwrap()
                         .parse::<u64>()
                         .unwrap(),
+                        find_round_from_config(&get_config(ctx, region).await)
+
                 ).await {
                     Ok(Some(player)) => {
                         if let Ok(round) = remove_player(ctx, &player, region).await {

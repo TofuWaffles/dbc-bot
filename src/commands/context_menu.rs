@@ -1,5 +1,6 @@
 use crate::brawlstars::{api::request, api::APIResult, player::stat};
-use crate::database::find::find_player_by_discord_id;
+use crate::database::config::get_config;
+use crate::database::find::{find_player_by_discord_id, find_round_from_config};
 use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
@@ -9,7 +10,7 @@ use tracing::info;
 #[poise::command(context_menu_command = "Player information", guild_only)]
 pub async fn get_individual_player_data(
     ctx: Context<'_>,
-    #[description = "Check a player registration status by user ID here"] user: serenity::User,
+    user: serenity::User,
 ) -> Result<(), Error> {
     info!("Getting participant data");
     ctx.defer_ephemeral().await?;
@@ -45,7 +46,8 @@ pub async fn get_individual_player_data(
         }
     };
     let id: u64 = user.id.into();
-    let player_from_db = match find_player_by_discord_id(&ctx, &region, id).await {
+    let round = find_round_from_config(&get_config(&ctx, &region).await); 
+    let player_from_db = match find_player_by_discord_id(&ctx, &region, id, round).await {
         Ok(player) => match player {
             Some(p) => p,
             None => {
