@@ -21,7 +21,8 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Re
             .content("Getting your opponent...")
     })
     .await?;
-    let caller = match find_self_by_discord_id(ctx).await.unwrap() {
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {

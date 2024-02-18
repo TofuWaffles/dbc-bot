@@ -20,15 +20,16 @@ use poise::ReplyHandle;
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
 
-pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
             .content("Checking your match result...")
     })
     .await?;
+    let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
-    let caller = match find_self_by_discord_id(ctx).await.unwrap() {
+    let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {

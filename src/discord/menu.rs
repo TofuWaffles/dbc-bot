@@ -174,7 +174,7 @@ pub async fn tournament_menu(
             }
             "submit" => {
                 mci.defer(&ctx.http()).await?;
-                return submit_result(ctx, msg).await;
+                return submit_result(ctx, msg, &region).await;
             }
             "view" => {
                 mci.defer(&ctx.http()).await?;
