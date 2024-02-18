@@ -26,7 +26,6 @@ pub async fn stat(
                     ("Duo Victories", player["duoVictories"].to_string(),true),
                     ("Best Robo Rumble Time", get_difficulty(&player["bestRoboRumbleTime"]),true),
                     ("Club", club, true),
-                    ("Currently in round", detail.map_or("Not in round".to_string(), |d| d.get_str("round").unwrap().to_string()), true),
                     ("Currently in match", detail.map_or("Not in match".to_string(), |d| d.get_i32("match_id").unwrap().to_string()), true),
                     ("Result submit", detail.map_or("Not in battle".to_string(), |d| {
                         if d.get_bool("battle").unwrap(){
