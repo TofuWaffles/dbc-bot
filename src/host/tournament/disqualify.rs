@@ -87,7 +87,7 @@ pub async fn disqualify_players(
                         .unwrap(),
                 ).await {
                     Ok(Some(player)) => {
-                        if let Ok(round) = remove_player(ctx, &player, &region).await {
+                        if let Ok(round) = remove_player(ctx, &player, region).await {
                             msg.edit(*ctx,|s| {
                             s.reply(true)
                                 .embed(|e| {

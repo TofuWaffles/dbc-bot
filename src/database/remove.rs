@@ -7,15 +7,9 @@ use mongodb::bson::{doc, Document};
 use super::find::find_round_from_config;
 
 pub async fn remove_player(ctx: &Context<'_>, player: &Document, region: &Region) -> Result<String, Error> {
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(ctx, &region).await;
-    let round_collection = ctx
-    .data()
-    .database
-    .regional_databases
-    .get(&region)
-    .unwrap()
-    .collection::<Document>(find_round_from_config(&config).as_str());
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let config = get_config(ctx, region).await;
+    let round_collection = database.collection::<Document>(find_round_from_config(&config).as_str());
     let players_collection = database.collection::<Document>("Players");
     match round_collection.name(){
         "Players" => {
@@ -25,7 +19,7 @@ pub async fn remove_player(ctx: &Context<'_>, player: &Document, region: &Region
         }
         _ => {
             let match_id = player.get_i32("match_id").unwrap();
-            let mannequin = add_mannequin(&region, Some(match_id));
+            let mannequin = add_mannequin(region, Some(match_id));
             round_collection.insert_one(mannequin, None).await?;
             round_collection
                 .delete_one(doc! {"_id": player.get("_id")}, None)
