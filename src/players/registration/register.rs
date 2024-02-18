@@ -26,7 +26,7 @@ struct PlayerRegistration {
 #[name = "Player Tag"]
 struct TagModal {
     #[name = "Enter your player tag:"]
-    #[placeholder = "The tag should start with #. For instance, #ABC123"]
+    #[placeholder = "The tag should start with # For instance, #ABC123"]
     #[min_length = 5]
     #[max_length = 10]
     tag: String,
