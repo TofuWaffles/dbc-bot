@@ -4,7 +4,7 @@ use dbc_bot::CustomError;
 use futures::StreamExt;
 use poise::ReplyHandle;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{error, info};
 const TIMEOUT: u64 = 150;
 
 pub struct AnnouncementData {
@@ -54,7 +54,6 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
             "create_announcement" => {
                 info!("Create announcement modal");
                 let modal = create_announcement_modal(ctx, mci.clone()).await?;
-                info!("End of create announcement modal");
                 match Some(modal) {
                     Some(announcement_modal) => {
                         if let Some(channel_id) = announcement_modal.channel_id {
@@ -66,13 +65,13 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                                     announcement_data = announcement_modal;
                                     display_confirmation(ctx, msg, &announcement_data).await?;
                                 }
-                                Err(_) => {
+                                Err(e) => {
                                     msg.edit(*ctx, |s| {
                                         s.reply(true).ephemeral(true).embed(|e| {
                                             e.description("Invalid channel ID provided.".to_string())
                                         })
-                                    })
-                                    .await?;
+                                    }).await?;
+                                    error!("{e}");
                                     continue;
                                 }
                             }
@@ -81,7 +80,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                     
                     None => {
                         msg.edit(*ctx, |s| {
-                            s.reply(true).ephemeral(true).embed(|e| {
+                            s.embed(|e| {
                                 e.description("Failed to create announcement modal.".to_string())
                             })
                         })
@@ -221,17 +220,15 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                             })
                             .await?;
                         }
-                        Err(_) => {
+                        Err(e) => {
                             msg.edit(*ctx, |s| {
                                 s.reply(true).ephemeral(true).embed(|e| {
                                     e.description("Failed to post announcement.".to_string())
                                 })
                             })
                             .await?;
-                            info!("Failed to post announcement.");
-                            return Err(Box::new(CustomError(
-                                "Failed to post announcement.".to_string()
-                            )));
+                            error!("{e}");
+                            return Ok(())
                         }
                     }
                 }
