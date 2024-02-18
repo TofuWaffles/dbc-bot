@@ -8,6 +8,7 @@ use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use poise::ReplyHandle;
+use tracing::info;
 const DELAY: u64 = 1;
 
 // Tournament all-in-one command
@@ -61,15 +62,17 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             } else {
                 match find_self_by_discord_id(&ctx).await.unwrap() {
                     Some(player) => {
-                        if is_battle(
+                        if !is_battle(
                             &ctx,
                             player.get("tag").unwrap().as_str(),
                             find_round_from_config(&get_config(&ctx, &region).await),
                         )
                         .await?
-                        {
+                        { 
+                            info!("{} has not done any battle in the current round!", player.get_str("tag").unwrap());
                             tournament_menu(&ctx, &msg, true, true, true, true).await
                         } else {
+                            info!("{} has done battle in the current round!", player.get_str("tag").unwrap());
                             tournament_menu(&ctx, &msg, false, true, false, false).await
                         }
                     }
