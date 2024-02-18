@@ -86,17 +86,15 @@ pub async fn disqualify_players(
                 .await
                 {
                     Ok(Some(player)) => {
-                        if let Ok(round) = remove_player(ctx, &player).await {
-                            ctx.send(|s| {
+                        if let Ok(round) = remove_player(ctx, &player, &region).await {
+                            msg.edit(*ctx,|s| {
                             s.reply(true)
-                                .ephemeral(true)
                                 .embed(|e| {
                                     e.description(format!(
-                                        "Successfully disqualified player: {}({}) with respective Discord <@{}> at round {}",
-                                        player.get("name").unwrap().as_str().unwrap(),
-                                        player.get("tag").unwrap().as_str().unwrap(),
-                                        &disqualification.user_id.unwrap().to_string(),
-                                        round
+                                        "Successfully disqualified player: {}({}) with respective Discord <@{}> at round {round}",
+                                        player.get_str("name").unwrap(),
+                                        player.get_str("tag").unwrap(),
+                                        &disqualification.user_id.unwrap(),
                                     ))
                                 })
                         })
