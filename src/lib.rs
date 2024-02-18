@@ -60,6 +60,7 @@ impl Region {
     pub fn full(&self) -> String {
         format!("{}", self)
     }
+
 }
 
 #[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]

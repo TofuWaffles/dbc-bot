@@ -5,6 +5,7 @@ use mongodb::{
     Collection, Cursor,
 };
 use strum::IntoEnumIterator;
+use tracing::error;
 
 use super::config::get_config;
 
@@ -41,7 +42,10 @@ pub async fn find_player_by_discord_id(
             Some(p) => Ok(Some(p)),
             None => Ok(None),
         },
-        Err(_) => Ok(None),
+        Err(e) => {
+            error!("{e}");
+            Ok(None)
+        },
     }
 }
 
