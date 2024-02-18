@@ -74,7 +74,7 @@ pub async fn get_individual_player_data(
     };
     let player = request("player", player_from_db.get_str("tag").unwrap()).await?;
     match player {
-        APIResult::Successful(p) => stat(&ctx, &msg, &p, &region).await,
+        APIResult::Successful(p) => stat(&ctx, &msg, &p, &region, Some(&player_from_db)).await,
         APIResult::NotFound(_) => {
             prompt(
                 &ctx,

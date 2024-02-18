@@ -70,10 +70,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                         .await?
                         { 
                             info!("{} has not done any battle in the current round!", player.get_str("tag").unwrap());
-                            tournament_menu(&ctx, &msg, true, true, true, true).await
+                            tournament_menu(&ctx, &msg, true, true, true, true, player).await
                         } else {
                             info!("{} has done battle in the current round!", player.get_str("tag").unwrap());
-                            tournament_menu(&ctx, &msg, false, true, false, false).await
+                            tournament_menu(&ctx, &msg, false, true, false, false, player).await
                         }
                     }
                     None => prompt(

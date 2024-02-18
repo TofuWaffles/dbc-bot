@@ -115,7 +115,9 @@ pub async fn tournament_menu(
     managers: bool,
     submit: bool,
     help: bool,
+    player: Document
 ) -> Result<(), Error> {
+    let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
     msg.edit(*ctx, |e| {
         e.components(|c| {
             c.create_action_row(|r| {
@@ -164,7 +166,7 @@ pub async fn tournament_menu(
         match mci.data.custom_id.as_str() {
             "enemy" => {
                 mci.defer(&ctx.http()).await?;
-                return view_opponent(ctx, msg).await;
+                return view_opponent(ctx, msg, &region).await;
             }
             "managers" => {
                 mci.defer(&ctx.http()).await?;

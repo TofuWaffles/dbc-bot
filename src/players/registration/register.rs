@@ -158,7 +158,7 @@ async fn display_confirmation(
                 })
             })
             .await?;
-            stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
+            stat(ctx, msg, &player, &register.region.clone().unwrap(), None).await?;
 
             Ok(Some(make_player_doc(
                 &player,
