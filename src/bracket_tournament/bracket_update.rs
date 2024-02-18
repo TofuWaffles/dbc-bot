@@ -21,7 +21,7 @@ pub async fn update_bracket(
             current_region = Some(region.clone());
         }
         None => {
-            let caller = match find_self_by_discord_id(ctx).await.unwrap() {
+            let caller = match find_self_by_discord_id(ctx, "Players".to_string()).await.unwrap() {
                 Some(caller) => caller,
                 None => {
                     info!("Player is not in a tournament, but the function did not return early.");

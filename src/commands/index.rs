@@ -42,7 +42,7 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     let region = get_region_from_role(&ctx, roles);
     match region {
         Some(region) => {
-            let player = match find_self_by_discord_id(&ctx).await.unwrap() {
+            let player = match find_self_by_discord_id(&ctx, "Players".to_string()).await.unwrap() {
                 Some(player) => player,
                 None => {
                     prompt(
@@ -60,7 +60,7 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             if registration_region_open(&ctx, &region).await {
                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
             } else {
-                match find_self_by_discord_id(&ctx).await.unwrap() {
+                match find_self_by_discord_id(&ctx, "Players".to_string()).await.unwrap() {
                     Some(player) => {
                         if !is_battle(
                             &ctx,
