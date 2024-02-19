@@ -1,4 +1,5 @@
 use super::prompt::prompt;
+use crate::brawlstars::player::stat;
 use crate::host::registration::index::registration_mod_panel;
 use crate::host::tournament::index::tournament_mod_panel;
 use crate::host::utilities::index::utilities_mod_panel;
@@ -43,21 +44,27 @@ pub async fn registration_menu(
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("📝".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("personal")
                         .label("View\nPersonal\nInfo")
                         .disabled(!view)
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("deregister")
                         .label("Deregister")
                         .disabled(!deregister)
                         .style(ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚪".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("help")
                         .label("Help")
                         .disabled(!help)
@@ -115,7 +122,7 @@ pub async fn tournament_menu(
     managers: bool,
     submit: bool,
     help: bool,
-    player: Document
+    player: Document,
 ) -> Result<(), Error> {
     let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
     msg.edit(*ctx, |e| {
@@ -128,21 +135,27 @@ pub async fn tournament_menu(
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("managers")
                         .label("View\nManagers")
                         .disabled(!managers)
                         .style(ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🛡️".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("submit")
                         .label("Submit\nResults")
                         .disabled(!submit)
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("⚔️".to_string()))
                 })
-                .create_button(|b| {
+            })
+            .create_action_row(|r| {
+                r.create_button(|b| {
                     b.custom_id("help")
                         .label("Help")
                         .disabled(!help)
@@ -187,6 +200,7 @@ pub async fn tournament_menu(
                     None,
                 )
                 .await;
+                // return stat(ctx, msg, ).await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;

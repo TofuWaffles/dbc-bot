@@ -14,7 +14,11 @@ use poise::{serenity_prelude as serenity, ReplyHandle};
 use std::io::Cursor;
 
 /// View your opponent
-pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+pub async fn view_opponent(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
@@ -74,7 +78,7 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Re
         }
         None => {
             msg.edit(*ctx, |s| {
-                s.reply(true).ephemeral(true).embed(|e| {
+                s.embed(|e| {
                     e.title("An error occurred!")
                         .description("Please run this command later.")
                 })
@@ -84,9 +88,7 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Re
         }
     };
 
-    let image = generate_pre_battle_img(&caller, &enemy, &config)
-        .await
-        .unwrap();
+    let image = generate_pre_battle_img(&caller, &enemy, &config).await?;
     let mut bytes: Vec<u8> = Vec::new();
     image.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
     let attachment = serenity::model::channel::AttachmentType::Bytes {

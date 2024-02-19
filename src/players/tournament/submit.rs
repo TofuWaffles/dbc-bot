@@ -1,3 +1,4 @@
+use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::brawlstars::api::{self, APIResult};
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
@@ -8,7 +9,6 @@ use crate::database::find::{
 use crate::database::open::tournament;
 use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
-use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::{doc, Document};
@@ -20,7 +20,11 @@ use poise::ReplyHandle;
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
 
-pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+pub async fn submit_result(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
@@ -140,9 +144,14 @@ pub async fn submit_result(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Re
                     })
                     .await?;
             } else {
-                database.collection::<Collection<Document>>(format!("Round {}", round).as_str())
-                .update_one(doc!{ "_id": winner.get_object_id("_id")? }, doc! { "$set": { "winner": true } }, None)
-                .await?;
+                database
+                    .collection::<Collection<Document>>(format!("Round {}", round).as_str())
+                    .update_one(
+                        doc! { "_id": winner.get_object_id("_id")? },
+                        doc! { "$set": { "winner": true } },
+                        None,
+                    )
+                    .await?;
                 update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
@@ -210,7 +219,7 @@ async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Doc
         let mut count_victory = 0;
         let mut count_defeat = 0;
 
-        for result in results.iter(){
+        for result in results.iter() {
             match result.as_str() {
                 "defeat" => count_defeat += 1,
                 "victory" => count_victory += 1,

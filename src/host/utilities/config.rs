@@ -399,7 +399,11 @@ async fn bracket_channel_option(
         mci2.defer(ctx.http()).await?;
         let channel_id = mci2.data.values[0].as_str();
         collection
-            .update_one(doc! {}, set_config("bracket_channel", Some(channel_id)), None)
+            .update_one(
+                doc! {},
+                set_config("bracket_channel", Some(channel_id)),
+                None,
+            )
             .await?;
         msg.edit(*ctx, |s| {
             s.components(|c| c).embed(|e| {
@@ -414,4 +418,3 @@ async fn bracket_channel_option(
     }
     Ok(())
 }
-

@@ -42,7 +42,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     let region = get_region_from_role(&ctx, roles);
     match region {
         Some(region) => {
-            let player = match find_self_by_discord_id(&ctx, "Players".to_string()).await.unwrap() {
+            let player = match find_self_by_discord_id(&ctx, "Players".to_string())
+                .await
+                .unwrap()
+            {
                 Some(player) => player,
                 None => {
                     prompt(
@@ -60,7 +63,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             if registration_region_open(&ctx, &region).await {
                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
             } else {
-                match find_self_by_discord_id(&ctx, "Players".to_string()).await.unwrap() {
+                match find_self_by_discord_id(&ctx, "Players".to_string())
+                    .await
+                    .unwrap()
+                {
                     Some(player) => {
                         if !is_battle(
                             &ctx,
@@ -68,11 +74,17 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                             find_round_from_config(&get_config(&ctx, &region).await),
                         )
                         .await?
-                        { 
-                            info!("{} has not done any battle in the current round!", player.get_str("tag").unwrap());
+                        {
+                            info!(
+                                "{} has not done any battle in the current round!",
+                                player.get_str("tag").unwrap()
+                            );
                             tournament_menu(&ctx, &msg, true, true, true, true, player).await
                         } else {
-                            info!("{} has done battle in the current round!", player.get_str("tag").unwrap());
+                            info!(
+                                "{} has done battle in the current round!",
+                                player.get_str("tag").unwrap()
+                            );
                             tournament_menu(&ctx, &msg, false, true, false, false, player).await
                         }
                     }

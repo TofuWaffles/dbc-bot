@@ -46,7 +46,7 @@ pub async fn get_individual_player_data(
         }
     };
     let id: u64 = user.id.into();
-    let round = find_round_from_config(&get_config(&ctx, &region).await); 
+    let round = find_round_from_config(&get_config(&ctx, &region).await);
     let player_from_db = match find_player_by_discord_id(&ctx, &region, id, round).await {
         Ok(player) => match player {
             Some(p) => p,

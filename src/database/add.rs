@@ -39,7 +39,7 @@ pub async fn insert_mannequins(ctx: &Context<'_>, region: &Region, byes: i32) ->
     match byes {
         0 => {}
         _ => {
-            for _ in 1..=byes {
+            for _ in 0..byes {
                 let mannequin = add_mannequin(region, None);
                 collection.insert_one(mannequin, None).await?;
             }

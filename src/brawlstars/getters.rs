@@ -29,17 +29,17 @@ pub fn get_difficulty(num: &serde_json::Value) -> String {
 pub fn get_mode_icon(event_name: String) -> String {
     // Match the event_name to known event names and return the corresponding URL as Some(&str)
     let event = match event_name.as_str() {
-        "brawlBall" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
-        "bounty" => "https://cdn.brawlstats.com/event-icons/event_mode_bounty.png",
-        "gemGrab" => "https://cdn.brawlstats.com/event-icons/event_mode_gem_grab.png",
-        "wipeout" => "https://cdn.brawlstats.com/event-icons/event_mode_wipeout.png",
-        "heist" => "https://cdn.brawlstats.com/event-icons/event_mode_heist.png",
-        "hotZone" => "https://cdn.brawlstats.com/event-icons/event_mode_hot_zone.png",
-        "knockout" => "https://cdn.brawlstats.com/event-icons/event_mode_knockout.png",
-        "siege" => "https://cdn.brawlstats.com/event-icons/event_mode_siege.png",
+        "brawlBall" => "https://cdn-old.brawlify.com/gamemode/Brawl-Ball.png",
+        "bounty" => "https://cdn-old.brawlify.com/gamemode/Bounty.png",
+        "gemGrab" => "https://cdn-old.brawlify.com/gamemode/Gem-Grab.png",
+        "wipeout" => "https://cdn-old.brawlify.com/gamemode/Wipeout.png",
+        "heist" => "https://cdn-old.brawlify.com/gamemode/Heist.png",
+        "hotZone" => "https://cdn-old.brawlify.com/gamemode/Hot-Zone.png",
+        "knockout" => "https://cdn-old.brawlify.com/gamemode/Knockout.png",
+        "siege" => "https://cdn-old.brawlify.com/gamemode/Siege.png",
         "raid" => "https://cdn.brawlstats.com/event-icons/event_mode_raid.png",
-        "soloShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_showdown.png",
-        "duoShowdown" => "https://cdn.brawlstats.com/event-icons/event_mode_showdown.png",
+        "soloShowdown" => "https://cdn-old.brawlify.com/gamemode/Solo-Showdown.png",
+        "duoShowdown" => "https://cdn-old.brawlify.com/gamemode/Duo-Showdown.png",
         _ => {
             "https://cdn.discordapp.com/emojis/1133867752155779173.webp?size=4096&quality=lossless"
         }
@@ -48,7 +48,7 @@ pub fn get_mode_icon(event_name: String) -> String {
 }
 
 pub fn get_player_icon_url(icon_id: String) -> String {
-    format!("https://cdn-old.brawlify.com/profile-low/{}.png", icon_id)
+    format!("https://cdn.brawlify.com/profile/{icon_id}.png?v=1")
 }
 
 pub fn get_icon(icon: &str) -> Box<dyn Fn(String) -> String> {

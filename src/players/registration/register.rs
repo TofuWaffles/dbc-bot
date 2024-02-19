@@ -178,7 +178,7 @@ async fn display_confirmation(
             .await?;
             Ok(None)
         }
-        Ok(APIResult::NotFound(_))  => {
+        Ok(APIResult::NotFound(_)) => {
             prompt(
                 ctx,
                 msg,
@@ -189,7 +189,7 @@ async fn display_confirmation(
             )
             .await?;
             Ok(None)
-        },
+        }
         Err(e) => {
             info!(e);
             prompt(
@@ -199,7 +199,8 @@ async fn display_confirmation(
                 "Please try again later!",
                 None,
                 None,
-            ).await?;
+            )
+            .await?;
             Ok(None)
         }
     }

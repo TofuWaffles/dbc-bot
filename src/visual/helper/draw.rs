@@ -1,6 +1,6 @@
+use crate::Error;
 use image::{DynamicImage, ImageBuffer, Rgba};
 use text_to_png::TextRenderer;
-
 /// Creates a dynamic image with a filled rectangle of the specified dimensions and color.
 ///
 /// This function generates a dynamic image with a filled rectangle of the specified `width`,
@@ -70,12 +70,12 @@ pub fn draw_rec(width: u32, height: u32, color: u32) -> DynamicImage {
 /// let text_image = make_text_image("Hello, Rust!", 24, &0xFF0000FF);
 /// text_image.save("output.png").expect("Failed to save image");
 /// ```
-pub fn make_text_image(text: &str, font_size: u8, font_color: &u32) -> DynamicImage {
-    let renderer =
-        TextRenderer::try_new_with_ttf_font_data(include_bytes!("../asset/LilitaOne-Regular.ttf"))
-            .unwrap();
+pub fn make_text_image(text: &str, font_size: u8, font_color: &u32) -> Result<DynamicImage, Error> {
+    let renderer = TextRenderer::try_new_with_ttf_font_data(include_bytes!(
+        "../assets/LilitaOne-Regular.ttf"
+    ))?;
     let img = renderer
         .render_text_to_png_data(text, font_size, *font_color)
         .expect("Failed to render text");
-    image::load_from_memory(&(img.data)).expect("Failed to load image")
+    image::load_from_memory(&(img.data)).map_err(|e| e.into())
 }

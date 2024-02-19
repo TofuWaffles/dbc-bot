@@ -9,7 +9,10 @@ use tracing::error;
 
 use super::config::get_config;
 
-pub async fn find_self_by_discord_id(ctx: &Context<'_>, round: String) -> Result<Option<Document>, Error> {
+pub async fn find_self_by_discord_id(
+    ctx: &Context<'_>,
+    round: String,
+) -> Result<Option<Document>, Error> {
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
         let collection: Collection<Document> = database.collection(&round);
@@ -33,7 +36,7 @@ pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
     user_id: u64,
-    round: String
+    round: String,
 ) -> Result<Option<Document>, Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection(round.as_str());
@@ -46,7 +49,7 @@ pub async fn find_player_by_discord_id(
         Err(e) => {
             error!("{e}");
             Ok(None)
-        },
+        }
     }
 }
 
