@@ -1,12 +1,15 @@
-use crate::database::find::find_player_by_discord_id;
+use crate::database::config::get_config;
+use crate::database::find::{find_player_by_discord_id, find_round_from_config};
 use crate::database::remove::remove_player;
 use crate::discord::prompt::prompt;
+use crate::discord::role::get_region_role_id;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::ReplyHandle;
 use std::sync::Arc;
+use tracing::error;
 const TIMEOUT: u64 = 120;
 
 struct PlayerDisqualification {
@@ -56,6 +59,7 @@ pub async fn disqualify_players(
                         .unwrap()
                         .parse::<u64>()
                         .unwrap(),
+                    find_round_from_config(&get_config(ctx, region).await),
                 )
                 .await
                 {
@@ -63,8 +67,11 @@ pub async fn disqualify_players(
                     Ok(None) => {
                         msg.edit(*ctx, |s| {
                             s.reply(true)
-                                .ephemeral(true)
-                                .embed(|e| e.description("No player is found for this ID"))
+                                .embed(|e| {
+                                    e.title("No player found")
+                                        .description("No player is found for this ID")
+                                })
+                                .components(|c| c)
                         })
                         .await?;
                         return Ok(());
@@ -82,11 +89,12 @@ pub async fn disqualify_players(
                         .unwrap()
                         .parse::<u64>()
                         .unwrap(),
+                    find_round_from_config(&get_config(ctx, region).await),
                 )
                 .await
                 {
                     Ok(Some(player)) => {
-                        if let Ok(round) = remove_player(ctx, &player, &region).await {
+                        if let Ok(round) = remove_player(ctx, &player, region).await {
                             msg.edit(*ctx,|s| {
                             s.reply(true)
                                 .embed(|e| {
@@ -94,16 +102,64 @@ pub async fn disqualify_players(
                                         "Successfully disqualified player: {}({}) with respective Discord <@{}> at round {round}",
                                         player.get_str("name").unwrap(),
                                         player.get_str("tag").unwrap(),
-                                        &disqualification.user_id.unwrap(),
+                                        &disqualification.user_id.clone().unwrap(),
                                     ))
                                 })
                         })
                         .await?;
-                            return Ok(());
+                            match ctx
+                                .guild()
+                                .unwrap()
+                                .member(
+                                    ctx.http(),
+                                    disqualification
+                                        .user_id
+                                        .clone()
+                                        .unwrap()
+                                        .parse::<u64>()
+                                        .unwrap(),
+                                )
+                                .await
+                            {
+                                Ok(mut member) => {
+                                    match member
+                                        .remove_role(
+                                            ctx.http(),
+                                            get_region_role_id(ctx, region).await.unwrap(),
+                                        )
+                                        .await
+                                    {
+                                        Ok(_) => {
+                                            msg.edit(*ctx, |s| {
+                                        s.embed(|e| {
+                                            e.description("Successfully removed the role from the user")
+                                        })
+                                    }).await?;
+                                        }
+                                        Err(e) => {
+                                            error!("{e}");
+                                            msg.edit(*ctx, |s| {
+                                                s.embed(|e| {
+                                                    e.description(
+                                                        "Failed to remove the role from the user",
+                                                    )
+                                                })
+                                            })
+                                            .await?;
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("{e}");
+                                    return Ok(());
+                                }
+                            };
                         }
                     }
                     Ok(None) => {}
-                    Err(_) => {}
+                    Err(e) => {
+                        error!("{e}");
+                    }
                 }
             }
             "cancel" => {
@@ -126,11 +182,10 @@ pub async fn disqualify_players(
     Ok(())
 }
 
-
 async fn disqualify_id(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
     msg.edit(*ctx, |b|{
         b.embed(|e|{
-            e.title("🔨 Disqualify Players - Step 2: Enter the user ID")
+            e.title("🔨 Disqualify Players - Step 1: Enter the user ID")
             .description("Please enter the user ID of the player you want to disqualify. See [this guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for more information.")
         })
         .components(|c|{
@@ -168,19 +223,23 @@ async fn display_confirmation(
         .ephemeral(true)
         .embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
-                .title("🔨 Disqualify Players - Step 3: User confirmation")
+                .title("🔨 Disqualify Players - Step 2: User confirmation")
                 .description(
                     "**Please confirm this is the player that you would like to disqualify.**",
                 )
                 .fields(vec![
                     (
                         "Mention",
-                        format!("<@{}>", player.get("discord_id").unwrap().as_str().unwrap()),
+                        format!("<@{}>", player.get_str("discord_id").unwrap()),
                         true,
                     ),
-                    ("Region", player.get("region").unwrap().to_string(), true),
-                    ("Name", player.get("name").unwrap().to_string(), true),
-                    ("Tag", player.get("tag").unwrap().to_string(), true),
+                    (
+                        "Region",
+                        player.get_str("region").unwrap().to_string(),
+                        true,
+                    ),
+                    ("Name", player.get_str("name").unwrap().to_string(), true),
+                    ("Tag", player.get_str("tag").unwrap().to_string(), true),
                 ])
                 .timestamp(ctx.created_at())
         })

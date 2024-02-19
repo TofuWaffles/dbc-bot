@@ -14,14 +14,19 @@ use poise::{serenity_prelude as serenity, ReplyHandle};
 use std::io::Cursor;
 
 /// View your opponent
-pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+pub async fn view_opponent(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.ephemeral(true)
             .reply(true)
             .content("Getting your opponent...")
     })
     .await?;
-    let caller = match find_self_by_discord_id(ctx).await.unwrap() {
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {
@@ -35,32 +40,11 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
         }
     };
 
-    //Checking if the tournament has started
-    let region = Region::find_key(
-        caller
-            .get("region")
-            .unwrap()
-            .to_string()
-            .strip_quote()
-            .as_str(),
-    )
-    .unwrap();
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, &region).await;
     //Get player document via their discord_id
-    let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
-    let caller_tag = caller.get("tag").unwrap().to_string().strip_quote();
-    let region = Region::find_key(
-        caller
-            .get("region")
-            .unwrap()
-            .to_string()
-            .strip_quote()
-            .as_str(),
-    )
-    .unwrap();
-
-    //Check if the user has already submitted the result or not yet disqualified
+    let match_id: i32 = caller.get_i32("match_id").unwrap();
+    let caller_tag = caller.get_str("tag").unwrap();
 
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
@@ -94,7 +78,7 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
         }
         None => {
             msg.edit(*ctx, |s| {
-                s.reply(true).ephemeral(true).embed(|e| {
+                s.embed(|e| {
                     e.title("An error occurred!")
                         .description("Please run this command later.")
                 })
@@ -104,9 +88,7 @@ pub async fn view_opponent(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
         }
     };
 
-    let image = generate_pre_battle_img(&caller, &enemy, &config)
-        .await
-        .unwrap();
+    let image = generate_pre_battle_img(&caller, &enemy, &config).await?;
     let mut bytes: Vec<u8> = Vec::new();
     image.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
     let attachment = serenity::model::channel::AttachmentType::Bytes {

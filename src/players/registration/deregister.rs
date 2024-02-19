@@ -87,8 +87,7 @@ async fn remove_role(
             .await?;
             info!("Failed to assign role for <@{}>", user);
             return Err(Box::new(CustomError(format!(
-                "Failed to assign role for <@{}>",
-                user
+                "Failed to assign role for <@{user}>",
             ))));
         }
     };

@@ -68,16 +68,19 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                                 Err(e) => {
                                     msg.edit(*ctx, |s| {
                                         s.reply(true).ephemeral(true).embed(|e| {
-                                            e.description("Invalid channel ID provided.".to_string())
+                                            e.description(
+                                                "Invalid channel ID provided.".to_string(),
+                                            )
                                         })
-                                    }).await?;
+                                    })
+                                    .await?;
                                     error!("{e}");
                                     continue;
                                 }
                             }
                         }
                     }
-                    
+
                     None => {
                         msg.edit(*ctx, |s| {
                             s.embed(|e| {
@@ -87,7 +90,8 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                         .await?;
                         info!("Failed to create announcement modal.");
                         return Err(Box::new(CustomError(
-                            "Failed to create announcement modal.".to_string())));
+                            "Failed to create announcement modal.".to_string(),
+                        )));
                     }
                 }
             }
@@ -111,7 +115,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                                         msg.edit(*ctx, |s| {
                                             s.reply(true).ephemeral(true).embed(|e| {
                                                 e.description(
-                                                    "Invalid channel ID provided.".to_string()
+                                                    "Invalid channel ID provided.".to_string(),
                                                 )
                                             })
                                         })
@@ -129,8 +133,8 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                                         continue;
                                     }
                                 }
-                            },
-                            (_,_) => {}
+                            }
+                            (_, _) => {}
                         }
                     }
                     None => {
@@ -142,7 +146,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                         .await?;
                         info!("Failed to create announcement modal.");
                         return Err(Box::new(CustomError(
-                            "Failed to create announcement modal.".to_string()
+                            "Failed to create announcement modal.".to_string(),
                         )));
                     }
                 }
@@ -192,7 +196,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                             .await?;
                             info!("Failed to edit announcement.");
                             return Err(Box::new(CustomError(
-                                "Failed to edit announcement.".to_string()
+                                "Failed to edit announcement.".to_string(),
                             )));
                         }
                     }
@@ -228,7 +232,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                             })
                             .await?;
                             error!("{e}");
-                            return Ok(())
+                            return Ok(());
                         }
                     }
                 }

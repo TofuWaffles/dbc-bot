@@ -1,9 +1,9 @@
+use crate::database::config::get_config;
+use crate::Context;
 use dbc_bot::Region;
 use poise::serenity_prelude::RoleId;
 use poise::serenity_prelude::User;
 use strum::IntoEnumIterator;
-
-use crate::Context;
 
 pub fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Option<Region> {
     for role in roles.iter() {
@@ -24,7 +24,6 @@ pub fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Option<Reg
 /// Get the roles from a user
 /// user: Option<&User> - The user to get the roles from. If None, it will get the roles from the author of the message.
 pub async fn get_roles_from_user(ctx: &Context<'_>, user: Option<&User>) -> Option<Vec<RoleId>> {
-    println!("Getting roles from user");
     match user {
         Some(user) => {
             let member = ctx
@@ -37,4 +36,11 @@ pub async fn get_roles_from_user(ctx: &Context<'_>, user: Option<&User>) -> Opti
         }
         None => Some((ctx.author_member().await?.roles).clone()),
     }
+}
+
+pub async fn get_region_role_id(ctx: &Context<'_>, region: &Region) -> Option<u64> {
+    let config = get_config(ctx, region).await;
+    config
+        .get_str("role")
+        .map_or_else(|_| None, |s| Some(s.parse::<u64>().unwrap()))
 }

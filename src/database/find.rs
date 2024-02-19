@@ -5,13 +5,17 @@ use mongodb::{
     Collection, Cursor,
 };
 use strum::IntoEnumIterator;
+use tracing::error;
 
 use super::config::get_config;
 
-pub async fn find_self_by_discord_id(ctx: &Context<'_>) -> Result<Option<Document>, Error> {
+pub async fn find_self_by_discord_id(
+    ctx: &Context<'_>,
+    round: String,
+) -> Result<Option<Document>, Error> {
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let collection: Collection<Document> = database.collection("Players");
+        let collection: Collection<Document> = database.collection(&round);
         let filter = doc! {"discord_id": ctx.author().id.to_string()};
         match collection.find_one(filter, None).await {
             Ok(result) => match result {
@@ -32,16 +36,20 @@ pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
     user_id: u64,
+    round: String,
 ) -> Result<Option<Document>, Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
-    let collection: Collection<Document> = database.collection("Players");
+    let collection: Collection<Document> = database.collection(round.as_str());
     let filter = doc! {"discord_id": user_id.to_string()};
     match collection.find_one(filter, None).await {
         Ok(result) => match result {
             Some(p) => Ok(Some(p)),
             None => Ok(None),
         },
-        Err(_) => Ok(None),
+        Err(e) => {
+            error!("{e}");
+            Ok(None)
+        }
     }
 }
 

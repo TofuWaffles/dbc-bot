@@ -1,7 +1,7 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, Document, Bson::Null},
+    bson::{self, doc, Bson::Null, Document},
     options::AggregateOptions,
     Collection, Database,
 };
@@ -133,9 +133,7 @@ pub async fn update_round_1(ctx: &Context<'_>, region: &Region) -> Result<(), Er
 pub async fn resetting_tournament_config(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
-    config
-        .update_one(doc! {}, reset_config(), None)
-        .await?; 
-    config.delete_many(doc!{"discord_id": Null}, None).await?;
+    config.update_one(doc! {}, reset_config(), None).await?;
+    config.delete_many(doc! {"discord_id": Null}, None).await?;
     Ok(())
 }

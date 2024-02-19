@@ -8,6 +8,7 @@ use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use poise::ReplyHandle;
+use tracing::info;
 const DELAY: u64 = 1;
 
 // Tournament all-in-one command
@@ -41,7 +42,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     let region = get_region_from_role(&ctx, roles);
     match region {
         Some(region) => {
-            let player = match find_self_by_discord_id(&ctx).await.unwrap() {
+            let player = match find_self_by_discord_id(&ctx, "Players".to_string())
+                .await
+                .unwrap()
+            {
                 Some(player) => player,
                 None => {
                     prompt(
@@ -59,18 +63,29 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             if registration_region_open(&ctx, &region).await {
                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
             } else {
-                match find_self_by_discord_id(&ctx).await.unwrap() {
+                match find_self_by_discord_id(&ctx, "Players".to_string())
+                    .await
+                    .unwrap()
+                {
                     Some(player) => {
-                        if is_battle(
+                        if !is_battle(
                             &ctx,
                             player.get("tag").unwrap().as_str(),
                             find_round_from_config(&get_config(&ctx, &region).await),
                         )
                         .await?
                         {
-                            tournament_menu(&ctx, &msg, true, true, true, true).await
+                            info!(
+                                "{} has not done any battle in the current round!",
+                                player.get_str("tag").unwrap()
+                            );
+                            tournament_menu(&ctx, &msg, true, true, true, true, player).await
                         } else {
-                            tournament_menu(&ctx, &msg, false, true, false, false).await
+                            info!(
+                                "{} has done battle in the current round!",
+                                player.get_str("tag").unwrap()
+                            );
+                            tournament_menu(&ctx, &msg, false, true, false, false, player).await
                         }
                     }
                     None => prompt(

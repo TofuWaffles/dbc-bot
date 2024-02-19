@@ -8,6 +8,7 @@ services:
       BRAWL_STARS_TOKEN: ${BRAWL_STARS_TOKEN}
     volumes:
       - /etc/ssl/certs/:/etc/ssl/certs:ro
+      
     build: 
       context: .
       dockerfile: Dockerfile

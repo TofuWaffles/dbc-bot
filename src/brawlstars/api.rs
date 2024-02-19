@@ -1,8 +1,8 @@
-use reqwest::StatusCode;
-use tracing::info;
 use crate::Error;
 use poise::serenity_prelude::json::Value;
 use reqwest;
+use reqwest::StatusCode;
+use tracing::info;
 
 pub enum APIResult {
     Successful(Value),
@@ -33,24 +33,21 @@ pub async fn request(option: &str, tag: &str) -> Result<APIResult, Error> {
 
     let token = std::env::var("BRAWL_STARS_TOKEN").expect("Brawl Stars API token not found.");
 
-    
     let response = reqwest::Client::new()
         .get(endpoint)
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
 
-        match response.status() {
-            StatusCode::OK => {
-                let data: Value = response.json().await?;
-                Ok(APIResult::Successful(data))
-            }
-            StatusCode::NOT_FOUND => {
-                Ok(APIResult::NotFound(response.status().as_u16()))
-            }
-            _ => {
-                info!("API error {}", response.status());
-                Ok(APIResult::APIError(response.status().as_u16()))
-            }
+    match response.status() {
+        StatusCode::OK => {
+            let data: Value = response.json().await?;
+            Ok(APIResult::Successful(data))
         }
+        StatusCode::NOT_FOUND => Ok(APIResult::NotFound(response.status().as_u16())),
+        _ => {
+            info!("API error {}", response.status());
+            Ok(APIResult::APIError(response.status().as_u16()))
+        }
+    }
 }

@@ -71,7 +71,6 @@ pub fn open_tour_close_reg() -> Document {
     config
 }
 
-
 pub fn reset_config() -> Document {
     let config = doc! {
         "$set": {

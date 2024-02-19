@@ -26,7 +26,7 @@ struct PlayerRegistration {
 #[name = "Player Tag"]
 struct TagModal {
     #[name = "Enter your player tag:"]
-    #[placeholder = "The tag should start with #. For instance, #ABC123"]
+    #[placeholder = "The tag should start with # For instance, #ABC123"]
     #[min_length = 5]
     #[max_length = 10]
     tag: String,
@@ -158,7 +158,7 @@ async fn display_confirmation(
                 })
             })
             .await?;
-            stat(ctx, msg, &player, &register.region.clone().unwrap()).await?;
+            stat(ctx, msg, &player, &register.region.clone().unwrap(), None).await?;
 
             Ok(Some(make_player_doc(
                 &player,

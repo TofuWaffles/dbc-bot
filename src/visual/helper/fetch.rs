@@ -43,11 +43,11 @@ pub async fn fetch_image(
                 let icon: Bytes;
                 if url.contains("profile") {
                     icon = Bytes::copy_from_slice(
-                        &include_bytes!("../asset/default_player_icon.png")[..],
+                        &include_bytes!("../assets/default_player_icon.png")[..],
                     );
                 } else if url.contains("event") {
                     icon = Bytes::copy_from_slice(
-                        &include_bytes!("../asset/default_mode_icon.png")[..],
+                        &include_bytes!("../assets/default_mode_icon.png")[..],
                     );
                 } else {
                     unreachable!("Invalid icon type")
@@ -59,11 +59,12 @@ pub async fn fetch_image(
             println!("Failed to fetch image from {}", url);
             let icon: Bytes;
             if url.contains("profile") {
-                icon =
-                    Bytes::copy_from_slice(&include_bytes!("../asset/default_player_icon.png")[..]);
+                icon = Bytes::copy_from_slice(
+                    &include_bytes!("../assets/default_player_icon.png")[..],
+                );
             } else if url.contains("event") {
                 icon =
-                    Bytes::copy_from_slice(&include_bytes!("../asset/default_mode_icon.png")[..]);
+                    Bytes::copy_from_slice(&include_bytes!("../assets/default_mode_icon.png")[..]);
             } else {
                 unreachable!("Invalid icon type")
             }

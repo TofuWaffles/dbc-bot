@@ -189,7 +189,11 @@ async fn get_player_data(
     let name = player.get("name").unwrap().as_str().unwrap();
     let tag = player.get("tag").unwrap().as_str().unwrap();
     let discord_id = player.get("discord_id").unwrap().as_str().unwrap();
-    let match_id = player.get("match_id").unwrap().as_str().unwrap_or("Not yet assigned.");
+    let match_id = player
+        .get("match_id")
+        .unwrap()
+        .as_str()
+        .unwrap_or("Not yet assigned.");
     let battle = match player.get("battle").unwrap().as_bool().unwrap() {
         true => "Already played",
         false => "Not yet played",

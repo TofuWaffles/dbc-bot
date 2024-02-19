@@ -1,12 +1,16 @@
 use crate::brawlstars::getters::get_icon;
-use std::error::Error;
+use crate::Error;
+use std::env;
 
 use super::helper::align::{center_x, center_y};
 use super::helper::draw::{draw_rec, make_text_image};
 use super::helper::fetch::fetch_image;
+use dbc_bot::CustomError;
 use image::imageops::FilterType::Nearest;
 use image::{imageops, DynamicImage};
 use mongodb::bson::Document;
+use tokio::process::Command;
+use tracing::{error, info};
 
 async fn create_battle_image(
     player1: &Document,
@@ -14,20 +18,28 @@ async fn create_battle_image(
     round: i32,
     match_id: i32,
     mode: &str,
-) -> DynamicImage {
+) -> Result<DynamicImage, Error> {
+    let current_dir = match env::current_dir() {
+        Ok(dir) => {
+            info!("Current directory: {:?}", dir);
+            dir
+        }
+        Err(e) => {
+            error!("Failed to get current directory: {}", e);
+            return Err(Box::new(CustomError(format!("{e}"))));
+        }
+    };
+
     // Open the background image
-    let base = image::open("src\\visual\\asset\\battle_background.jpg")
-        .expect("Failed to open background image");
-    let vs = image::open("src\\visual\\asset\\versus.png")
-        .expect("Failed to open vs image")
-        .resize(150, 150, Nearest);
+    let base = image::open(current_dir.join("assets/battle_background.jpg"))?;
+    let vs = image::open(current_dir.join("assets/versus.png"))?.resize(150, 150, Nearest);
     // Fetch player icons and mode icon asynchronously
     let icon1_url = get_icon("player")(player1.get("icon").unwrap().to_string());
     let icon1 = fetch_image(icon1_url, (Some(200), Some(200))).await;
     let icon2_url = get_icon("player")(player2.get("icon").unwrap().to_string());
-    println!("{}", icon2_url);
+
     let icon2 = fetch_image(icon2_url, (Some(200), Some(200))).await;
-    println!("This runs");
+
     let name1_color = u32::from_str_radix(
         &(player1.get("name_color").unwrap().as_str().unwrap()[2..]),
         16,
@@ -42,22 +54,22 @@ async fn create_battle_image(
         player1.get("name").unwrap().as_str().unwrap(),
         30,
         &name1_color,
-    );
+    )?;
     let name2 = make_text_image(
         player2.get("name").unwrap().as_str().unwrap(),
         30,
         &name2_color,
-    );
+    )?;
     let tag1 = make_text_image(
         player1.get("tag").unwrap().as_str().unwrap(),
         30,
         &name1_color,
-    );
+    )?;
     let tag2 = make_text_image(
         player2.get("tag").unwrap().as_str().unwrap(),
         30,
         &name2_color,
-    );
+    )?;
     let mode_url = get_icon("mode")(mode.to_string());
 
     let mode_icon = fetch_image(mode_url, (None, None)).await;
@@ -67,9 +79,9 @@ async fn create_battle_image(
         &format!("Round {} - Match {}", round, match_id),
         50,
         &0xFFFF99,
-    );
-    let mode_text = make_text_image(&mode.to_uppercase(), 40, &0xFFFFFF);
-    let footer = make_text_image("Best of 2", 50, &0xFFFFFF);
+    )?;
+    let mode_text = make_text_image(&mode.to_uppercase(), 40, &0xFFFFFF)?;
+    let footer = make_text_image("Best of 2", 50, &0xFFFFFF)?;
 
     // Clone the base image to create an overlay
     let mut overlay = base.clone();
@@ -127,17 +139,16 @@ async fn create_battle_image(
     imageops::overlay(&mut overlay, &tag2, tag2_x, tag2_y);
     imageops::overlay(&mut overlay, &vs, vs_x, vs_y);
     imageops::overlay(&mut overlay, &footer, footer_x, footer_y);
-    overlay
+    Ok(overlay)
 }
 
 pub async fn generate_pre_battle_img(
     player1: &Document,
     player2: &Document,
     config: &Document,
-) -> Result<DynamicImage, Box<dyn Error>> {
+) -> Result<DynamicImage, Error> {
     let mode = config.get("mode").unwrap().as_str().unwrap();
     let round = config.get("round").unwrap().as_i32().unwrap();
     let match_id = player1.get("match_id").unwrap().as_i32().unwrap();
-    let result = create_battle_image(player1, player2, round, match_id, mode).await;
-    Ok(result)
+    create_battle_image(player1, player2, round, match_id, mode).await
 }

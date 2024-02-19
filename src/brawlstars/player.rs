@@ -1,16 +1,19 @@
 use super::getters::get_difficulty;
 use crate::{Context, Error};
 use dbc_bot::Region;
+use mongodb::bson::Document;
 use poise::ReplyHandle;
 pub async fn stat(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     player: &serde_json::Value,
     region: &Region,
+    detail: Option<&Document>,
 ) -> Result<(), Error> {
     let club = player["club"]["name"]
         .as_str()
-        .map_or("No Club", |name| name);
+        .unwrap_or("No Club")
+        .to_string();
     msg.edit(*ctx, |s| {
         s.embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
@@ -25,34 +28,40 @@ pub async fn stat(
                     player["icon"]["id"]
                 ))
                 .fields(vec![
-                    ("**Region**", format!("{}", region).as_str(), true),
-                    ("Trophies", player["trophies"].to_string().as_str(), true),
+                    ("**Region**", region.full(), true),
+                    ("Trophies", player["trophies"].to_string(), true),
                     (
                         "Highest Trophies",
-                        player["highestTrophies"].to_string().as_str(),
+                        player["highestTrophies"].to_string(),
                         true,
                     ),
-                    (
-                        "3v3 Victories",
-                        player["3vs3Victories"].to_string().as_str(),
-                        true,
-                    ),
-                    (
-                        "Solo Victories",
-                        player["soloVictories"].to_string().as_str(),
-                        true,
-                    ),
-                    (
-                        "Duo Victories",
-                        player["duoVictories"].to_string().as_str(),
-                        true,
-                    ),
+                    ("3v3 Victories", player["3vs3Victories"].to_string(), true),
+                    ("Solo Victories", player["soloVictories"].to_string(), true),
+                    ("Duo Victories", player["duoVictories"].to_string(), true),
                     (
                         "Best Robo Rumble Time",
-                        &get_difficulty(&player["bestRoboRumbleTime"]),
+                        get_difficulty(&player["bestRoboRumbleTime"]),
                         true,
                     ),
                     ("Club", club, true),
+                    (
+                        "Currently in match",
+                        detail.map_or("Not in match".to_string(), |d| {
+                            d.get_i32("match_id").unwrap().to_string()
+                        }),
+                        true,
+                    ),
+                    (
+                        "Result submit",
+                        detail.map_or("Not in battle".to_string(), |d| {
+                            if d.get_bool("battle").unwrap() {
+                                "Yes".to_string()
+                            } else {
+                                "No".to_string()
+                            }
+                        }),
+                        true,
+                    ),
                 ])
                 .timestamp(ctx.created_at())
         })
