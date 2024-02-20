@@ -217,7 +217,7 @@ impl Image for CustomImage {
             }
             (_, _) => {
                 let img = image::load_from_memory(&img_bytes)?;
-                self.width = Some(img.width().clone() as i64);
+                self.width = Some(img.width() as i64);
                 self.height = Some(img.height() as i64);
                 Ok(img)
             }

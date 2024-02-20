@@ -190,7 +190,7 @@ async fn create_battle_image(
     );
     imageops::overlay(&mut mode_bg.img, &mut mode_overlay.img, 0, 0);
     
-    let mut mode_text = model::Component::new(
+    let mode_text = model::Component::new(
         model::Text::new(mode.to_uppercase(), 40, 0xFFFFFF)
             .build()
             .await?,
