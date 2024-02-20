@@ -157,15 +157,16 @@ async fn create_battle_image(
     // Create mode components
     let mut mode_bg = model::Component::new(
         model::Parallelogram{
-            top: 200,
-            bottom: 100,
-            height: 50,
-            color: 0x00000000
+            top: 1000,
+            bottom: 800,
+            height: 200,
+            color: 0xFE1AB6FF
         }.build().await?,
         None,
         Some(0),
         Some("mode_bg")
     );
+    mode_bg.set_center_x(img.width);
     let mut mode_icon = model::Component::new(
         model::CustomImage::new(get_mode_icon(mode.to_string()), Some(50), Some(50))
             .build()
@@ -178,9 +179,9 @@ async fn create_battle_image(
 
     let mut mode_overlay = model::Component::new(
         model::Parallelogram{
-            top: 200,
-            bottom: 100,
-            height: 50,
+            top: 1000,
+            bottom: 800,
+            height: 200,
             color: 0xFE1AB680
         }.build().await?,
         Some(0),
@@ -198,8 +199,8 @@ async fn create_battle_image(
         Some("mode_text"),
     );
     let text_x = mode_text.get_center_x(mode_bg.width());
-    imageops::overlay(&mut mode_bg.img, &mut mode_text.img, text_x , 0);
-    mode_bg.set_center_x(img.width);
+    imageops::overlay(&mut mode_bg.img, & mode_text.img, text_x , 0);
+   
 
 
     let mut footer = model::Component::new(

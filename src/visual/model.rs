@@ -6,7 +6,7 @@ use image::{
     DynamicImage, ImageBuffer, Rgba,
 };
 use text_to_png::TextRenderer;
-use tracing::error;
+use tracing::{error, info};
 const DEFAULT_ICON: &str = "https://cdn.brawlify.com/profile/28000000.png?v=1";
 const DEFAULT_MODE_ICON: &str =
     "https://pbs.twimg.com/media/F2_Uy9rXgAAXXnP?format=png&name=360x360";
@@ -32,7 +32,7 @@ pub struct Text {
 pub struct Rectangle {
     pub width: i64,
     pub height: i64,
-    pub color: i64,
+    pub color: u32,
 }
 
 pub struct Parallelogram {
@@ -55,17 +55,18 @@ pub trait Image {
 #[async_trait]
 impl Image for Rectangle {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
-        let r = (self.color >> 24) as u8;
-        let g = ((self.color >> 16) & 0xFF) as u8;
-        let b = ((self.color >> 8) & 0xFF) as u8;
-        let a = (self.color & 0xFF) as u8;
+        let r = (self.color >> 24) & 0xFF;
+        let g = (self.color >> 16) & 0xFF;
+        let b = (self.color >> 8) & 0xFF;
+        let a = (self.color << 24) >> 24;
+        info!("r: {}, g: {}, b: {}, a: {}", r, g, b, a);
 
         // Create a new image with the specified dimensions
         let mut overlay_image = ImageBuffer::new(self.width as u32, self.height as u32);
 
         // Fill the image with the provided RGBA color
         for (_, _, pixel) in overlay_image.enumerate_pixels_mut() {
-            *pixel = Rgba([r, g, b, a]); // Pink color (R, G, B, A)
+            *pixel = Rgba([r as u8 , g as u8, b as u8, a as u8]);
         }
 
         // Convert the ImageBuffer to a DynamicImage
@@ -75,31 +76,73 @@ impl Image for Rectangle {
 
 #[async_trait]
 impl Image for Parallelogram{
-    async fn build(&mut self) -> Result<DynamicImage, Error> {
-        let r = (self.color >> 24) as u8;
-        let g = ((self.color >> 16) & 0xFF) as u8;
-        let b = ((self.color >> 8) & 0xFF) as u8;
-        let a = (self.color & 0xFF) as u8;
+    async fn build(&mut self) -> Result<DynamicImage, Error> {        
+        let r = (self.color >> 24) & 0xFF;
+        let g = (self.color >> 16) & 0xFF;
+        let b = (self.color >> 8) & 0xFF;
+        let a = (self.color << 24) >> 24;
+        info!("r: {}, g: {}, b: {}, a: {}", r, g, b, a);
 
         // Create a new image with the specified dimensions
         let mut overlay_image = ImageBuffer::new(self.height as u32, self.height as u32);
 
         // Fill the image with the provided RGBA color
-        for (_x, y, pixel) in overlay_image.enumerate_pixels_mut() {
-            if y < self.top as u32{
-                *pixel = Rgba([0, 0, 0, 0]);
-            } else if y > self.bottom as u32 {
-                *pixel = Rgba([0, 0, 0, 0]);
-            } else {
-                *pixel = Rgba([r, g, b, a]);
+        let c = (self.top - self.bottom) / 2;
+        let vertices = vec![(0.0, 0.0),(self.top as f64, 0.0), (c as f64, self.height as f64),(self.bottom as f64 +c as f64, self.height as f64)];
+        for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
+            if Parallelogram::point_in_polygon((x as f64, y as f64), &vertices){
+                *pixel = Rgba([r as u8, g as u8, b as u8, a as u8]);
             }
         }
 
         // Convert the ImageBuffer to a DynamicImage
         Ok(DynamicImage::ImageRgba8(overlay_image))
     }
+
+   
 }
 
+impl Parallelogram{
+    pub fn point_in_polygon(point: (f64, f64), polygon: &Vec<(f64, f64)>) -> bool {
+        let num_vertices = polygon.len();
+        let (x, y) = point;
+        let mut inside = false;
+    
+        // Store the first point in the polygon and initialize the second point
+        let mut p1 = polygon[0];
+        let mut p2;
+    
+        // Loop through each edge in the polygon
+        for i in 1..=num_vertices {
+            // Get the next point in the polygon
+            p2 = polygon[i % num_vertices];
+    
+            // Check if the point is above the minimum y coordinate of the edge
+            if y > p1.1.min(p2.1) {
+                // Check if the point is below the maximum y coordinate of the edge
+                if y <= p1.1.max(p2.1) {
+                    // Check if the point is to the left of the maximum x coordinate of the edge
+                    if x <= p1.0.max(p2.0) {
+                        // Calculate the x-intersection of the line connecting the point to the edge
+                        let x_intersection = (y - p1.1) * (p2.0 - p1.0) / (p2.1 - p1.1) + p1.0;
+    
+                        // Check if the point is on the same line as the edge or to the left of the x-intersection
+                        if (p1.0 == p2.0) || (x <= x_intersection) {
+                            // Flip the inside flag
+                            inside = !inside;
+                        }
+                    }
+                }
+            }
+    
+            // Store the current point as the first point for the next iteration
+            p1 = p2;
+        }
+    
+        // Return the value of the inside flag
+        inside
+    }
+}
 
 #[async_trait]
 impl Image for Text {
