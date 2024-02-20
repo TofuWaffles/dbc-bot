@@ -47,14 +47,6 @@ pub fn get_mode_icon(event_name: String) -> String {
     event.to_string()
 }
 
-pub fn get_player_icon_url(icon_id: String) -> String {
+pub fn get_player_icon(icon_id: i64) -> String {
     format!("https://cdn.brawlify.com/profile/{icon_id}.png?v=1")
-}
-
-pub fn get_icon(icon: &str) -> Box<dyn Fn(String) -> String> {
-    match icon {
-        "player" => Box::new(get_player_icon_url),
-        "mode" => Box::new(get_mode_icon),
-        _ => unreachable!("Invalid icon type"),
-    }
 }

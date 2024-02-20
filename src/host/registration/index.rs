@@ -1,4 +1,4 @@
-use crate::brawlstars::getters::get_icon;
+use crate::brawlstars::getters::get_player_icon;
 use crate::database::config::get_config;
 use crate::database::find::find_round_from_config;
 use crate::database::open::{registration_open, tournament};
@@ -186,20 +186,16 @@ async fn get_player_data(
     index: &i32,
     total: &i32,
 ) -> Result<(), Error> {
-    let name = player.get("name").unwrap().as_str().unwrap();
-    let tag = player.get("tag").unwrap().as_str().unwrap();
-    let discord_id = player.get("discord_id").unwrap().as_str().unwrap();
-    let match_id = player
-        .get("match_id")
-        .unwrap()
-        .as_str()
-        .unwrap_or("Not yet assigned.");
-    let battle = match player.get("battle").unwrap().as_bool().unwrap() {
+    let name = player.get_str("name").unwrap();
+    let tag = player.get_str("tag").unwrap();
+    let discord_id = player.get_str("discord_id").unwrap();
+    let match_id = player.get_str("match_id").unwrap_or("Not yet assigned.");
+    let battle = match player.get_bool("battle").unwrap() {
         true => "Already played",
         false => "Not yet played",
     };
-    let icon = player.get("icon").unwrap().to_string();
-    let icon_url = get_icon("player")(icon);
+    let icon = player.get_i64("icon").unwrap();
+    let icon_url = get_player_icon(icon);
     msg.edit(*ctx, |s| {
         s.embed(|e| {
             e.title(format!(
