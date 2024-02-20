@@ -39,7 +39,7 @@ pub struct Parallelogram {
     pub top: i64,
     pub bottom: i64,
     pub height: i64,
-    pub color: i64,
+    pub color: u32,
 }
 pub struct CustomImage {
     pub path: String,
