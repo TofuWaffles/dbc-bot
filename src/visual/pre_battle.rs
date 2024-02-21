@@ -26,7 +26,7 @@ async fn create_battle_image(
             return Err(Box::new(CustomError(format!("{e}"))));
         }
     };
-    
+
     let bg_path = match current_dir
         .join("assets/battle_background.jpg")
         .into_os_string()
@@ -40,7 +40,6 @@ async fn create_battle_image(
     };
     let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
 
-    // Open the versus img
     let mut vs = model::Component::new(
         image::open(current_dir.join("assets/versus.png"))?.resize(
             150,
@@ -54,7 +53,6 @@ async fn create_battle_image(
     vs.set_center_x(img.width);
     vs.set_center_y(img.height);
 
-    // Fetch player icons and mode icon asynchronously
     let mut icon1 = model::Component::new(
         model::CustomImage::new(
             get_player_icon(player1.get_i64("icon").unwrap()),
@@ -145,75 +143,147 @@ async fn create_battle_image(
     tag2.set_y(name2.y + name2.height() + 10);
 
     // Create text images for title, mode, VS, and footer
-    let mut title = model::Component::new(
-        model::Text::new(format!("Round {round} - Match {match_id}"), 50, 0xFFFFFF)
+    let mut title_box = model::Component::new(
+        model::Trapezoid {
+            top: 200,
+            bottom: 150,
+            height: 100,
+            color: 0xFFBF00FF,
+            border: None
+        }
+        .build()
+        .await?
+        .rotate180(),
+        None,
+        None,
+        Some("title_box"),
+    );
+    title_box.set_center_x(img.width);
+    title_box.set_y(img.height - title_box.height());
+    let mut title_icon = model::Component::new(
+        model::CustomImage::new(
+            "https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoic3VwZXJjZWxsXC9maWxlXC9ha3o5dFVFaWdrNWhMbWdWaFlHei5wbmcifQ:supercell:jcXu95iX7mdOU5lxdXU2Da8QR2BuK3rCgZgc_CwxcjU?width=2400",
+            Some(100),
+            Some(100),
+        )
+        .build()
+        .await?,
+        None,
+        None,
+        Some("title_icon"),
+    );
+    title_icon.set_center_x(title_box.width());
+    title_icon.set_center_y(title_box.height());
+    title_box.overlay(title_icon);
+    let title_box_overlay = model::Component::new(
+        model::Trapezoid {
+            top: 200,
+            bottom: 150,
+            height: 100,
+            color: 0xFFBF004D,
+            border: Some(Border { thickness: 10, color: 0x000000FF })
+        }
+        .build()
+        .await?
+        .rotate180(),
+        None,
+        None,
+        Some("title_overlay"),
+    );
+    title_box.overlay(title_box_overlay);
+
+   
+    let mut upper_title = model::Component::new(
+        model::Text::new(format!("Round {round}"), 35, 0xFFFFFF)
             .build()
             .await?,
         None,
-        Some(100),
+        None,
         Some("title"),
     );
-    title.set_center_x(img.width);
-    // Create mode components
-    let mut mode_bg = model::Component::new(
-        model::Parallelogram{
-            top: 1000,
-            bottom: 800,
-            height: 200,
-            color: 0xFE1AB6FF
-        }.build().await?,
-        None,
-        Some(0),
-        Some("mode_bg")
-    );
-    mode_bg.set_center_x(img.width);
-    let mut mode_icon = model::Component::new(
-        model::CustomImage::new(get_mode_icon(mode.to_string()), Some(50), Some(50))
+    let mut lower_title = model::Component::new(
+        model::Text::new(format!("Match {match_id}\n"), 35, 0xFFFFFF)
             .build()
             .await?,
-        Some(mode_bg.x + 10),
-        Some(mode_bg.y),
+        None,
+        None,
+        Some("title"),
+    );
+    upper_title.set_center_x(title_box.width());
+    lower_title.set_center_x(title_box.width());
+    let a = (title_box.height() - 2*upper_title.height() - 5)/2;
+    info!("a: {a}");
+    upper_title.set_y(a);
+    lower_title.set_y(upper_title.y + upper_title.height()+ 5);
+    title_box.overlay(upper_title);
+    title_box.overlay(lower_title);
+    // Create mode components
+    let mut mode_bg = model::Component::new(
+        model::Trapezoid {
+            top: 300,
+            bottom: 150,
+            height: 75,
+            color: 0xFE1AB6FF,
+            border: {
+                Some(model::Border {
+                    thickness: 10,
+                    color: 0x000000FF,
+                })
+            },
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("mode_bg"),
+    );
+    mode_bg.set_center_x(img.width);
+
+    let mode_icon = model::Component::new(
+        model::CustomImage::new(get_mode_icon(mode.to_string()), Some(60), Some(60))
+            .build()
+            .await?,
+        Some(50),
+        None,
         Some("mode_icon"),
     );
-    imageops::overlay(&mut mode_bg.img, &mut mode_icon.img, 0, 0);
+    mode_bg.overlay(mode_icon);
 
-    let mut mode_overlay = model::Component::new(
-        model::Parallelogram{
-            top: 1000,
-            bottom: 800,
-            height: 200,
-            color: 0xFE1AB680
-        }.build().await?,
-        Some(0),
-        Some(0),
-        Some("mode_comp")
+    let mode_overlay = model::Component::new(
+        model::Trapezoid {
+            top: 300,
+            bottom: 150,
+            height: 75,
+            color: 0xFE1AB64D,
+            border: {
+                Some(model::Border {
+                    thickness: 10,
+                    color: 0x000000FF,
+                })
+            },
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("mode_comp"),
     );
-    imageops::overlay(&mut mode_bg.img, &mut mode_overlay.img, 0, 0);
-    
-    let mode_text = model::Component::new(
+    mode_bg.overlay(mode_overlay);
+
+    let mut mode_text = model::Component::new(
         model::Text::new(mode.to_uppercase(), 40, 0xFFFFFF)
             .build()
             .await?,
-        Some(mode_icon.width() as i64 + 10),
-        Some(0),
+        None,
+        None,
         Some("mode_text"),
     );
-    let text_x = mode_text.get_center_x(mode_bg.width());
-    imageops::overlay(&mut mode_bg.img, & mode_text.img, text_x , 0);
-   
-
-
-    let mut footer = model::Component::new(
-        model::Text::new("Best of 2", 30, 0xFFFFFF).build().await?,
-        None,
-        None,
-        Some("footer"),
-    );
-    footer.set_center_x(img.width);
-    footer.set_y(img.height - footer.height() - 50);
+    mode_text.set_center_x(mode_bg.width());
+    mode_text.set_center_y(mode_bg.height());
+    mode_bg.overlay(mode_text);
 
     // Component elements onto the base img
-    img.add_overlay(title);
+    img.add_overlay(title_box);
     img.add_overlay(mode_bg);
     img.add_overlay(icon1);
     img.add_overlay(icon2);
@@ -222,7 +292,6 @@ async fn create_battle_image(
     img.add_overlay(tag1);
     img.add_overlay(tag2);
     img.add_overlay(vs);
-    img.add_overlay(footer);
 
     // Build the final composed img
     Ok(img.build())

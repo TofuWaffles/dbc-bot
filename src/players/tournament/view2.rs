@@ -54,11 +54,7 @@ pub async fn view_opponent(
         None => return Ok(()),  // Battle already happened
     };
     let enemy = match find_enemy_by_match_id_and_self_tag(
-        ctx,
-        region,
-        &round,
-        &match_id,
-        caller_tag,
+        ctx, region, &round, &match_id, caller_tag,
     )
     .await
     {

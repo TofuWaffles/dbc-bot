@@ -6,7 +6,7 @@ use image::{
     DynamicImage, ImageBuffer, Rgba,
 };
 use text_to_png::TextRenderer;
-use tracing::{error, info};
+use tracing::error;
 const DEFAULT_ICON: &str = "https://cdn.brawlify.com/profile/28000000.png?v=1";
 const DEFAULT_MODE_ICON: &str =
     "https://pbs.twimg.com/media/F2_Uy9rXgAAXXnP?format=png&name=360x360";
@@ -33,12 +33,19 @@ pub struct Rectangle {
     pub width: i64,
     pub height: i64,
     pub color: u32,
+    pub border: Option<Border>,
 }
 
-pub struct Parallelogram {
+pub struct Trapezoid {
     pub top: i64,
     pub bottom: i64,
     pub height: i64,
+    pub color: u32,
+    pub border: Option<Border>,
+}
+
+pub struct Border {
+    pub thickness: i64,
     pub color: u32,
 }
 pub struct CustomImage {
@@ -52,95 +59,90 @@ pub trait Image {
     async fn build(&mut self) -> Result<DynamicImage, Error>;
 }
 
+pub trait Borderable {
+    fn is_border(&mut self, x: i64, y: i64) -> bool;
+}
+
 #[async_trait]
 impl Image for Rectangle {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
-        let r = (self.color >> 24) & 0xFF;
-        let g = (self.color >> 16) & 0xFF;
-        let b = (self.color >> 8) & 0xFF;
-        let a = (self.color << 24) >> 24;
-        info!("r: {}, g: {}, b: {}, a: {}", r, g, b, a);
+        let (r, g, b, a) = get_color(self.color);
 
         // Create a new image with the specified dimensions
         let mut overlay_image = ImageBuffer::new(self.width as u32, self.height as u32);
+        let bcolor = self.border.as_mut().map_or(0x00000000, |b| b.color);
+        let (br, bg, bb, ba) = get_color(bcolor);
 
         // Fill the image with the provided RGBA color
-        for (_, _, pixel) in overlay_image.enumerate_pixels_mut() {
-            *pixel = Rgba([r as u8 , g as u8, b as u8, a as u8]);
+        for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
+            if Rectangle::is_border(&mut self, x as i64, y as i64){
+                *pixel = Rgba([br, bg, bb, ba]);
+            }
+            else{
+                *pixel = Rgba([r, g, b, a]);
+            }
         }
 
         // Convert the ImageBuffer to a DynamicImage
         Ok(DynamicImage::ImageRgba8(overlay_image))
     }
 }
+impl Borderable for Rectangle {
+    fn is_border(&mut self, x: i64, y: i64) -> bool {
+        let t = self.border.as_mut().map_or(0, |t| t.thickness);
+        x < t || x > self.width - t || y < t || y > self.height - t
+    }
+}
+
 
 #[async_trait]
-impl Image for Parallelogram{
-    async fn build(&mut self) -> Result<DynamicImage, Error> {        
-        let r = (self.color >> 24) & 0xFF;
-        let g = (self.color >> 16) & 0xFF;
-        let b = (self.color >> 8) & 0xFF;
-        let a = (self.color << 24) >> 24;
-        info!("r: {}, g: {}, b: {}, a: {}", r, g, b, a);
-
+impl Image for Trapezoid {
+    async fn build(&mut self) -> Result<DynamicImage, Error> {
+        let (r, g, b, a) = get_color(self.color);
+        let bcolor = self.border.as_mut().map_or(0x00000000, |b| b.color);
+        let (br, bg, bb, ba) = get_color(bcolor);
         // Create a new image with the specified dimensions
-        let mut overlay_image = ImageBuffer::new(self.height as u32, self.height as u32);
+        let mut overlay_image = ImageBuffer::new(self.top as u32, self.height as u32);
 
         // Fill the image with the provided RGBA color
-        let c = (self.top - self.bottom) / 2;
-        let vertices = vec![(0.0, 0.0),(self.top as f64, 0.0), (c as f64, self.height as f64),(self.bottom as f64 +c as f64, self.height as f64)];
         for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
-            if Parallelogram::point_in_polygon((x as f64, y as f64), &vertices){
-                *pixel = Rgba([r as u8, g as u8, b as u8, a as u8]);
+            if Trapezoid::is_inside(self, x as i64, y as i64) {
+                *pixel = Rgba([r, g, b, a]);
+            } else if Trapezoid::is_border(&mut self, x as i64, y as i64) {
+                *pixel = Rgba([br, bg, bb, ba]);
             }
         }
 
         // Convert the ImageBuffer to a DynamicImage
         Ok(DynamicImage::ImageRgba8(overlay_image))
     }
-
-   
 }
 
-impl Parallelogram{
-    pub fn point_in_polygon(point: (f64, f64), polygon: &Vec<(f64, f64)>) -> bool {
-        let num_vertices = polygon.len();
-        let (x, y) = point;
-        let mut inside = false;
-    
-        // Store the first point in the polygon and initialize the second point
-        let mut p1 = polygon[0];
-        let mut p2;
-    
-        // Loop through each edge in the polygon
-        for i in 1..=num_vertices {
-            // Get the next point in the polygon
-            p2 = polygon[i % num_vertices];
-    
-            // Check if the point is above the minimum y coordinate of the edge
-            if y > p1.1.min(p2.1) {
-                // Check if the point is below the maximum y coordinate of the edge
-                if y <= p1.1.max(p2.1) {
-                    // Check if the point is to the left of the maximum x coordinate of the edge
-                    if x <= p1.0.max(p2.0) {
-                        // Calculate the x-intersection of the line connecting the point to the edge
-                        let x_intersection = (y - p1.1) * (p2.0 - p1.0) / (p2.1 - p1.1) + p1.0;
-    
-                        // Check if the point is on the same line as the edge or to the left of the x-intersection
-                        if (p1.0 == p2.0) || (x <= x_intersection) {
-                            // Flip the inside flag
-                            inside = !inside;
-                        }
-                    }
-                }
-            }
-    
-            // Store the current point as the first point for the next iteration
-            p1 = p2;
-        }
-    
-        // Return the value of the inside flag
-        inside
+impl Trapezoid {
+    ///  Here is the geometry that Doofus doesn't like lmao
+    ///    (0, 0)_______________________(top, 0)
+    ///         \                      |
+    ///          \                    |
+    ///           \                  |
+    /// (c,height) \________________| (bottom+c, height)
+    ///
+    pub fn is_inside(&mut self, x: i64, y: i64) -> bool {
+        let c = ((self.top - self.bottom) / 2).abs();
+        let t = self.border.as_mut().map_or(0, |t| t.thickness);
+        self.height * (x - t) - c * y >= 0
+            && y >= t
+            && y <= self.height - t
+            && self.height * (x - self.top + t) - y * (self.bottom + c - self.top) <= 0
+    }
+}
+
+impl Borderable for Trapezoid {
+    fn is_border(&mut self, x: i64, y: i64) -> bool {
+        let c = ((self.top - self.bottom) / 2).abs();
+        self.height * x - c * y >= 0
+            && y >= 0
+            && y <= self.height
+            && self.height * (x - self.top) - y * (self.bottom + c - self.top) <= 0
     }
 }
 
@@ -151,8 +153,8 @@ impl Image for Text {
             "./assets/LilitaOne-Regular.ttf"
         ))?;
         let img = renderer
-            .render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)
-            .expect("Failed to render text");
+            .render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)?;
+        
         match image::load_from_memory(&img.data) {
             Ok(img) => Ok(img),
             Err(e) => {
@@ -245,8 +247,8 @@ impl Component {
     {
         Self {
             img: img.clone(),
-            x: x.unwrap_or(img.width() as i64),
-            y: y.unwrap_or(img.height() as i64),
+            x: x.unwrap_or(0),
+            y: y.unwrap_or(0),
             name: name.map_or_else(|| "untitled".to_string(), |s| s.into()),
         }
     }
@@ -293,6 +295,11 @@ impl Component {
     pub fn get_center_y(&self, base_height: &i64) -> i64 {
         (base_height - self.img.height() as i64) / 2
     }
+
+    /// Overlay another component on this component
+    pub fn overlay(&mut self, overlay: Component) {
+        imageops::overlay(&mut self.img, &overlay.img, overlay.x, overlay.y);
+    }
 }
 
 impl BSImage {
@@ -329,4 +336,12 @@ impl BSImage {
         }
         self.bg.clone()
     }
+}
+
+fn get_color(color: u32) -> (u8, u8, u8, u8) {
+    let r = (color >> 24) as u8;
+    let g = (color >> 16) as u8;
+    let b = (color >> 8) as u8;
+    let a = (color << 24) >> 24 as u8;
+    (r as u8, g as u8, b as u8, a as u8)
 }
