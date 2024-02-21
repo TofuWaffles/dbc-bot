@@ -1,2 +1,2 @@
-pub mod helper;
+pub mod model;
 pub mod pre_battle;

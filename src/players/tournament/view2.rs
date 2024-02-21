@@ -40,8 +40,8 @@ pub async fn view_opponent(
         }
     };
 
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
-    let config = get_config(ctx, &region).await;
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let config = get_config(ctx, region).await;
     //Get player document via their discord_id
     let match_id: i32 = caller.get_i32("match_id").unwrap();
     let caller_tag = caller.get_str("tag").unwrap();
@@ -49,16 +49,12 @@ pub async fn view_opponent(
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(ctx, &caller_tag, current_round, msg).await? {
+    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
     let enemy = match find_enemy_by_match_id_and_self_tag(
-        ctx,
-        &region,
-        &round,
-        &match_id,
-        &caller_tag,
+        ctx, region, &round, &match_id, caller_tag,
     )
     .await
     {
@@ -96,25 +92,24 @@ pub async fn view_opponent(
         filename: "pre_battle.png".to_string(),
     };
     msg.edit(*ctx,|s| {
-        s.reply(true)
-            .ephemeral(true)
+        s
             .embed(|e| {
                 e.title("**DISCORD BRAWL CUP TOURNAMENT**")
                     .description(format!(
 "# Round {round} - Match {match_id}
-**<@{}> vs. <@{}>**\
+**<@{}> vs. <@{}>**\n
 Please plan with your opponent to schedule at least 2 games in the friendly battle mode (please turn off all bots).
 Once the battle if finished, please wait for 30s and call the bot again and hit submit button to submit the result.
 Only 2 **LATEST** matches with the opponent are considered once you submit the result.
 We are only able to fetch up to 25 latest battle reports only so please make sure to submit the result after the battle is finished.
-Good luck!
-",
+Good luck!",
                         caller.get_str("discord_id").unwrap(),
                         enemy.get_str("discord_id").unwrap()
                     )
                     )
             })
             .attachment(attachment)
+            .components(|c|c)
     })
     .await?;
     Ok(())

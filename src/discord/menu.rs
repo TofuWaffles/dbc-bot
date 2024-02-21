@@ -1,5 +1,4 @@
 use super::prompt::prompt;
-use crate::brawlstars::player::stat;
 use crate::host::registration::index::registration_mod_panel;
 use crate::host::tournament::index::tournament_mod_panel;
 use crate::host::utilities::index::utilities_mod_panel;

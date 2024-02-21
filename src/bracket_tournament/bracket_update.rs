@@ -11,7 +11,6 @@ use std::{io::Read, process::Stdio};
 use tracing::{error, info};
 
 pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
-    let mut current_region: Option<Region> = None;
     let current_dir = match env::current_dir() {
         Ok(dir) => {
             info!("Current directory: {:?}", dir);
@@ -23,10 +22,8 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         }
     };
 
-    match region {
-        Some(region) => {
-            current_region = Some(region.clone());
-        }
+    let current_region = match region {
+        Some(region) => region.clone(),
         None => {
             let caller = match find_self_by_discord_id(ctx, "Players".to_string())
                 .await
@@ -41,25 +38,18 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                     )));
                 }
             };
-            current_region = Region::find_key(
-                caller
-                    .get("region")
-                    .unwrap()
-                    .to_string()
-                    .strip_quote()
-                    .as_str(),
-            )
+            Region::find_key(caller.get_str("region").unwrap()).unwrap()
         }
-    }
+    };
 
     let database = ctx
         .data()
         .database
         .regional_databases
-        .get(current_region.as_ref().unwrap())
+        .get(&current_region)
         .unwrap();
     let collection: mongodb::Collection<mongodb::bson::Document> = database.collection("Config");
-    let config = collection.find_one(None, None).await.unwrap().unwrap();
+    let config = collection.find_one(None, None).await?.unwrap();
 
     let mut player_data: Vec<(i32, i32, String, String, bool, bool)> = Vec::new();
     let mut match_ids = Vec::new();
@@ -69,7 +59,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
             .data()
             .database
             .regional_databases
-            .get(current_region.as_ref().unwrap())
+            .get(&current_region)
             .unwrap()
             .collection(format!("Round {}", round_number).as_str())
             .find(None, None)
@@ -97,7 +87,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                     .map_or(" ".to_string(), |name| name.to_string().strip_quote()),
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
-                    current_region.as_ref().unwrap(),
+                    &current_region,
                     &round_number,
                     &match_id,
                     tag,
@@ -111,7 +101,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                     .map_or(false, |is_winner| is_winner.as_bool().unwrap()),
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
-                    current_region.as_ref().unwrap(),
+                    &current_region,
                     &round_number,
                     &match_id,
                     tag,
@@ -129,7 +119,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
 
     let output = Command::new("python")
         .arg("bracket_tournament/bracket_generation.py")
-        .arg(current_region.as_ref().unwrap().to_string())
+        .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
         .arg(match player_data.is_empty() {
             true => "1|1| | | | ".to_string(),
@@ -208,13 +198,12 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                             return Err(Error::from(err));
                         }
                     }
-                }
-                _ => {
-                    info!("Failed to retrieve bracket results channel data.");
-                    return Err(Box::new(CustomError(
-                        "Failed to retrieve bracket results channel data.".to_string(),
-                    )));
-                }
+                } // _ => {
+                  //     info!("Failed to retrieve bracket results channel data.");
+                  //     return Err(Box::new(CustomError(
+                  //         "Failed to retrieve bracket results channel data.".to_string(),
+                  //     )));
+                  // }
             }
         }
         _ => {

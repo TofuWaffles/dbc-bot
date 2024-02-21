@@ -1,17 +1,14 @@
-use crate::brawlstars::getters::get_icon;
+use super::model::{self, *};
+use crate::brawlstars::getters::get_mode_icon;
+use crate::brawlstars::getters::get_player_icon;
 use crate::Error;
-use std::env;
-
-use super::helper::align::{center_x, center_y};
-use super::helper::draw::{draw_rec, make_text_image};
-use super::helper::fetch::fetch_image;
 use dbc_bot::CustomError;
-use image::imageops::FilterType::Nearest;
 use image::{imageops, DynamicImage};
 use mongodb::bson::Document;
-use tokio::process::Command;
+use std::env;
 use tracing::{error, info};
-
+const FONT_SIZE: u8 = 30;
+const ICON_SIZE: i64 = 200;
 async fn create_battle_image(
     player1: &Document,
     player2: &Document,
@@ -30,116 +27,274 @@ async fn create_battle_image(
         }
     };
 
-    // Open the background image
-    let base = image::open(current_dir.join("assets/battle_background.jpg"))?;
-    let vs = image::open(current_dir.join("assets/versus.png"))?.resize(150, 150, Nearest);
-    // Fetch player icons and mode icon asynchronously
-    let icon1_url = get_icon("player")(player1.get("icon").unwrap().to_string());
-    let icon1 = fetch_image(icon1_url, (Some(200), Some(200))).await;
-    let icon2_url = get_icon("player")(player2.get("icon").unwrap().to_string());
+    let bg_path = match current_dir
+        .join("assets/battle_background.jpg")
+        .into_os_string()
+        .into_string()
+    {
+        Ok(path) => path,
+        Err(e) => {
+            error!("Failed to get background img path: {:?}", e);
+            return Err(Box::new(CustomError(format!("{:?}", e))));
+        }
+    };
+    let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
 
-    let icon2 = fetch_image(icon2_url, (Some(200), Some(200))).await;
+    let mut vs = model::Component::new(
+        image::open(current_dir.join("assets/versus.png"))?.resize(
+            150,
+            150,
+            imageops::FilterType::Nearest,
+        ),
+        None,
+        None,
+        Some("versus"),
+    );
+    vs.set_center_x(img.width);
+    vs.set_center_y(img.height);
 
-    let name1_color = u32::from_str_radix(
-        &(player1.get("name_color").unwrap().as_str().unwrap()[2..]),
-        16,
-    )
-    .unwrap();
-    let name2_color = u32::from_str_radix(
-        &(player2.get("name_color").unwrap().as_str().unwrap()[2..]),
-        16,
-    )
-    .unwrap();
-    let name1 = make_text_image(
-        player1.get("name").unwrap().as_str().unwrap(),
-        30,
-        &name1_color,
-    )?;
-    let name2 = make_text_image(
-        player2.get("name").unwrap().as_str().unwrap(),
-        30,
-        &name2_color,
-    )?;
-    let tag1 = make_text_image(
-        player1.get("tag").unwrap().as_str().unwrap(),
-        30,
-        &name1_color,
-    )?;
-    let tag2 = make_text_image(
-        player2.get("tag").unwrap().as_str().unwrap(),
-        30,
-        &name2_color,
-    )?;
-    let mode_url = get_icon("mode")(mode.to_string());
+    let mut icon1 = model::Component::new(
+        model::CustomImage::new(
+            get_player_icon(player1.get_i64("icon").unwrap()),
+            Some(ICON_SIZE),
+            Some(ICON_SIZE),
+        )
+        .build()
+        .await?,
+        Some(50),
+        None,
+        Some("icon1"),
+    );
+    icon1.set_center_y(img.height);
 
-    let mode_icon = fetch_image(mode_url, (None, None)).await;
+    let mut icon2 = model::Component::new(
+        model::CustomImage::new(
+            get_player_icon(player2.get_i64("icon").unwrap()),
+            Some(ICON_SIZE),
+            Some(ICON_SIZE),
+        )
+        .build()
+        .await?,
+        None,
+        None,
+        Some("icon2"),
+    );
+    icon2.set_x(img.width - icon1.x - icon2.width());
+    icon2.set_center_y(img.height);
+
+    let mut name1 = model::Component::new(
+        model::Text {
+            text: player1.get_str("name").unwrap().to_string(),
+            font_size: FONT_SIZE,
+            font_color: u32::from_str_radix(&(player1.get_str("name_color").unwrap()[2..]), 16)?,
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("name1"),
+    );
+    name1.set_relative_center_x(&icon1);
+    name1.set_y(icon1.y + icon1.height() + 10);
+
+    let mut name2 = model::Component::new(
+        model::Text::new(
+            player2.get_str("name").unwrap(),
+            FONT_SIZE,
+            u32::from_str_radix(&(player2.get_str("name_color").unwrap()[2..]), 16)?,
+        )
+        .build()
+        .await?,
+        None,
+        None,
+        Some("name2"),
+    );
+    name2.set_relative_center_x(&icon2);
+    name2.set_y(icon2.y + icon2.height() + 10);
+
+    let mut tag1 = model::Component::new(
+        model::Text {
+            text: player1.get_str("tag").unwrap().to_string(),
+            font_size: FONT_SIZE,
+            font_color: u32::from_str_radix(&(player1.get_str("name_color").unwrap()[2..]), 16)?,
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("tag1"),
+    );
+    tag1.set_relative_center_x(&name1);
+    tag1.set_y(name1.y + name1.height() + 10);
+
+    let mut tag2 = model::Component::new(
+        model::Text::new(
+            player2.get_str("tag").unwrap(),
+            FONT_SIZE,
+            u32::from_str_radix(&(player2.get_str("name_color").unwrap()[2..]), 16)?,
+        )
+        .build()
+        .await?,
+        None,
+        None,
+        Some("tag2"),
+    );
+    tag2.set_relative_center_x(&name2);
+    tag2.set_y(name2.y + name2.height() + 10);
 
     // Create text images for title, mode, VS, and footer
-    let title = make_text_image(
-        &format!("Round {} - Match {}", round, match_id),
-        50,
-        &0xFFFF99,
-    )?;
-    let mode_text = make_text_image(&mode.to_uppercase(), 40, &0xFFFFFF)?;
-    let footer = make_text_image("Best of 2", 50, &0xFFFFFF)?;
+    let mut title_box = model::Component::new(
+        model::Trapezoid {
+            top: 200,
+            bottom: 150,
+            height: 100,
+            color: 0xFFBF00FF,
+            border: None
+        }
+        .build()
+        .await?
+        .rotate180(),
+        None,
+        None,
+        Some("title_box"),
+    );
+    title_box.set_center_x(img.width);
+    title_box.set_y(img.height - title_box.height());
+    let mut title_icon = model::Component::new(
+        model::CustomImage::new(
+            "https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoic3VwZXJjZWxsXC9maWxlXC9ha3o5dFVFaWdrNWhMbWdWaFlHei5wbmcifQ:supercell:jcXu95iX7mdOU5lxdXU2Da8QR2BuK3rCgZgc_CwxcjU?width=2400",
+            Some(100),
+            Some(100),
+        )
+        .build()
+        .await?,
+        None,
+        None,
+        Some("title_icon"),
+    );
+    title_icon.set_center_x(title_box.width());
+    title_icon.set_center_y(title_box.height());
+    title_box.overlay(title_icon);
+    let title_box_overlay = model::Component::new(
+        model::Trapezoid {
+            top: 200,
+            bottom: 150,
+            height: 100,
+            color: 0xFFBF004D,
+            border: Some(Border { thickness: 10, color: 0x000000FF })
+        }
+        .build()
+        .await?
+        .rotate180(),
+        None,
+        None,
+        Some("title_overlay"),
+    );
+    title_box.overlay(title_box_overlay);
 
-    // Clone the base image to create an overlay
-    let mut overlay = base.clone();
+   
+    let mut upper_title = model::Component::new(
+        model::Text::new(format!("Round {round}"), 35, 0xFFFFFF)
+            .build()
+            .await?,
+        None,
+        None,
+        Some("title"),
+    );
+    let mut lower_title = model::Component::new(
+        model::Text::new(format!("Match {match_id}\n"), 35, 0xFFFFFF)
+            .build()
+            .await?,
+        None,
+        None,
+        Some("title"),
+    );
+    upper_title.set_center_x(title_box.width());
+    lower_title.set_center_x(title_box.width());
+    let a = (title_box.height() - 2*upper_title.height() - 5)/2;
+    info!("a: {a}");
+    upper_title.set_y(a);
+    lower_title.set_y(upper_title.y + upper_title.height()+ 5);
+    title_box.overlay(upper_title);
+    title_box.overlay(lower_title);
+    // Create mode components
+    let mut mode_bg = model::Component::new(
+        model::Trapezoid {
+            top: 300,
+            bottom: 150,
+            height: 75,
+            color: 0xFE1AB6FF,
+            border: {
+                Some(model::Border {
+                    thickness: 10,
+                    color: 0x000000FF,
+                })
+            },
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("mode_bg"),
+    );
+    mode_bg.set_center_x(img.width);
 
-    // Calculate positions for various elements
+    let mode_icon = model::Component::new(
+        model::CustomImage::new(get_mode_icon(mode.to_string()), Some(60), Some(60))
+            .build()
+            .await?,
+        Some(50),
+        None,
+        Some("mode_icon"),
+    );
+    mode_bg.overlay(mode_icon);
 
-    // Title Position
-    let title_x = center_x(base.width() as i64, title.width() as i64);
-    let title_y = 100;
+    let mode_overlay = model::Component::new(
+        model::Trapezoid {
+            top: 300,
+            bottom: 150,
+            height: 75,
+            color: 0xFE1AB64D,
+            border: {
+                Some(model::Border {
+                    thickness: 10,
+                    color: 0x000000FF,
+                })
+            },
+        }
+        .build()
+        .await?,
+        None,
+        None,
+        Some("mode_comp"),
+    );
+    mode_bg.overlay(mode_overlay);
 
-    // Mode Icon Position
-    let mode_icon_x = 0;
-    let mode_icon_y = 0;
+    let mut mode_text = model::Component::new(
+        model::Text::new(mode.to_uppercase(), 40, 0xFFFFFF)
+            .build()
+            .await?,
+        None,
+        None,
+        Some("mode_text"),
+    );
+    mode_text.set_center_x(mode_bg.width());
+    mode_text.set_center_y(mode_bg.height());
+    mode_bg.overlay(mode_text);
 
-    // Mode Text Position
-    let mode_text_x = mode_icon.width() as i64 + 10;
-    let mode_text_y = center_y(mode_icon.height() as i64, mode_text.height() as i64);
+    // Component elements onto the base img
+    img.add_overlay(title_box);
+    img.add_overlay(mode_bg);
+    img.add_overlay(icon1);
+    img.add_overlay(icon2);
+    img.add_overlay(name1);
+    img.add_overlay(name2);
+    img.add_overlay(tag1);
+    img.add_overlay(tag2);
+    img.add_overlay(vs);
 
-    // Player Icons Positions
-    let icon1_x = 50;
-    let icon1_y = center_y(base.height() as i64, icon1.height() as i64);
-    let icon2_x = base.width() as i64 - icon1_x - icon2.width() as i64;
-    let icon2_y = center_y(base.height() as i64, icon2.height() as i64);
-
-    // Player Names Positions
-    let name1_x = center_x(icon1_x * 2 + icon1.width() as i64, name1.width() as i64);
-    let name1_y = icon1_y + icon1.height() as i64 + 10;
-    let name2_x = center_x(icon2_x * 2 + icon2.width() as i64, name2.width() as i64);
-    let name2_y = icon2_y + icon2.height() as i64 + 10;
-
-    // Player Tags Positions
-    let tag1_x = center_x(name1_x * 2 + name1.width() as i64, tag1.width() as i64);
-    let tag1_y = name1_y + name1.height() as i64 + 10;
-    let tag2_x = center_x(name2_x * 2 + name2.width() as i64, tag2.width() as i64);
-    let tag2_y = name2_y + name2.height() as i64 + 10;
-
-    // VS Text Position
-    let vs_x = center_x(base.width() as i64, vs.width() as i64);
-    let vs_y = center_y(base.height() as i64, vs.height() as i64);
-
-    // Footer Position
-    let footer_x = center_x(base.width() as i64, footer.width() as i64);
-    let footer_y = base.height() as i64 - footer.height() as i64 - 50;
-
-    // Overlay elements onto the base image
-    imageops::overlay(&mut overlay, &draw_rec(300, 100, 0xFE1BB8), 0, 0);
-    imageops::overlay(&mut overlay, &title, title_x, title_y);
-    imageops::overlay(&mut overlay, &mode_icon, mode_icon_x, mode_icon_y);
-    imageops::overlay(&mut overlay, &mode_text, mode_text_x, mode_text_y);
-    imageops::overlay(&mut overlay, &icon1, icon1_x, icon1_y);
-    imageops::overlay(&mut overlay, &icon2, icon2_x, icon2_y);
-    imageops::overlay(&mut overlay, &name1, name1_x, name1_y);
-    imageops::overlay(&mut overlay, &name2, name2_x, name2_y);
-    imageops::overlay(&mut overlay, &tag1, tag1_x, tag1_y);
-    imageops::overlay(&mut overlay, &tag2, tag2_x, tag2_y);
-    imageops::overlay(&mut overlay, &vs, vs_x, vs_y);
-    imageops::overlay(&mut overlay, &footer, footer_x, footer_y);
-    Ok(overlay)
+    // Build the final composed img
+    Ok(img.build())
 }
 
 pub async fn generate_pre_battle_img(
@@ -147,8 +302,8 @@ pub async fn generate_pre_battle_img(
     player2: &Document,
     config: &Document,
 ) -> Result<DynamicImage, Error> {
-    let mode = config.get("mode").unwrap().as_str().unwrap();
-    let round = config.get("round").unwrap().as_i32().unwrap();
-    let match_id = player1.get("match_id").unwrap().as_i32().unwrap();
+    let mode = config.get_str("mode").unwrap();
+    let round = config.get_i32("round").unwrap();
+    let match_id = player1.get_i32("match_id").unwrap();
     create_battle_image(player1, player2, round, match_id, mode).await
 }
