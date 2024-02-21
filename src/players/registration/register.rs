@@ -13,7 +13,7 @@ use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use tracing::info;
+use tracing::{error, info};
 
 const TIMEOUT: u64 = 120;
 struct PlayerRegistration {
@@ -257,7 +257,14 @@ async fn assign_role(
                 None,
             )
             .await?;
-            None
+            error!(
+                "Failed to get role for region {:?}",
+                region.clone().unwrap()
+            );
+            return Err(Box::new(CustomError(format!(
+                "Failed to get role for region {:?}",
+                region.clone().unwrap()
+            ))));
         }
     };
     let mut member = match ctx.author_member().await {

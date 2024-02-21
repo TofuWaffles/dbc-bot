@@ -527,6 +527,7 @@ dependencies = [
  "image",
  "just",
  "mongodb",
+ "openssl",
  "poise",
  "reqwest",
  "serde",
