@@ -10,7 +10,7 @@ use poise::{
 use std::collections::HashMap;
 use tracing::error;
 
-/// Setup role to interact configurations of this bot
+/// Setup role to interact with the  configurations of this bot
 #[poise::command(slash_command, required_permissions = "MANAGE_MESSAGES")]
 pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let roles = ctx.guild_id().unwrap().roles(ctx.http()).await?;

@@ -60,7 +60,7 @@ async fn run() -> Result<(), Error> {
         commands::context_menu::get_individual_player_data(),
         commands::setup::setup(),
     ];
-    // dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
+    dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
     let token = std::env::var("DISCORD_TOKEN")
         .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
     /*let owner_id =
