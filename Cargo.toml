@@ -39,4 +39,3 @@ bytes = "1.5.0"
 serenity_utils = "0.7.0"
 just = "1.23.0"
 async-trait = "0.1.77"
-openssl = { version = "0.10.63", features = ["vendored"] }
