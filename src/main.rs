@@ -58,6 +58,7 @@ async fn run() -> Result<(), Error> {
         commands::index::index(),
         commands::host::host(),
         commands::context_menu::get_individual_player_data(),
+        commands::setup::setup(),
     ];
     // dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
     let token = std::env::var("DISCORD_TOKEN")

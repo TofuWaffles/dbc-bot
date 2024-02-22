@@ -4,6 +4,14 @@ use mongodb::bson::{doc, Bson::Null, Document};
 use mongodb::Collection;
 use poise::serenity_prelude::json::Value;
 
+pub fn make_server_doc(server: &str, server_id: &str) -> Document {
+    doc! {
+        "server": server,
+        "server_id": server_id,
+        "role_id": [],
+    }
+}
+
 pub fn make_config() -> Document {
     let config = doc! {
       "registration": false,

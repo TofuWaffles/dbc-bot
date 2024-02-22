@@ -4,14 +4,13 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::visual::pre_battle::generate_pre_battle_img;
+use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
 use poise::{serenity_prelude as serenity, ReplyHandle};
-use std::io::Cursor;
 
 /// View your opponent
 pub async fn view_opponent(
@@ -48,47 +47,43 @@ pub async fn view_opponent(
 
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
-    let round = config.get("round").unwrap().as_i32().unwrap();
+    let round = config.get_i32("round").unwrap();
     let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
-    let enemy = match find_enemy_by_match_id_and_self_tag(
-        ctx, region, &round, &match_id, caller_tag,
-    )
-    .await
-    {
-        Some(enemy) => {
-            if is_mannequin(&enemy) {
-                msg.edit(*ctx, |s|
-                    s.embed(|e| {
+    let enemy =
+        match find_enemy_by_match_id_and_self_tag(ctx, region, &round, &match_id, caller_tag).await
+        {
+            Some(enemy) => {
+                if is_mannequin(&enemy) {
+                    msg.edit(*ctx, |s| {
+                        s.embed(|e| {
                             e.title("Congratulations! You are the bye player for this round!")
-                                .description("Please run </submit-result:1148650981555441894> to be in the next round!")
+                                .description("Please run the bot again to submit the result!")
                         })
-                )
+                    })
+                    .await?;
+                    return Ok(());
+                } else {
+                    enemy
+                }
+            }
+            None => {
+                msg.edit(*ctx, |s| {
+                    s.embed(|e| {
+                        e.title("An error occurred!")
+                            .description("Please run this command later.")
+                    })
+                })
                 .await?;
                 return Ok(());
-            } else {
-                enemy
             }
-        }
-        None => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("An error occurred!")
-                        .description("Please run this command later.")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
-    };
+        };
 
-    let image = generate_pre_battle_img(&caller, &enemy, &config).await?;
-    let mut bytes: Vec<u8> = Vec::new();
-    image.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
+    let prebattle = get_image(&caller, &enemy, &config).await?;
     let attachment = serenity::model::channel::AttachmentType::Bytes {
-        data: bytes.into(),
+        data: prebattle.into(),
         filename: "pre_battle.png".to_string(),
     };
     msg.edit(*ctx,|s| {
@@ -96,15 +91,27 @@ pub async fn view_opponent(
             .embed(|e| {
                 e.title("**DISCORD BRAWL CUP TOURNAMENT**")
                     .description(format!(
-"# Round {round} - Match {match_id}
-**<@{}> vs. <@{}>**\n
-Please plan with your opponent to schedule at least 2 games in the friendly battle mode (please turn off all bots).
-Once the battle if finished, please wait for 30s and call the bot again and hit submit button to submit the result.
-Only 2 **LATEST** matches with the opponent are considered once you submit the result.
-We are only able to fetch up to 25 latest battle reports only so please make sure to submit the result after the battle is finished.
-Good luck!",
+r#"# Round {round} - Match {match_id}
+**<@{}> vs. <@{}>**
+**🗣️ Before you start:**
+Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
+**⚙️ During the battle:**
+- Set up a friendly mode.
+- Mode: {}.
+- Map: {}.
+- Turn off all bots.
+**🗒️ After the battle:**
+- Wait for 30s 
+- Run this bot again to submit the result.
+**⚠️ Note:**
+- Only 2 **LATEST** matches with the opponent are considered once you submit the result.
+- Due to limitation, only as most 25 battles are viewable, so please submit the result as soon as possible.
+# Good luck!"#, 
                         caller.get_str("discord_id").unwrap(),
-                        enemy.get_str("discord_id").unwrap()
+                        enemy.get_str("discord_id").unwrap(),
+                        config.get_str("mode").unwrap(),
+                        config.get_str("map").unwrap_or("Any")
+
                     )
                     )
             })

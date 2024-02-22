@@ -12,7 +12,7 @@ use tracing::info;
 const DELAY: u64 = 1;
 
 // Tournament all-in-one command
-#[poise::command(slash_command, guild_only)]
+#[poise::command(slash_command, guild_only, aliases("menu"))]
 pub async fn index(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
     home(ctx, None).await

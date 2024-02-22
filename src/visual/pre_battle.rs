@@ -6,6 +6,7 @@ use dbc_bot::CustomError;
 use image::{imageops, DynamicImage};
 use mongodb::bson::Document;
 use std::env;
+use std::io::Cursor;
 use tracing::{error, info};
 const FONT_SIZE: u8 = 30;
 const ICON_SIZE: i64 = 200;
@@ -149,7 +150,7 @@ async fn create_battle_image(
             bottom: 150,
             height: 100,
             color: 0xFFBF00FF,
-            border: None
+            border: None,
         }
         .build()
         .await?
@@ -181,7 +182,10 @@ async fn create_battle_image(
             bottom: 150,
             height: 100,
             color: 0xFFBF004D,
-            border: Some(Border { thickness: 10, color: 0x000000FF })
+            border: Some(Border {
+                thickness: 10,
+                color: 0x000000FF,
+            }),
         }
         .build()
         .await?
@@ -192,7 +196,6 @@ async fn create_battle_image(
     );
     title_box.overlay(title_box_overlay);
 
-   
     let mut upper_title = model::Component::new(
         model::Text::new(format!("Round {round}"), 35, 0xFFFFFF)
             .build()
@@ -211,10 +214,10 @@ async fn create_battle_image(
     );
     upper_title.set_center_x(title_box.width());
     lower_title.set_center_x(title_box.width());
-    let a = (title_box.height() - 2*upper_title.height() - 5)/2;
+    let a = (title_box.height() - 2 * upper_title.height() - 5) / 2;
     info!("a: {a}");
     upper_title.set_y(a);
-    lower_title.set_y(upper_title.y + upper_title.height()+ 5);
+    lower_title.set_y(upper_title.y + upper_title.height() + 5);
     title_box.overlay(upper_title);
     title_box.overlay(lower_title);
     // Create mode components
@@ -306,4 +309,15 @@ pub async fn generate_pre_battle_img(
     let round = config.get_i32("round").unwrap();
     let match_id = player1.get_i32("match_id").unwrap();
     create_battle_image(player1, player2, round, match_id, mode).await
+}
+
+pub async fn get_image(
+    player1: &Document,
+    player2: &Document,
+    config: &Document,
+) -> Result<Vec<u8>, Error> {
+    let img = generate_pre_battle_img(player1, player2, config).await?;
+    let mut bytes: Vec<u8> = Vec::new();
+    img.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
+    Ok(bytes)
 }
