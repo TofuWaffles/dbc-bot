@@ -1,4 +1,4 @@
-use crate::database::config::set_config;
+use crate::database::config::{make_config, set_config};
 use crate::{Context, Error};
 use dbc_bot::{Mode, Region};
 use futures::StreamExt;
@@ -74,7 +74,13 @@ async fn display_config(
 ) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = collection.find_one(doc! {}, None).await.unwrap().unwrap();
+    let config = match collection.find_one(doc! {}, None).await?{
+        Some(config) => config,
+        None => {
+            collection.insert_one(make_config(), None).await?;
+            collection.find_one(doc! {}, None).await?.unwrap()
+        }
+    };
     let registration_status = if config.get("registration").unwrap().as_bool().unwrap() {
         "Open"
     } else {
@@ -100,9 +106,9 @@ async fn display_config(
         Some(channel) => format!("<#{}>", channel),
         None => "Not yet set".to_string(),
     };
-    let bracket_channel = match config.get("bracket_channel").unwrap().as_str() {
-        Some(bracket_channel) => format!("<#{}>", bracket_channel),
-        None => "Not yet set".to_string(),
+    let bracket_channel = match config.get_str("bracket_channel") {
+        Ok(bracket_channel) => format!("<#{}>", bracket_channel),
+        Err(_) => "Not yet set".to_string(),
     };
     msg.edit(*ctx, |s| {
         s.reply(true).ephemeral(true).embed(|e| {
@@ -128,7 +134,7 @@ async fn create_select_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<
             c.create_action_row(|a| {
                 a.create_select_menu(|m| {
                     m.custom_id("config")
-                        .placeholder("Select field to configurate")
+                        .placeholder("Select a field to configurate")
                         .options(|o| {
                             o.create_option(|o| {
                                 o.label("Mode")

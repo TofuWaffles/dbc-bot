@@ -26,14 +26,18 @@ COPY . .
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
+# Build python image
+FROM python:3
+COPY requirements.txt ./
+COPY src/bracket_tournament/bracket_generation.py ./src/bracket_tournament/bracket_generation.py
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Create a minimal image
 FROM scratch
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
-COPY requirements.txt requirements.txt
-COPY /src/visual/assets assets
-COPY /src/bracket_tournament/presets presets
-COPY src/bracket_tournament/bracket_generation.py bracket_tournament/bracket_generation.py
+COPY assets ./
 ENTRYPOINT ["/dbc-bot"]
+
 
 
 

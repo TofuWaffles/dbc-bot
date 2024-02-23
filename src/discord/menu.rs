@@ -42,25 +42,19 @@ pub async fn registration_menu(
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("📝".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("personal")
                         .disabled(!view)
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("deregister")
                         .disabled(!deregister)
                         .style(ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚪".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("help")
                         .disabled(!help)
                         .style(ButtonStyle::Secondary)
@@ -69,13 +63,15 @@ pub async fn registration_menu(
             })
         })
         .embed(|e| {
-            e.title("Registration Menu").description(
-                r#"Below are options:
+            e.title("Registration Menu")
+                .description(
+                    r#"Below are options:
 📝: Register.
 🤓: View personal information.
 🚪: Deregister.
 ❓: Help."#,
-            )
+                )
+                .color(0xFFFF00)
         })
     })
     .await?;
@@ -134,6 +130,18 @@ pub async fn tournament_menu(
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
+                .create_button(|b| {
+                    b.custom_id("submit")
+                        .disabled(!submit)
+                        .style(ButtonStyle::Success)
+                        .emoji(ReactionType::Unicode("⚔️".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("help")
+                        .disabled(!help)
+                        .style(ButtonStyle::Secondary)
+                        .emoji(ReactionType::Unicode("❓".to_string()))
+                })
             })
             // .create_action_row(|r| {
             //     r.create_button(|b| {
@@ -143,31 +151,17 @@ pub async fn tournament_menu(
             //             .emoji(ReactionType::Unicode("🛡️".to_string()))
             //     })
             // })
-            .create_action_row(|r| {
-                r.create_button(|b| {
-                    b.custom_id("submit")
-                        .disabled(!submit)
-                        .style(ButtonStyle::Success)
-                        .emoji(ReactionType::Unicode("⚔️".to_string()))
-                })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
-                    b.custom_id("help")
-                        .disabled(!help)
-                        .style(ButtonStyle::Secondary)
-                        .emoji(ReactionType::Unicode("❓".to_string()))
-                })
-            })
         })
         .embed(|e| {
-            e.title("Tournament Menu").description(
-                r#"Below are the available options!
+            e.title("Tournament Menu")
+                .description(
+                    r#"Below are the available options!
 🤓: Find out who is your opponent in current round!
 ⚔️: Submit your result!
 ❓: Help.
 "#,
-            )
+                )
+                .color(0xFFFF00)
         })
     })
     .await?;

@@ -60,6 +60,15 @@ impl Region {
     pub fn full(&self) -> String {
         format!("{}", self)
     }
+
+    pub fn get_emoji(&self) -> String {
+        match self {
+            Region::NASA => "🌎",
+            Region::EU => "🌍",
+            Region::APAC => "🌏",
+        }
+        .to_string()
+    }
 }
 
 #[derive(Debug, poise::ChoiceParameter, EnumIter, Eq, Hash, PartialEq)]

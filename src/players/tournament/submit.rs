@@ -9,6 +9,7 @@ use crate::database::find::{
 use crate::database::open::tournament;
 use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
+use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::{doc, Document};
@@ -26,8 +27,7 @@ pub async fn submit_result(
     region: &Region,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
-        s.ephemeral(true)
-            .reply(true)
+        s
             .content("Checking your match result...")
     })
     .await?;
@@ -91,13 +91,15 @@ pub async fn submit_result(
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round.insert_one(update_match_id(caller), None).await?;
-        msg.edit(*ctx, |s| {
-            s.embed(|e| {
-                e.title("Bye! See you next... round!").description(
-                    "You have been automatically advanced to the next round due to bye!",
-                )
-            })
-        })
+        prompt(
+            ctx,
+            msg,
+            "Bye... See you next round",
+            "
+            Congratulation, you pass this round!",
+            None,
+            Some(0xFFFF00),
+        )
         .await?;
         update_battle(database, round, match_id).await?;
         update_bracket(ctx, None).await?;
@@ -130,6 +132,7 @@ pub async fn submit_result(
                             winner.get("tag").unwrap().to_string().strip_quote()
                         ))
                     })
+                    .components(|c|c)
                 })
                 .await?;
                 channel_to_announce
@@ -140,7 +143,7 @@ pub async fn submit_result(
                                 winner.get("name").unwrap().to_string().strip_quote(),
                                 winner.get("tag").unwrap().to_string().strip_quote()
                             ))
-                        })
+                        .color(0xFFFF00)})
                     })
                     .await?;
             } else {
@@ -161,6 +164,7 @@ pub async fn submit_result(
                             winner.get("tag").unwrap().to_string().strip_quote()
                         ))
                     })
+                    .components(|c|c)
                 })
                 .await?;
                 channel_to_announce
@@ -168,8 +172,8 @@ pub async fn submit_result(
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
                                 "CONGRATULATIONS! {}({}) IS THE TOURNAMENT CHAMPION!",
-                                winner.get("name").unwrap().to_string().strip_quote(),
-                                winner.get("tag").unwrap().to_string().strip_quote()
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap()
                             ))
                         })
                     })

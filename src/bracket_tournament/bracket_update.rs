@@ -13,7 +13,6 @@ use tracing::{error, info};
 pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
     let current_dir = match env::current_dir() {
         Ok(dir) => {
-            info!("Current directory: {:?}", dir);
             dir
         }
         Err(e) => {
@@ -116,9 +115,9 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         }
         match_ids.clear();
     }
-
+    info!("Generating bracket.");
     let output = Command::new("python")
-        .arg("bracket_tournament/bracket_generation.py")
+        .arg("src/bracket_tournament/bracket_generation.py")
         .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
         .arg(match player_data.is_empty() {
@@ -128,6 +127,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         .stdout(Stdio::piped())
         .current_dir(current_dir)
         .spawn()?;
+    info!("Bracket generated.");
 
     let mut stdout = output
         .stdout
@@ -151,24 +151,30 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 .and_then(|v| v.as_str().map(|s| s.parse::<u64>().ok()))
             {
                 Some(bracket_message_id) => {
+                    info!("Editing bracket messages.");
                     match poise::serenity_prelude::ChannelId(channel_id.unwrap())
                         .edit_message(&ctx, bracket_message_id.unwrap(), |m| {
                             m.attachment(attachment)
                         })
                         .await
                     {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            info!("Bracket messages edited.")
+                        }
                         Err(err) => {
+                            error!{"{err}"};
                             return Err(Error::from(err));
                         }
                     }
                 }
                 None => {
+                    info!("Sending bracket messages.");
                     match poise::serenity_prelude::ChannelId(channel_id.unwrap())
                         .send_message(&ctx, |m| m.add_file(attachment))
                         .await
                     {
                         Ok(message) => {
+                            info!("Bracket messages sent.");
                             match collection
                                 .update_one(
                                     doc! {},
@@ -195,6 +201,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                             }
                         }
                         Err(err) => {
+                            error!{"{err}"};
                             return Err(Error::from(err));
                         }
                     }

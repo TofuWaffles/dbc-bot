@@ -1,7 +1,7 @@
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
-use poise::ReplyHandle;
+use poise::{serenity_prelude::ReactionType, ReplyHandle};
 
 use super::{announcement::announcement, config::configurate};
 const TIMEOUT: u64 = 300;
@@ -14,23 +14,25 @@ pub async fn utilities_mod_panel(
         m.embed(|e| {
             e.title(format!("Utilities menu ({})", region.short()))
                 .description(
-                    r#"
-        Announcement: Set an announcement for the tournament.
-        Configurate: Set the configuration for the tournament.
-        "#,
+                    r#"Below are available options:
+📢: Announcement
+- Set an announcement for the tournament.
+🛠️: Configuration
+- Set the configuration for the tournament."#,
                 )
+                .color(0xFFFF00)
         })
         .components(|c| {
             c.create_action_row(|a| {
                 a.create_button(|b| {
                     b.custom_id("announcement")
-                        .label("Announcement")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("📢".to_string()))
                 })
                 .create_button(|b| {
                     b.custom_id("setting")
-                        .label("Configurate")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("🛠️".to_string()))
                 })
             })
         })

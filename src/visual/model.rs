@@ -1,12 +1,15 @@
+use std::env;
+
 use crate::Error;
 use async_trait::async_trait;
 use bytes::Bytes;
+use dbc_bot::CustomError;
 use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
 use text_to_png::TextRenderer;
-use tracing::error;
+use tracing::{error, info};
 const DEFAULT_ICON: &str = "https://cdn.brawlify.com/profile/28000000.png?v=1";
 const DEFAULT_MODE_ICON: &str =
     "https://pbs.twimg.com/media/F2_Uy9rXgAAXXnP?format=png&name=360x360";
@@ -167,7 +170,7 @@ impl Borderable for Circle {
 impl Image for Text {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
         let renderer = TextRenderer::try_new_with_ttf_font_data(include_bytes!(
-            "./assets/LilitaOne-Regular.ttf"
+            "../../assets/battle/LilitaOne-Regular.ttf"
         ))?;
         let img =
             renderer.render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)?;
@@ -356,9 +359,9 @@ impl BSImage {
 }
 
 fn get_color(color: u32) -> (u8, u8, u8, u8) {
-    let r = (color >> 24) as u8;
-    let g = (color >> 16) as u8;
-    let b = (color >> 8) as u8;
-    let a = (color << 24) >> 24 as u8;
+    let r = color >> 24_u8;
+    let g = color >> 16_u8;
+    let b = color >> 8_u8;
+    let a = (color << 24_u8) >> 24_u8 ;
     (r as u8, g as u8, b as u8, a as u8)
 }

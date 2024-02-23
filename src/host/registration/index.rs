@@ -4,6 +4,7 @@ use crate::database::update::toggle_registration;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
+use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
 
 use super::detail::{detail, term};
@@ -57,27 +58,41 @@ async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Re
         ""
     };
     msg.edit(*ctx, |m| {
-      m.embed(|e| {
-          e.title("**Registration Panel**")
-              .description(format!("Registration is currently: {}\nThere are {} registered players for the tournament of {}.{}", term(reg.registration), reg.count, reg.region, flag))
-              .image("")
-      })
-      .components(|c|{
-        c.create_action_row(|row| {
-          row.create_button(|b| {
-            b.custom_id("registration")
-            .label("Toggle Registration")
-            .style(poise::serenity_prelude::ButtonStyle::Primary)
-            .disabled(reg.tournament)
-          });
-          row.create_button(|b| {
-            b.custom_id("detail")
-            .label("All players")
-            .style(poise::serenity_prelude::ButtonStyle::Primary)
-          })
+        m.embed(|e| {
+            e.title("**Registration Panel**")
+                .description(format!(
+                    r#"Registration is currently: {}
+There are {} registered players for the tournament of {}.{flag}
+Below are options:
+🔒: Toggle registration
+- Open/Close registration phase for players.
+- This will be disabled during the tournament phase.
+🔍: View
+- Lets you see all players who has already registered in the tournament
+"#,
+                    term(reg.registration),
+                    reg.count,
+                    reg.region,
+                ))
+                .color(0xFFFF00)
         })
-      })
-    }).await?;
+        .components(|c| {
+            c.create_action_row(|row| {
+                row.create_button(|b| {
+                    b.custom_id("registration")
+                        .style(poise::serenity_prelude::ButtonStyle::Primary)
+                        .disabled(reg.tournament)
+                        .emoji(ReactionType::Unicode("🔒".to_string()))
+                });
+                row.create_button(|b| {
+                    b.custom_id("detail")
+                        .style(poise::serenity_prelude::ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("🔍".to_string()))
+                })
+            })
+        })
+    })
+    .await?;
     Ok(())
 }
 
