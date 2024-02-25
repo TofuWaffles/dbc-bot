@@ -1,7 +1,7 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, Bson::Null, Document},
+    bson::{self, doc, Document},
     options::AggregateOptions,
     Collection, Database,
 };

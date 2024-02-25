@@ -1,3 +1,4 @@
+use crate::database::config::get_config;
 use crate::database::open::{registration_open, tournament};
 use crate::database::stat::count_registers;
 use crate::database::update::toggle_registration;
@@ -23,7 +24,7 @@ pub async fn registration_mod_panel(
     region: &Region,
 ) -> Result<(), Error> {
     let mut reg = getter(ctx, region).await?;
-    display_info(ctx, msg, &reg).await?;
+    display_info(ctx, msg, region, &reg).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
         .await_component_interactions(&ctx.serenity_context().shard)
@@ -41,22 +42,23 @@ pub async fn registration_mod_panel(
             }
             _ => {
                 reg = getter(ctx, region).await?;
-                display_info(ctx, msg, &reg).await?;
+                display_info(ctx, msg, region, &reg).await?;
                 continue;
             }
         }
         reg = getter(ctx, region).await?;
-        display_info(ctx, msg, &reg).await?;
+        display_info(ctx, msg, region, &reg).await?;
     }
     Ok(())
 }
 
-async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, reg: &Reg) -> Result<(), Error> {
+async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region, reg: &Reg) -> Result<(), Error> {
     let flag = if reg.tournament {
-        "\n. Tournament is currently running. Toggle is disabled!"
+        "\n. Notice: Tournament is currently running. Toggle is disabled!"
     } else {
         ""
     };
+    let check_flag = prerequisite(ctx, region).await;
     msg.edit(*ctx, |m| {
         m.embed(|e| {
             e.title("**Registration Panel**")
@@ -81,7 +83,7 @@ Below are options:
                 row.create_button(|b| {
                     b.custom_id("registration")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
-                        .disabled(reg.tournament)
+                        .disabled(reg.tournament && check_flag)
                         .emoji(ReactionType::Unicode("🔒".to_string()))
                 });
                 row.create_button(|b| {
@@ -106,4 +108,12 @@ async fn getter(ctx: &Context<'_>, region: &Region) -> Result<Reg, Error> {
         count,
         region: region.clone(),
     })
+}
+
+async fn prerequisite(ctx: &Context<'_>, region: &Region) -> bool {
+    let config = get_config(ctx, region).await;
+    !(config.get("mode").is_none()
+        || config.get("role").is_none()
+        || config.get("channel").is_none()
+        || config.get("bracket_channel").is_none())
 }

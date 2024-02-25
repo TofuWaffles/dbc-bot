@@ -5,13 +5,6 @@ ENV DATABASE_URL = ${DATABASE_URL}
 RUN cargo install cargo-chef
 WORKDIR /dbc-bot
 
-RUN \
-  apt-get update && \
-  apt-get install -y ca-certificates && \
-  export OPENSSL_DIR="/usr/lib/openssl" && \
-  apt-get install -y ca-certificates && \
-  apt-get clean
-
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
@@ -26,18 +19,13 @@ COPY . .
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
-# Build python image
-FROM python:3
-COPY requirements.txt ./
-COPY src/bracket_tournament/bracket_generation.py ./src/bracket_tournament/bracket_generation.py
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Create a minimal image
-FROM scratch
+# Create a python environment with Rust binary files, as no longer do we need the Rust compiler
+FROM python:3.12.2-bullseye
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
-COPY assets ./
+COPY assets/ /assets
+COPY requirements.txt .
+COPY src/bracket_tournament/bracket_generation.py .
+RUN pip install --no-cache-dir -r requirements.txt
+CMD ["python3", "--version"]
 ENTRYPOINT ["/dbc-bot"]
-
-
-
-

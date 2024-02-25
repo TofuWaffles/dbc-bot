@@ -1,15 +1,12 @@
-use std::env;
-
 use crate::Error;
 use async_trait::async_trait;
 use bytes::Bytes;
-use dbc_bot::CustomError;
 use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
 use text_to_png::TextRenderer;
-use tracing::{error, info};
+use tracing::error;
 const DEFAULT_ICON: &str = "https://cdn.brawlify.com/profile/28000000.png?v=1";
 const DEFAULT_MODE_ICON: &str =
     "https://pbs.twimg.com/media/F2_Uy9rXgAAXXnP?format=png&name=360x360";
@@ -77,9 +74,9 @@ pub trait Borderable {
         (br, bg, bb, ba): (u8, u8, u8, u8),
     ) -> DynamicImage {
         for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
-            if self.is_border(x as i64, y as i64) {
+            if self.is_inside(x as i64, y as i64) {
                 *pixel = Rgba([r, g, b, a]);
-            } else {
+            } else if self.is_border(x as i64, y as i64){
                 *pixel = Rgba([br, bg, bb, ba]);
             }
         }

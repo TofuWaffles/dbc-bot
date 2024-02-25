@@ -8,7 +8,7 @@ use crate::database::update::{
 use crate::{Context, Error};
 use dbc_bot::Region;
 use mongodb::bson::{doc, Document, Bson::Null};
-use mongodb::{options, Collection};
+use mongodb::Collection;
 use poise::ReplyHandle;
 use tracing::error;
 const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to start a tournament
@@ -199,7 +199,7 @@ pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &
         Ok(_) => Ok(()),
         Err(e) => {
             error!("{e}");
-            revert(ctx, region, config.get_i32("total").unwrap()).await?;
+            revert(ctx, region).await?;
             resetting_tournament_config(ctx, region, Some(config)).await?;
             msg.edit(*ctx, |s| {
                 s.embed(|e| {
@@ -213,7 +213,7 @@ pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &
     }
 }
 
-async fn revert(ctx: &Context<'_>, region: &Region, total: i32) -> Result<(), Error> {
+async fn revert(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
     collection.delete_many(doc! {"discord_id": Null}, None).await?;
@@ -223,9 +223,14 @@ async fn revert(ctx: &Context<'_>, region: &Region, total: i32) -> Result<(), Er
         }
     };
     collection.update_many(doc!{}, update, None).await?;
-    for round in 1..=total{
-        let collection: Collection<Document> = database.collection(format!("Round {}", round).as_str());
-        collection.drop(options::DropCollectionOptions::default()).await?;
+    let collections = database.list_collection_names(None).await?;
+    for collection in collections {
+        if collection.starts_with("Round") {
+            database
+                .collection::<Document>(&collection)
+                .drop(None)
+                .await?;
+        }
     }
     Ok(())
 }

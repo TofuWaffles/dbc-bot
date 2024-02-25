@@ -29,7 +29,7 @@ async fn create_battle_image(
     };
 
     let bg_path = match current_dir
-        .join("assets/battle_background.jpg")
+        .join("/assets/battle/battle_background.jpg")
         .into_os_string()
         .into_string()
     {
@@ -39,10 +39,11 @@ async fn create_battle_image(
             return Err(Box::new(CustomError(format!("{:?}", e))));
         }
     };
+    info!("Background path: {}", bg_path);
     let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
 
     let mut vs = model::Component::new(
-        image::open(current_dir.join("assets/versus.png"))?.resize(
+        image::open(current_dir.join("assets/battle/versus.png"))?.resize(
             150,
             150,
             imageops::FilterType::Nearest,
@@ -215,7 +216,6 @@ async fn create_battle_image(
     upper_title.set_center_x(title_box.width());
     lower_title.set_center_x(title_box.width());
     let a = (title_box.height() - 2 * upper_title.height() - 5) / 2;
-    info!("a: {a}");
     upper_title.set_y(a);
     lower_title.set_y(upper_title.y + upper_title.height() + 5);
     title_box.overlay(upper_title);

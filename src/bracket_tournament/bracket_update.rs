@@ -116,8 +116,9 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         match_ids.clear();
     }
     info!("Generating bracket.");
-    let output = Command::new("python")
-        .arg("src/bracket_tournament/bracket_generation.py")
+   
+    let output = Command::new("python3")
+        .arg("bracket_generation.py")
         .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
         .arg(match player_data.is_empty() {
@@ -134,6 +135,9 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         .ok_or_else(|| Error::from("Failed to capture Python script output"))?;
     let mut buffer = String::new();
     stdout.read_to_string(&mut buffer)?;
+    if buffer.len() < 100 {
+        return Err("Failed to capture Python script output".into());
+    }
 
     let image_bytes = general_purpose::STANDARD.decode(buffer.trim_end()).unwrap();
     let attachment = poise::serenity_prelude::AttachmentType::Bytes {
