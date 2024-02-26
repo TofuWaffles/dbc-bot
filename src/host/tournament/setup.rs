@@ -10,6 +10,7 @@ use dbc_bot::Region;
 use mongodb::bson::{doc, Document, Bson::Null};
 use mongodb::Collection;
 use poise::ReplyHandle;
+use crate::discord::prompt::prompt;
 use tracing::error;
 const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to start a tournament
 
@@ -201,13 +202,14 @@ pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &
             error!("{e}");
             revert(ctx, region).await?;
             resetting_tournament_config(ctx, region, Some(config)).await?;
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("Setting up tournament").description(format!(
-                        "All set up is reverted!"
-                    ))
-                })
-            }).await?;
+            prompt(
+                ctx,
+                msg,
+                "Failed to start tournament!",
+                "<:sad:1187843167760949348> Failed to start tournament!",
+                None,
+                Some(0xFF0000),
+            ).await?;
             Ok(())
         }
     }

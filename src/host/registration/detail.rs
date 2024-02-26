@@ -103,7 +103,7 @@ async fn get_player_data(
     index: &i32,
     total: &i32,
 ) -> Result<(), Error> {
-    let name = player.get_str("name").unwrap_or_else(|_| "Unknown player");
+    let name = player.get_str("name").unwrap_or("Unknown player");
     let tag = player.get_str("tag").unwrap();
     let discord_id = player.get_str("discord_id").unwrap();
     let match_id = player

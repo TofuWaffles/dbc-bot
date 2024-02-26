@@ -11,9 +11,9 @@ pub async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) ->
             .components(|c| c)
     })
     .await?;
-    let database = ctx.data().database.regional_databases.get(&region).unwrap();
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
-    clear_rounds_and_reset_config(database, &region, ctx, msg).await?;
+    clear_rounds_and_reset_config(database, region, ctx, msg).await?;
     clear_all_players(&collection).await;
     msg.edit(*ctx, |s| s.content("Complete!")).await?;
     Ok(())

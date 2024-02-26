@@ -115,7 +115,7 @@ pub async fn tournament_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     schedule: bool,
-    managers: bool,
+    _managers: bool,
     submit: bool,
     help: bool,
     player: Document,

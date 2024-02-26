@@ -155,7 +155,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 .and_then(|v| v.as_str().map(|s| s.parse::<u64>().ok()))
             {
                 Some(bracket_message_id) => {
-                    info!("Editing bracket messages.");
+                    info!("Editing bracket messages at {}.", bracket_message_id.unwrap());
                     match poise::serenity_prelude::ChannelId(channel_id.unwrap())
                         .edit_message(&ctx, bracket_message_id.unwrap(), |m| {
                             m.attachment(attachment)
@@ -163,7 +163,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                         .await
                     {
                         Ok(_) => {
-                            info!("Bracket messages edited.")
+                            info!("Bracket message is edited at {}", bracket_message_id.unwrap());
                         }
                         Err(err) => {
                             error!{"{err}"};
@@ -172,13 +172,13 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                     }
                 }
                 None => {
-                    info!("Sending bracket messages.");
+                    info!("Sending bracket messages at {}.", channel_id.unwrap());
                     match poise::serenity_prelude::ChannelId(channel_id.unwrap())
                         .send_message(&ctx, |m| m.add_file(attachment))
                         .await
                     {
                         Ok(message) => {
-                            info!("Bracket messages sent.");
+                            info!("Bracket messages sent at {}", channel_id.unwrap());
                             match collection
                                 .update_one(
                                     doc! {},
@@ -206,7 +206,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                         }
                         Err(err) => {
                             error!{"{err}"};
-                            return Err(Error::from(err));
+                            return Err(err.into());
                         }
                     }
                 } // _ => {

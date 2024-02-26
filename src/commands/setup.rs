@@ -95,7 +95,7 @@ async fn display_select_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     roles: &HashMap<RoleId, Role>,
-    hosts: &Vec<Bson>,
+    hosts: &[Bson],
 ) -> Result<(), Error> {
     let accept: String = hosts
         .iter()

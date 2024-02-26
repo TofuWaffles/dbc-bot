@@ -4,6 +4,7 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
+use crate::discord::prompt::prompt;
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
@@ -18,12 +19,14 @@ pub async fn view_opponent(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    msg.edit(*ctx, |s| {
-        s.ephemeral(true)
-            .reply(true)
-            .content("Getting your opponent...")
-    })
-    .await?;
+    prompt(
+        ctx,
+        msg,
+        "Getting your opponent...",
+        "<a:loading:1187839622680690689> Searching for your opponent...",
+        None,
+        Some(0xFFFF00),
+    ).await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,

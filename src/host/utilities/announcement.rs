@@ -238,7 +238,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                                         "Announcement successfully posted in <#{}>",
                                         message.channel_id
                                     ))
-                                    .color(0x00FF00FF as u32)
+                                    .color(0x00FF00FF_u32)
                                 })
                             })
                             .await?;
@@ -247,7 +247,7 @@ pub async fn announcement(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<()
                             msg.edit(*ctx, |s| {
                                 s.embed(|e| {
                                     e.description("Failed to post announcement.".to_string())
-                                        .color(0xFF000000 as u32)
+                                        .color(0xFF000000_u32)
                                 })
                             })
                             .await?;
@@ -318,12 +318,10 @@ Press confirm to send this announcement to <#{}>
         ))
         .embed(|e| {
             e.title(announcement_data.title.clone().unwrap_or("".to_string()))
-                .description(format!(
-                    "{}",
-                    &announcement_data
+                .description(&announcement_data
                         .description
                         .clone()
-                        .unwrap_or("No description".to_string()),
+                        .unwrap_or("No description".to_string(),
                 ))
         })
         .components(|c| {

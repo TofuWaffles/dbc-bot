@@ -57,7 +57,7 @@ pub async fn stat(
                         detail.map_or_else(
                             || "Not in battle".to_string(),
                             |d| {
-                                let result = if let Ok(battle) = d.get_bool("battle") {
+                                if let Ok(battle) = d.get_bool("battle") {
                                     if battle {
                                         "Yes".to_string()
                                     } else {
@@ -65,8 +65,8 @@ pub async fn stat(
                                     }
                                 } else {
                                     "Undefined".to_string()
-                                };
-                                result
+                                }
+                                
                             },
                         ),
                         true,
