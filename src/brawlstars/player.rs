@@ -46,24 +46,34 @@ pub async fn stat(
                     ("Club", club, true),
                     (
                         "Currently in match",
-                        detail.map_or("Not in match".to_string(), |d| {
-                            d.get_i32("match_id").unwrap().to_string()
-                        }),
+                        detail.map_or_else(
+                            || "Not in match".to_string(),
+                            |d| d.get_i32("match_id").unwrap_or(0).to_string(),
+                        ),
                         true,
                     ),
                     (
                         "Result submit",
-                        detail.map_or("Not in battle".to_string(), |d| {
-                            if d.get_bool("battle").unwrap() {
-                                "Yes".to_string()
-                            } else {
-                                "No".to_string()
-                            }
-                        }),
+                        detail.map_or_else(
+                            || "Not in battle".to_string(),
+                            |d| {
+                                if let Ok(battle) = d.get_bool("battle") {
+                                    if battle {
+                                        "Yes".to_string()
+                                    } else {
+                                        "No".to_string()
+                                    }
+                                } else {
+                                    "Undefined".to_string()
+                                }
+                                
+                            },
+                        ),
                         true,
                     ),
                 ])
                 .timestamp(ctx.created_at())
+                .color(0x0000FF)
         })
     })
     .await?;

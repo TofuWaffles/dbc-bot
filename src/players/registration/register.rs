@@ -3,12 +3,13 @@ use crate::brawlstars::player::stat;
 use crate::database::add::add_player;
 use crate::database::config::{get_config, make_player_doc};
 use crate::database::find::find_tag;
+use crate::database::open::registration_region_open;
 use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, ReactionType};
 use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -48,8 +49,21 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
             "APAC" | "EU" | "NASA" => {
                 register.region = Some(Region::find_key(mci.data.custom_id.as_str()).unwrap());
                 mci.defer(&ctx.http()).await?;
-                register_tag(ctx, msg).await?;
-                continue;
+                if registration_region_open(ctx, &register.region.clone().unwrap()).await {
+                    register_tag(ctx, msg).await?;
+                    continue;
+                } else {
+                    prompt(
+                        ctx,
+                        msg,
+                        "Registration is not open for this region!",
+                        "Please try again later!",
+                        None,
+                        Some(0xFF0000),
+                    )
+                    .await?;
+                    return Ok(());
+                }
             }
             "open_modal" => {
                 register.tag = Some(create_modal_tag(ctx, mci.clone()).await?.to_uppercase());
@@ -78,23 +92,29 @@ pub async fn register_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(
 
 //Step 1
 async fn display_register_region(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    msg.edit(*ctx, |b|{
-        b.embed(|e|{
-            e.title("Step 1: Select your region")
-            .description("- The tournament is available for all 3 regions:\n - Asia & Oceania\n - Europe\n - North America & South America")
+    msg.edit(*ctx, |b| {
+        b.embed(|e| {
+            e.title("Step 1: Select your region").description(
+                r#"
+The tournament is available for all 3 regions: 
+-🌎: North America & South America.
+-🌍: Europe.
+-🌏: Asia & Oceania."#,
+            )
         })
-        .components(|c|{
-            c.create_action_row(|a|{
-                for region in Region::iter(){
-                    a.create_button(|b|{
-                        b.custom_id(format!("{:?}", region))
-                        .label(format!("{}", region))
+        .components(|c| {
+            c.create_action_row(|a| {
+                for region in Region::iter() {
+                    a.create_button(|b| {
+                        b.custom_id(region.short())
+                            .emoji(ReactionType::Unicode(region.get_emoji()))
                     });
-                };
+                }
                 a
             })
         })
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -173,7 +193,7 @@ async fn display_confirmation(
                 "The API is so uncanny!",
                 "Please try again later",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             Ok(None)
@@ -185,7 +205,7 @@ async fn display_confirmation(
                 "Failed to find your account!",
                 "We failed to find your account! Please try again!",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             Ok(None)
@@ -198,7 +218,7 @@ async fn display_confirmation(
                 "Something went wrong!",
                 "Please try again later!",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             Ok(None)
@@ -224,7 +244,7 @@ async fn confirm(
         "Congratulations! You are one of our participants!",
         format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </index:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
         None,
-        None).await
+        Some(0xFFFF00)).await
 }
 
 async fn cancel(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
@@ -234,7 +254,7 @@ async fn cancel(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
         "You have cancelled your registration!",
         "You can always register again by running </index:1181542953542488205>",
         None,
-        None,
+        Some(0xFF0000),
     )
     .await
 }
@@ -254,7 +274,7 @@ async fn assign_role(
                 "Failed! Unable to find role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             error!(
@@ -277,7 +297,7 @@ async fn assign_role(
                 "Failed! Unable to assign role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             info!("Failed to assign role for <@{}>", user);
@@ -300,7 +320,7 @@ async fn assign_role(
                 "Failed! Unable to assign role!",
                 "Please contact Host or Moderator for this issue",
                 None,
-                None,
+                Some(0xFF0000),
             )
             .await?;
             info!("Failed to assign role for <@{}>", user);
@@ -324,7 +344,7 @@ async fn already_used(
         "This account has already been used!",
         format!("This account has already been registered by <@{}>. If this is unwanted, please issue to the Host or Moderator team!", discord_id),
         None,
-        None
+        Some(0xFF0000)
     ).await?;
     Ok(())
 }

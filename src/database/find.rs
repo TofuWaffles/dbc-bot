@@ -120,7 +120,7 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
     };
     for region in Region::iter() {
         let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let player_data: Collection<Document> = database.collection("Player");
+        let player_data: Collection<Document> = database.collection("Players");
 
         match player_data
             .find_one(doc! { "tag": format!("#{}",&proper_tag)}, None)

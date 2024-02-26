@@ -1,5 +1,7 @@
 use crate::database::config::get_config;
 use crate::database::remove::remove_registration;
+use crate::discord::prompt;
+use crate::players::registration::deregister::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
@@ -70,20 +72,19 @@ async fn remove_role(
     msg: &ReplyHandle<'_>,
     config: &Document,
 ) -> Result<(), Error> {
-    let role_id = config
-        .get("role")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+    let role_id = config.get_str("role").unwrap().parse::<u64>().unwrap();
     let mut member = match ctx.author_member().await {
         Some(m) => m.deref().to_owned(),
         None => {
             let user = *ctx.author().id.as_u64();
-            msg.edit(*ctx, |s| {
-                s.content("Removing role failed! Please contact Host or Moderators for this issue")
-            })
+            prompt(
+                ctx,
+                msg,
+                "Failed to get member",
+                format!("Failed to get member for <@{}>", user),
+                None,
+                Some(0xFF0000),
+            )
             .await?;
             info!("Failed to assign role for <@{}>", user);
             return Err(Box::new(CustomError(format!(
@@ -95,12 +96,15 @@ async fn remove_role(
         Ok(_) => Ok(()),
         Err(_) => {
             let user = *ctx.author().id.as_u64();
-            msg.edit(*ctx, |s| {
-                s.content("Removing role failed! Please contact Host or Moderators for this issue")
-            })
-            .await?;
-            info!("Failed to remove role from <@{}>", user);
-            Ok(())
+            prompt(
+                ctx,
+                msg,
+                "Failed to remove the regional role",
+                format!("Failed to remove the regional role for <@{}>", user),
+                None,
+                Some(0xFF0000),
+            )
+            .await
         }
     }
 }

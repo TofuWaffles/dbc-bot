@@ -38,34 +38,24 @@ pub async fn registration_menu(
             c.create_action_row(|r| {
                 r.create_button(|b| {
                     b.custom_id("register")
-                        .label("Register")
                         .disabled(!register)
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("📝".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("personal")
-                        .label("View\nPersonal\nInfo")
                         .disabled(!view)
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("deregister")
-                        .label("Deregister")
                         .disabled(!deregister)
                         .style(ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚪".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("help")
-                        .label("Help")
                         .disabled(!help)
                         .style(ButtonStyle::Secondary)
                         .emoji(ReactionType::Unicode("❓".to_string()))
@@ -74,7 +64,14 @@ pub async fn registration_menu(
         })
         .embed(|e| {
             e.title("Registration Menu")
-                .description("Below are the available options!")
+                .description(
+                    r#"Below are options:
+📝: Register.
+🤓: View personal information.
+🚪: Deregister.
+❓: Help."#,
+                )
+                .color(0xFFFF00)
         })
     })
     .await?;
@@ -118,7 +115,7 @@ pub async fn tournament_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     schedule: bool,
-    managers: bool,
+    _managers: bool,
     submit: bool,
     help: bool,
     player: Document,
@@ -129,43 +126,42 @@ pub async fn tournament_menu(
             c.create_action_row(|r| {
                 r.create_button(|b| {
                     b.custom_id("enemy")
-                        .label("View\nOpponent")
                         .disabled(!schedule)
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🤓".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
-                    b.custom_id("managers")
-                        .label("View\nManagers")
-                        .disabled(!managers)
-                        .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("🛡️".to_string()))
-                })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("submit")
-                        .label("Submit\nResults")
                         .disabled(!submit)
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("⚔️".to_string()))
                 })
-            })
-            .create_action_row(|r| {
-                r.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("help")
-                        .label("Help")
                         .disabled(!help)
                         .style(ButtonStyle::Secondary)
                         .emoji(ReactionType::Unicode("❓".to_string()))
                 })
             })
+            // .create_action_row(|r| {
+            //     r.create_button(|b| {
+            //         b.custom_id("managers")
+            //             .disabled(!managers)
+            //             .style(ButtonStyle::Danger)
+            //             .emoji(ReactionType::Unicode("🛡️".to_string()))
+            //     })
+            // })
         })
         .embed(|e| {
             e.title("Tournament Menu")
-                .description("Below are the available options!")
+                .description(
+                    r#"Below are the available options!
+🤓: Find out who is your opponent in current round!
+⚔️: Submit your result!
+❓: Help.
+"#,
+                )
+                .color(0xFFFF00)
         })
     })
     .await?;
@@ -231,62 +227,38 @@ pub async fn mod_menu(
     msg.edit(*ctx, |e| {
         e.components(|c| {
             c.create_action_row(|r| {
-                r
-                    // .create_button(|b| {
-                    //     b.custom_id("disqualify")
-                    //         .label("Disqualify\nPlayer")
-                    //         .disabled(!disqualify)
-                    //         .style(ButtonStyle::Danger)
-                    //         .emoji(ReactionType::Unicode("🔨".to_string()))
-                    // })
-                    .create_button(|b| {
-                        b.custom_id("registration")
-                            .label("Registration")
-                            .disabled(!managers)
-                            .style(ButtonStyle::Primary)
-                            .emoji(ReactionType::Unicode("📥".to_string()))
-                    })
-                    .create_button(|b| {
-                        b.custom_id("tournament")
-                            .label("Tournament")
-                            .disabled(!managers)
-                            .style(ButtonStyle::Primary)
-                            .emoji(ReactionType::Unicode("🚩".to_string()))
-                    })
-                    .create_button(|b| {
-                        b.custom_id("setting")
-                            .label("Utilities")
-                            .disabled(!managers)
-                            .style(ButtonStyle::Primary)
-                            .emoji(ReactionType::Unicode("⚙️".to_string()))
-                    })
-                // .create_button(|b| {
-                //     b.custom_id("announcement")
-                //         .label("Announcement\nOptions")
-                //         .disabled(!managers)
-                //         .style(ButtonStyle::Danger)
-                //         .emoji(ReactionType::Unicode("📢".to_string()))
-                // })
-                // .create_button(|b| {
-                //     b.custom_id("configuration")
-                //         .label("Configuration\nROptions")
-                //         .disabled(!submit)
-                //         .style(ButtonStyle::Success)
-                //         .emoji(ReactionType::Unicode("⚙️".to_string()))
-                // })
-                // .create_button(|b| {
-                //     b.custom_id("help")
-                //         .label("Help")
-                //         .disabled(!help)
-                //         .style(ButtonStyle::Secondary)
-                //         .emoji(ReactionType::Unicode("❓".to_string()))
-                // })
+                r.create_button(|b| {
+                    b.custom_id("registration")
+                        .disabled(!managers)
+                        .style(ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("📥".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("tournament")
+                        .disabled(!managers)
+                        .style(ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("🚩".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("setting")
+                        .disabled(!managers)
+                        .style(ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("⚙️".to_string()))
+                })
             })
         })
         .embed(|e| {
             e.title("Host-only menu").description(format!(
-                "The following mod menu is set for region: {}",
-                region
+                r#"The following mod menu is set for {}
+Below are options:
+📥: Registration
+- Lets you manage registration status and view all players information.
+🚩: Tournament
+- Lets you start, end, and manage rounds.
+⚙️: Utilities
+- Lets you configurate announcements, and bot settings i.e role, channels, game modes, etc.
+"#,
+                region.full()
             ))
         })
     })

@@ -11,8 +11,8 @@ use poise::ReplyHandle;
 use tracing::info;
 const DELAY: u64 = 1;
 
-// Tournament all-in-one command
-#[poise::command(slash_command, guild_only)]
+/// Tournament all-in-one command
+#[poise::command(slash_command, guild_only, rename = "menu")]
 pub async fn index(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer_ephemeral().await?;
     home(ctx, None).await
@@ -70,7 +70,7 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                     Some(player) => {
                         if !is_battle(
                             &ctx,
-                            player.get("tag").unwrap().as_str(),
+                            player.get("tag").unwrap().as_str(), // Don't unwrap this as the `is_battle()` handles it internally
                             find_round_from_config(&get_config(&ctx, &region).await),
                         )
                         .await?

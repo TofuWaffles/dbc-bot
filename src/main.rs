@@ -58,15 +58,20 @@ async fn run() -> Result<(), Error> {
         commands::index::index(),
         commands::host::host(),
         commands::context_menu::get_individual_player_data(),
+        commands::setup::setup(),
     ];
-    // dotenv::dotenv().expect("Unable to load the .env file. Check if it has been created.");
-    let token = std::env::var("DISCORD_TOKEN")
-        .expect("DISCORD_TOKEN is not set. Set it as an environment variable.");
-    /*let owner_id =
-    std::env::var("OWNER_ID").expect("OWNER_ID is not set. Set it as an environment variable.");*/
-
+    info!("{} commands registered", commands.len());
+    // match dotenv::dotenv() {
+    //     Ok(_) => info!("Loaded .env file"),
+    //     Err(e) => error!("Error loading .env file: {e}"),
+    // }
+    let token = match std::env::var("DISCORD_TOKEN") {
+        Ok(token) => token,
+        Err(e) => {
+            panic!("Error loading DISCORD_TOKEN: {e}",)
+        }
+    };
     info!("Setting up the bot...");
-
     info!("Generating options");
     let options = poise::FrameworkOptions {
         commands,

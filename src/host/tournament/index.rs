@@ -11,7 +11,7 @@ use poise::ReplyHandle;
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
 use super::reset::reset;
-use super::setup::start_tournament;
+use super::setup::starter_wrapper;
 const TIMEOUT: u64 = 300;
 
 pub async fn tournament_mod_panel(
@@ -29,7 +29,7 @@ pub async fn tournament_mod_panel(
         match mci.data.custom_id.as_str() {
             "start" => {
                 mci.defer(&ctx.http()).await?;
-                return start_tournament(ctx, msg, region).await;
+                return starter_wrapper(ctx, msg, region).await;
             }
             "next" => {
                 mci.defer(&ctx.http()).await?;
@@ -41,7 +41,7 @@ pub async fn tournament_mod_panel(
             }
             "reset" => {
                 mci.defer(&ctx.http()).await?;
-                return reset(ctx, msg, Some(region)).await;
+                return reset(ctx, msg, region).await;
             }
             _ => {}
         }
@@ -57,6 +57,21 @@ async fn display_start_menu(
 ) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
     let valid = tournament_available(ctx, region).await || prerequisite(ctx, region).await;
+    let menu = r#"Below are available options:
+▶️: Start
+- Lets you start the tournament setup. 
+- This will end registration phase immediately if successful.
+➡️: Next round
+- Lets you move to the next round.
+- This will first check if any remaining players in the current round, if not, it will move to the next round.
+🔨: Disqualify
+- Lets you disqualify players from the tournament.
+- This will replace a disqualified player with a mannequin.
+🚩: Reset
+- Lets you reset the tournament.
+- This will reset the tournament to the initial state.
+- This is a dangerous action, use with caution.
+    "#;
     match round.as_str() {
         "Players" => {
             let count_prompt = format!(
@@ -64,14 +79,15 @@ async fn display_start_menu(
                 count_registers(ctx, region).await?
             );
             let valid_prompt = match &valid{
-          true => "All configurations are set! You can start tournament now",
-          false => "Some configurations are missing, please re-run </host:1185308022285799546> and check ⚙️ configuration menu",
-        };
+                true => "All configurations are set! You can start tournament now",
+                false => "Some configurations are missing, please re-run the command and check ⚙️ Utilities menu",
+            };
             display_start_buttons(ctx, msg, &valid, &false).await?;
             msg.edit(*ctx, |m| {
                 m.embed(|e| {
                     e.title("**Tournament menu**")
-                        .description(format!("{}\n{}\n", count_prompt, valid_prompt))
+                        .description(format!("{}\n{}\n{}", valid_prompt, count_prompt, menu))
+                        .color(0xFFFF00)
                 })
             })
             .await?;
@@ -81,7 +97,8 @@ async fn display_start_menu(
             msg.edit(*ctx, |m| {
                 m.embed(|e| {
                     e.title("Tournament menu")
-                        .description(format!("Tournament is at {}!", round))
+                        .description(format!("Tournament is at {round}!"))
+                        .color(0xFFFF00)
                 })
             })
             .await?;
@@ -100,31 +117,25 @@ async fn display_start_buttons(
             c.create_action_row(|row| {
                 row.create_button(|b| {
                     b.custom_id("start")
-                        .label("Start tournament")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("▶️".to_string()))
                         .disabled(!start)
-                });
-                row.create_button(|b| {
+                })
+                .create_button(|b| {
                     b.custom_id("next")
-                        .label("Next round")
-                        .emoji(ReactionType::Unicode("▶️".to_string()))
+                        .emoji(ReactionType::Unicode("➡️".to_string()))
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                         .disabled(!next)
                 })
-            })
-            .create_action_row(|row| {
-                row.create_button(|b| {
+                .create_button(|b| {
                     b.custom_id("disqualify")
-                        .label("Disqualify players")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🔨".to_string()))
                 })
                 .create_button(|b| {
                     b.custom_id("reset")
-                        .label("Reset tournament")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("🔨".to_string()))
+                        .emoji(ReactionType::Unicode("🚩".to_string()))
                 })
             })
         })

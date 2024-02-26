@@ -44,6 +44,11 @@ pub struct Trapezoid {
     pub border: Option<Border>,
 }
 
+pub struct Circle {
+    pub radius: i64,
+    pub color: u32,
+    pub border: Option<Border>,
+}
 pub struct Border {
     pub thickness: i64,
     pub color: u32,
@@ -61,30 +66,33 @@ pub trait Image {
 
 pub trait Borderable {
     fn is_border(&mut self, x: i64, y: i64) -> bool;
+    fn is_inside(&mut self, x: i64, y: i64) -> bool;
+    fn draw(
+        &mut self,
+        overlay_image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+        (r, g, b, a): (u8, u8, u8, u8),
+        (br, bg, bb, ba): (u8, u8, u8, u8),
+    ) -> DynamicImage {
+        for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
+            if self.is_inside(x as i64, y as i64) {
+                *pixel = Rgba([r, g, b, a]);
+            } else if self.is_border(x as i64, y as i64){
+                *pixel = Rgba([br, bg, bb, ba]);
+            }
+        }
+        DynamicImage::ImageRgba8(overlay_image.clone())
+    }
 }
 
 #[async_trait]
 impl Image for Rectangle {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
-        let (r, g, b, a) = get_color(self.color);
-
-        // Create a new image with the specified dimensions
-        let mut overlay_image = ImageBuffer::new(self.width as u32, self.height as u32);
+        let color = get_color(self.color);
         let bcolor = self.border.as_mut().map_or(0x00000000, |b| b.color);
-        let (br, bg, bb, ba) = get_color(bcolor);
-
-        // Fill the image with the provided RGBA color
-        for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
-            if Rectangle::is_border(&mut self, x as i64, y as i64){
-                *pixel = Rgba([br, bg, bb, ba]);
-            }
-            else{
-                *pixel = Rgba([r, g, b, a]);
-            }
-        }
-
-        // Convert the ImageBuffer to a DynamicImage
-        Ok(DynamicImage::ImageRgba8(overlay_image))
+        let b_color = get_color(bcolor);
+        let mut overlay_image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            ImageBuffer::new(self.width as u32, self.height as u32);
+        Ok(self.draw(&mut overlay_image, color, b_color))
     }
 }
 impl Borderable for Rectangle {
@@ -92,8 +100,11 @@ impl Borderable for Rectangle {
         let t = self.border.as_mut().map_or(0, |t| t.thickness);
         x < t || x > self.width - t || y < t || y > self.height - t
     }
-}
 
+    fn is_inside(&mut self, x: i64, y: i64) -> bool {
+        x >= 0 && x <= self.width && y >= 0 && y <= self.height
+    }
+}
 
 #[async_trait]
 impl Image for Trapezoid {
@@ -103,36 +114,7 @@ impl Image for Trapezoid {
         let (br, bg, bb, ba) = get_color(bcolor);
         // Create a new image with the specified dimensions
         let mut overlay_image = ImageBuffer::new(self.top as u32, self.height as u32);
-
-        // Fill the image with the provided RGBA color
-        for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
-            if Trapezoid::is_inside(self, x as i64, y as i64) {
-                *pixel = Rgba([r, g, b, a]);
-            } else if Trapezoid::is_border(&mut self, x as i64, y as i64) {
-                *pixel = Rgba([br, bg, bb, ba]);
-            }
-        }
-
-        // Convert the ImageBuffer to a DynamicImage
-        Ok(DynamicImage::ImageRgba8(overlay_image))
-    }
-}
-
-impl Trapezoid {
-    ///  Here is the geometry that Doofus doesn't like lmao
-    ///    (0, 0)_______________________(top, 0)
-    ///         \                      |
-    ///          \                    |
-    ///           \                  |
-    /// (c,height) \________________| (bottom+c, height)
-    ///
-    pub fn is_inside(&mut self, x: i64, y: i64) -> bool {
-        let c = ((self.top - self.bottom) / 2).abs();
-        let t = self.border.as_mut().map_or(0, |t| t.thickness);
-        self.height * (x - t) - c * y >= 0
-            && y >= t
-            && y <= self.height - t
-            && self.height * (x - self.top + t) - y * (self.bottom + c - self.top) <= 0
+        Ok(self.draw(&mut overlay_image, (r, g, b, a), (br, bg, bb, ba)))
     }
 }
 
@@ -144,17 +126,52 @@ impl Borderable for Trapezoid {
             && y <= self.height
             && self.height * (x - self.top) - y * (self.bottom + c - self.top) <= 0
     }
+    //  Here is the geometry that Doofus doesn't like lmao
+    //    (0, 0)_______________________(top, 0)
+    //         \                      |
+    //          \                    |
+    //           \                  |
+    // (c,height) \________________| (bottom+c, height)
+    //
+    fn is_inside(&mut self, x: i64, y: i64) -> bool {
+        let c = ((self.top - self.bottom) / 2).abs();
+        let t = self.border.as_mut().map_or(0, |t| t.thickness);
+        self.height * (x - t) - c * y >= 0
+            && y >= t
+            && y <= self.height - t
+            && self.height * (x - self.top + t) - y * (self.bottom + c - self.top) <= 0
+    }
+}
+#[async_trait]
+impl Image for Circle {
+    async fn build(&mut self) -> Result<DynamicImage, Error> {
+        let (r, g, b, a) = get_color(self.color);
+        let bcolor = self.border.as_mut().map_or(0x00000000, |b| b.color);
+        let (br, bg, bb, ba) = get_color(bcolor);
+        let mut overlay_image = ImageBuffer::new(self.radius as u32, self.radius as u32);
+        Ok(self.draw(&mut overlay_image, (r, g, b, a), (br, bg, bb, ba)))
+    }
 }
 
+impl Borderable for Circle {
+    fn is_border(&mut self, x: i64, y: i64) -> bool {
+        x * x + y * y <= self.radius * self.radius
+    }
+
+    fn is_inside(&mut self, x: i64, y: i64) -> bool {
+        let t = self.border.as_mut().map_or(0, |t| t.thickness);
+        x * x + y * y <= (self.radius - t) * (self.radius - t)
+    }
+}
 #[async_trait]
 impl Image for Text {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
         let renderer = TextRenderer::try_new_with_ttf_font_data(include_bytes!(
-            "./assets/LilitaOne-Regular.ttf"
+            "../../assets/battle/LilitaOne-Regular.ttf"
         ))?;
-        let img = renderer
-            .render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)?;
-        
+        let img =
+            renderer.render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)?;
+
         match image::load_from_memory(&img.data) {
             Ok(img) => Ok(img),
             Err(e) => {
@@ -339,9 +356,9 @@ impl BSImage {
 }
 
 fn get_color(color: u32) -> (u8, u8, u8, u8) {
-    let r = (color >> 24) as u8;
-    let g = (color >> 16) as u8;
-    let b = (color >> 8) as u8;
-    let a = (color << 24) >> 24 as u8;
+    let r = color >> 24_u8;
+    let g = color >> 16_u8;
+    let b = color >> 8_u8;
+    let a = (color << 24_u8) >> 24_u8 ;
     (r as u8, g as u8, b as u8, a as u8)
 }

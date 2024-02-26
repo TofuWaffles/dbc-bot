@@ -6,14 +6,13 @@ import cv2
 def generate_bracket_image(region, total_rounds, args):
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-
     region_background_mapping = {
         'Europe': 'bracket_preset_eu.jpg',
         'North America & South America': 'bracket_preset_nasa.jpg',
         'Asia & Oceania': 'bracket_preset_apac.jpg',
     }
-
-    background_image_path = os.path.join(current_dir, "presets", region_background_mapping.get(region, 'bracket_preset_default.jpg'))
+    # root = os.path.dirname(os.path.dirname(current_dir))
+    background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.jpg'))
     
     background_image = cv2.imread(background_image_path)
 

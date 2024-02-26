@@ -1,9 +1,7 @@
 name: Build, Test and Deploy to Prod
 
 on:
-  push:
-    branches:
-      - bracket
+  workflow_dispatch:
 
 env:
   BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}

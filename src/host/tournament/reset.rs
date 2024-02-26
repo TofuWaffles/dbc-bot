@@ -5,27 +5,16 @@ use mongodb::{
     Collection, Database,
 };
 use poise::ReplyHandle;
-use strum::IntoEnumIterator;
-
-pub async fn reset(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>,
-    region_option: Option<&Region>,
-) -> Result<(), Error> {
+pub async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
         s.content("Resetting match id, and removing mannequins and rounds...")
+            .components(|c| c)
     })
     .await?;
-    for region in Region::iter() {
-        match region_option {
-            Some(region_option) if region != *region_option => continue,
-            _ => {}
-        }
-        let database = ctx.data().database.regional_databases.get(&region).unwrap();
-        let collection: Collection<Document> = database.collection("Players");
-        clear_rounds_and_reset_config(database, &region, ctx, msg).await?;
-        clear_all_players(&collection).await;
-    }
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let collection: Collection<Document> = database.collection("Players");
+    clear_rounds_and_reset_config(database, region, ctx, msg).await?;
+    clear_all_players(&collection).await;
     msg.edit(*ctx, |s| s.content("Complete!")).await?;
     Ok(())
 }
