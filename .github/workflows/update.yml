@@ -67,27 +67,15 @@ jobs:
           host: ${{ vars.DROPLET_IP }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_NAME,REGISTRY,{{ secrets.DO_TOKEN }},GITHUB_SHA
           script: |
             cd ~
             echo "BRAWL_STARS_TOKEN=${{ secrets.BRAWL_STARS_TOKEN }}" > ~/.env
             echo "DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}" >> ~/.env
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> ~/.env
-
-      - name: Deploy to Digital Ocean droplet via SSH action
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ vars.DROPLET_IP }}
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_NAME,REGISTRY,{{ secrets.DO_TOKEN }},GITHUB_SHA
-          script: |
-            # Login to registry
-            docker login -u ${{ secrets.DO_TOKEN  }} -p ${{ secrets.DO_TOKEN  }} registry.digitalocean.com 
-            # Stop running container
+            docker login -u ${{ secrets.DO_TOKEN  }} -p ${{ secrets.DO_TOKEN  }} registry.digitalocean.com
             docker stop $(echo $IMAGE_NAME)
-            # Remove old container
             docker rm $(echo $IMAGE_NAME)
-            # Run a new container from a new image
             docker run -d \
             --restart always \
             --name $(echo $IMAGE_NAME) \
