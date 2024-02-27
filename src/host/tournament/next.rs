@@ -43,6 +43,7 @@ pub async fn display_next_round(
           })
         })
     }).await?;
+}
         let resp = msg.clone().into_message().await?;
         let cib = resp
             .await_component_interactions(&ctx.serenity_context().shard)
@@ -52,10 +53,16 @@ pub async fn display_next_round(
             if mci.data.custom_id.as_str() == "continue" {
                 mci.defer(&ctx.http()).await?;
                 update_round_config(ctx, region).await?;
-                return Ok(());
+                let config = crate::database::config::get_config(ctx, region).await;
+                let round = config.get_i32("round").unwrap();
+                msg.edit(*ctx, |m| {
+                    m.embed(|e| {
+                        e.title("Next Round is set!")
+                            .description(format!("Now the tournament is at round {round}!"))
+                    })
+                }).await?;
             }
         }
-    }
     Ok(())
 }
 

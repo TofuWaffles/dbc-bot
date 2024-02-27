@@ -54,7 +54,7 @@ pub async fn registration_mod_panel(
 
 async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region, reg: &Reg) -> Result<(), Error> {
     let flag = if reg.tournament {
-        "\n. Notice: Tournament is currently running. Toggle is disabled!"
+        "\nNotice: Tournament is currently running. Toggle is disabled!"
     } else {
         ""
     };
@@ -83,7 +83,7 @@ Below are options:
                 row.create_button(|b| {
                     b.custom_id("registration")
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
-                        .disabled(reg.tournament && check_flag)
+                        .disabled(reg.tournament || !check_flag)
                         .emoji(ReactionType::Unicode("🔒".to_string()))
                 });
                 row.create_button(|b| {
