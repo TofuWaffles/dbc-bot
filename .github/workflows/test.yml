@@ -9,6 +9,8 @@ env:
   BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
   DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  REGISTRY: registry.digitalocean.com/dbc-bot
+  IMAGE_NAME: dbc-bot 
 
 jobs:
   build_and_push:
