@@ -31,10 +31,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 Some(caller) => caller,
                 None => {
                     info!("Player is not in a tournament, but the function did not return early.");
-                    return Err(Box::new(CustomError(
-                        "Player is not in a tournament, but the function did not return early."
-                            .to_string(),
-                    )));
+                    return Err("Player is not in a tournament, but the function did not return early.".into());
                 }
             };
             Region::find_key(caller.get_str("region").unwrap()).unwrap()
@@ -142,7 +139,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     let image_bytes = general_purpose::STANDARD.decode(buffer.trim_end()).unwrap();
     let attachment = poise::serenity_prelude::AttachmentType::Bytes {
         data: image_bytes.into(),
-        filename: "Tournament_Bracket.png".to_string(),
+        filename: format!("Tournament_bracket_{}.png", current_region.short()),
     };
 
     match config

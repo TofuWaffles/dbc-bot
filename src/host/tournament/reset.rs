@@ -5,7 +5,9 @@ use mongodb::{
     Collection, Database,
 };
 use poise::ReplyHandle;
+use tracing::info;
 pub async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+    info!("{} decides to reset the tournament.", ctx.author_member().await.map_or_else(|| "Someone".to_string(), |m| m.user.name.clone()));
     msg.edit(*ctx, |s| {
         s.content("Resetting match id, and removing mannequins and rounds...")
             .components(|c| c)

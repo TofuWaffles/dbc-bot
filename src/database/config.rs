@@ -22,7 +22,8 @@ pub fn make_config() -> Document {
       "total": 0,
       "role": Null,
       "channel": Null,
-      "bracket_channel": Null
+      "bracket_channel": Null,
+      "bracket_message_id": Null,
     };
     config
 }
@@ -90,7 +91,8 @@ pub fn reset_config() -> Document {
             "total": 0,
             "role": Null,
             "channel": Null,
-            "bracket_channel": Null
+            "bracket_channel": Null,
+            "bracket_message_id": Null,
         }
     };
     config

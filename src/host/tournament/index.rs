@@ -112,6 +112,7 @@ async fn display_start_buttons(
     start: &bool,
     next: &bool,
 ) -> Result<(), Error> {
+    let is_mod = is_mod(ctx).await.unwrap_or(false);
     msg.edit(*ctx, |m| {
         m.components(|c| {
             c.create_action_row(|row| {
@@ -136,6 +137,7 @@ async fn display_start_buttons(
                     b.custom_id("reset")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚩".to_string()))
+                        .disabled(!is_mod)
                 })
             })
         })
@@ -154,4 +156,15 @@ async fn prerequisite(ctx: &Context<'_>, region: &Region) -> bool {
 async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !config.get_bool("tournament").unwrap()
+}
+
+async fn is_mod(ctx: &Context<'_>) -> Result<bool, Error>{
+    let member = ctx
+        .serenity_context()
+        .http
+        .get_member(ctx.guild_id().unwrap().into(), ctx.author().id.into())
+        .await?;
+    let permission = member.permissions(ctx.cache())?;
+
+    Ok(permission.ban_members())
 }
