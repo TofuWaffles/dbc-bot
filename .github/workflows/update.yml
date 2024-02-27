@@ -74,7 +74,7 @@ jobs:
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> ~/.env
 
       - name: Deploy to Digital Ocean droplet via SSH action
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ vars.DROPLET_IP }}
           username: root
