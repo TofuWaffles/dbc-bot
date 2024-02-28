@@ -97,9 +97,9 @@ async fn display_register_region(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Re
             e.title("Step 1: Select your region").description(
                 r#"
 The tournament is available for all 3 regions: 
--🌎: North America & South America.
--🌍: Europe.
--🌏: Asia & Oceania."#,
+-NASA: North America & South America.
+-EU: Europe.
+-APAC: Asia & Oceania."#,
             )
         })
         .components(|c| {
