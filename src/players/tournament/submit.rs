@@ -58,12 +58,12 @@ pub async fn submit_result(
     let config = get_config(ctx, &region).await;
 
     //Get player document via their discord_id
-    let match_id: i32 = (caller.get("match_id").unwrap()).as_i32().unwrap();
-    let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
+    let match_id: i32 = caller.get_i32("match_id").unwrap();
+    let caller_tag = caller.get_str("tag").unwrap();
     //Check if the user has already submitted the result or not yet disqualified
 
-    let mode = config.get("mode").unwrap().as_str().unwrap();
-    // let map = config.get("map").unwrap().as_str().unwrap();
+    let mode = config.get_str("mode").unwrap();
+    let map = config.get_str("map").unwrap_or_default();
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
@@ -103,7 +103,7 @@ pub async fn submit_result(
     let bracket_chn_id = config.get_str("bracket_channel").unwrap();
     let server_id = ctx.guild_id().unwrap().0;
     let channel_to_announce = ChannelId(channel);
-    match get_result(mode, caller, enemy).await {
+    match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
             if round < config.get("total").unwrap().as_i32().unwrap() {
                 let next_round: Collection<Document> =
@@ -193,7 +193,7 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
     Ok(())
 }
 
-async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Document> {
+async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) -> Option<Document> {
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let logs = match api::request("battle_log", caller_tag).await {
@@ -207,18 +207,22 @@ async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Doc
 
     for log in logs.unwrap() {
         let mode_log = log["event"]["mode"].as_str().unwrap();
-        if log["battle"]["type"].as_str().unwrap() != "friendly" {
+        let map_log = log["event"]["map"].as_str().unwrap();
+        if log["battle"]["type"].as_str().unwrap() != "friendly" || *mode_log != *mode {
+            continue;
+        } 
+        if !map.is_empty() && *map_log != *map {
             continue;
         }
+        
         let player1 = log["battle"]["teams"][0][0]["tag"].as_str().unwrap();
         let player2 = log["battle"]["teams"][1][0]["tag"].as_str().unwrap();
-        if mode_log.to_string() == mode.to_string() {
-            if (compare_tag(caller_tag, player1) || compare_tag(caller_tag, player2))
-                && (compare_tag(enemy_tag, player1) || compare_tag(enemy_tag, player2))
-            {
-                results.push(log["battle"]["result"].as_str().unwrap().to_string());
-            }
+        if (compare_tag(caller_tag, player1) || compare_tag(caller_tag, player2))
+            && (compare_tag(enemy_tag, player1) || compare_tag(enemy_tag, player2))
+        {
+            results.push(log["battle"]["result"].as_str().unwrap().to_string());
         }
+        
     }
     info!("{:?}", results);
     //If there are more than 1 result (best of 2), then we need to check the time
