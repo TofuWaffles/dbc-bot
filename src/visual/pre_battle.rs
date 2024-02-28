@@ -18,9 +18,7 @@ async fn create_battle_image(
     mode: &str,
 ) -> Result<DynamicImage, Error> {
     let current_dir = match env::current_dir() {
-        Ok(dir) => {
-            dir
-        }
+        Ok(dir) => dir,
         Err(e) => {
             error!("Failed to get current directory: {}", e);
             return Err(Box::new(CustomError(format!("{e}"))));

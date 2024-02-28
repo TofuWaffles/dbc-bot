@@ -26,7 +26,8 @@ pub async fn view_opponent(
         "<a:loading:1187839622680690689> Searching for your opponent...",
         None,
         Some(0xFFFF00),
-    ).await?;
+    )
+    .await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,

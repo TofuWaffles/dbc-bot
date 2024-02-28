@@ -5,12 +5,12 @@ use crate::database::stat::count_registers;
 use crate::database::update::{
     resetting_tournament_config, setting_tournament_config, update_round_1, update_round_config,
 };
+use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::Region;
-use mongodb::bson::{doc, Document, Bson::Null};
+use mongodb::bson::{doc, Bson::Null, Document};
 use mongodb::Collection;
 use poise::ReplyHandle;
-use crate::discord::prompt::prompt;
 use tracing::error;
 const MINIMUM_PLAYERS: i32 = 3; // The minimum amount of players required to start a tournament
 
@@ -130,25 +130,25 @@ pub async fn start_tournament(
         })
     })
     .await?;
-msg.edit(*ctx, |s| {
-    s.embed(|e| {
-        e.title("Setting up tournament").description(format!(
-            "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
-            prompts[0],
-            prompts[1],
-            prompts[3],
-            &count,
-            prompts[7],
-            &rounds,
-            prompts[5],
-            &byes,
-            prompts[9],
-            prompts[10]
-        ))
+    msg.edit(*ctx, |s| {
+        s.embed(|e| {
+            e.title("Setting up tournament").description(format!(
+                "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
+                prompts[0],
+                prompts[1],
+                prompts[3],
+                &count,
+                prompts[7],
+                &rounds,
+                prompts[5],
+                &byes,
+                prompts[9],
+                prompts[10]
+            ))
+        })
     })
-})
-.await?;
-    match update_bracket(ctx, Some(region)).await{
+    .await?;
+    match update_bracket(ctx, Some(region)).await {
         Ok(_) => {
             msg.edit(*ctx, |s| {
                 s.embed(|e| {
@@ -194,9 +194,13 @@ msg.edit(*ctx, |s| {
     Ok(())
 }
 
-pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+pub async fn starter_wrapper(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
-    match start_tournament(ctx, msg, region).await{
+    match start_tournament(ctx, msg, region).await {
         Ok(_) => Ok(()),
         Err(e) => {
             error!("{e}");
@@ -209,7 +213,8 @@ pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &
                 "<:sad:1187843167760949348> Failed to start tournament!",
                 None,
                 Some(0xFF0000),
-            ).await?;
+            )
+            .await?;
             Ok(())
         }
     }
@@ -218,13 +223,15 @@ pub async fn starter_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &
 async fn revert(ctx: &Context<'_>, region: &Region) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
-    collection.delete_many(doc! {"discord_id": Null}, None).await?;
+    collection
+        .delete_many(doc! {"discord_id": Null}, None)
+        .await?;
     let update = doc! {
         "$set": {
             "match_id": Null,
         }
     };
-    collection.update_many(doc!{}, update, None).await?;
+    collection.update_many(doc! {}, update, None).await?;
     let collections = database.list_collection_names(None).await?;
     for collection in collections {
         if collection.starts_with("Round") {

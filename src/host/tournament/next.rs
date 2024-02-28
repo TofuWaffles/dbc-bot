@@ -43,26 +43,27 @@ pub async fn display_next_round(
           })
         })
     }).await?;
-}
-        let resp = msg.clone().into_message().await?;
-        let cib = resp
-            .await_component_interactions(&ctx.serenity_context().shard)
-            .timeout(std::time::Duration::from_secs(TIMEOUT));
-        let mut cic = cib.build();
-        while let Some(mci) = &cic.next().await {
-            if mci.data.custom_id.as_str() == "continue" {
-                mci.defer(&ctx.http()).await?;
-                update_round_config(ctx, region).await?;
-                let config = crate::database::config::get_config(ctx, region).await;
-                let round = config.get_i32("round").unwrap();
-                msg.edit(*ctx, |m| {
-                    m.embed(|e| {
-                        e.title("Next Round is set!")
-                            .description(format!("Now the tournament is at round {round}!"))
-                    })
-                }).await?;
-            }
+    }
+    let resp = msg.clone().into_message().await?;
+    let cib = resp
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT));
+    let mut cic = cib.build();
+    while let Some(mci) = &cic.next().await {
+        if mci.data.custom_id.as_str() == "continue" {
+            mci.defer(&ctx.http()).await?;
+            update_round_config(ctx, region).await?;
+            let config = crate::database::config::get_config(ctx, region).await;
+            let round = config.get_i32("round").unwrap();
+            msg.edit(*ctx, |m| {
+                m.embed(|e| {
+                    e.title("Next Round is set!")
+                        .description(format!("Now the tournament is at round {round}!"))
+                })
+            })
+            .await?;
         }
+    }
     Ok(())
 }
 

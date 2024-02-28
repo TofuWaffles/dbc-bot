@@ -74,7 +74,7 @@ async fn display_config(
 ) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = match collection.find_one(doc! {}, None).await?{
+    let config = match collection.find_one(doc! {}, None).await? {
         Some(config) => config,
         None => {
             collection.insert_one(make_config(), None).await?;

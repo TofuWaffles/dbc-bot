@@ -52,7 +52,12 @@ pub async fn registration_mod_panel(
     Ok(())
 }
 
-async fn display_info(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region, reg: &Reg) -> Result<(), Error> {
+async fn display_info(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    reg: &Reg,
+) -> Result<(), Error> {
     let flag = if reg.tournament {
         "\nNotice: Tournament is currently running. Toggle is disabled!"
     } else {

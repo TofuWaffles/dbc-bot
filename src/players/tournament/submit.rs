@@ -26,18 +26,22 @@ pub async fn submit_result(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    msg.edit(*ctx, |s| {
-        s
-            .content("Checking your match result...")
-    })
-    .await?;
+    msg.edit(*ctx, |s| s.content("Checking your match result..."))
+        .await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
-            return prompt(ctx, msg, "Sorry, you are not in the tournament!", "You have to be in a tournament to use this command!", None, Some(0xFF0000)).await;
-           
+            return prompt(
+                ctx,
+                msg,
+                "Sorry, you are not in the tournament!",
+                "You have to be in a tournament to use this command!",
+                None,
+                Some(0xFF0000),
+            )
+            .await;
         }
     };
     let region = Region::find_key(
@@ -111,18 +115,19 @@ pub async fn submit_result(
                 update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
-                        e.title("Result is here!").description(format!(
-r#"{}({}) has won this round!
+                        e.title("Result is here!")
+                            .description(format!(
+                                r#"{}({}) has won this round!
 The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
-                            winner.get_str("name").unwrap(),
-                            winner.get_str("tag").unwrap(),
-                            guild = server_id,
-                            chn = bracket_chn_id,
-                            msg_id = bracket_msg_id
-                        ))
-                        .color(0xFFFF00)
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap(),
+                                guild = server_id,
+                                chn = bracket_chn_id,
+                                msg_id = bracket_msg_id
+                            ))
+                            .color(0xFFFF00)
                     })
-                    .components(|c|c)
+                    .components(|c| c)
                 })
                 .await?;
                 channel_to_announce
@@ -149,6 +154,7 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                         None,
                     )
                     .await?;
+                update_battle(database, round, match_id).await?;
                 update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
@@ -158,7 +164,7 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                             winner.get_str("tag").unwrap()
                         ))
                     })
-                    .components(|c|c)
+                    .components(|c| c)
                 })
                 .await?;
                 channel_to_announce
@@ -178,11 +184,9 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
             ctx.send(|s| {
                 s.embed(|e| {
                         e.title("There are not enough results yet!")
-                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battlelog")
-                   
+                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battlelog")              
                     })
                     .components(|c|c)
-                    
             }).await?;
         }
     }
@@ -203,18 +207,18 @@ async fn get_result(mode: &str, caller: Document, enemy: Document) -> Option<Doc
 
     for log in logs.unwrap() {
         let mode_log = log["event"]["mode"].as_str().unwrap();
-        if log["battle"]["type"].as_str().unwrap() != "friendly"{
+        if log["battle"]["type"].as_str().unwrap() != "friendly" {
             continue;
         }
         let player1 = log["battle"]["teams"][0][0]["tag"].as_str().unwrap();
         let player2 = log["battle"]["teams"][1][0]["tag"].as_str().unwrap();
-        if mode_log.to_string() == mode.to_string()
-         {if (compare_tag(caller_tag, player1) || compare_tag(caller_tag, player2))
-            && (compare_tag(enemy_tag, player1) || compare_tag(enemy_tag, player2) )
-        {
-            results.push(log["battle"]["result"].as_str().unwrap().to_string());
-        }}
-        
+        if mode_log.to_string() == mode.to_string() {
+            if (compare_tag(caller_tag, player1) || compare_tag(caller_tag, player2))
+                && (compare_tag(enemy_tag, player1) || compare_tag(enemy_tag, player2))
+            {
+                results.push(log["battle"]["result"].as_str().unwrap().to_string());
+            }
+        }
     }
     info!("{:?}", results);
     //If there are more than 1 result (best of 2), then we need to check the time

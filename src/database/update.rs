@@ -125,7 +125,7 @@ pub async fn update_round_1(ctx: &Context<'_>, region: &Region, rounds: i32) -> 
             "total": rounds
         }
     };
-    config.update_one(doc!{}, update, None).await?;
+    config.update_one(doc! {}, update, None).await?;
     let players: Collection<Document> = database.collection("Players");
     let pipeline = vec![
         bson::doc! { "$match": bson::Document::new() },
@@ -137,10 +137,16 @@ pub async fn update_round_1(ctx: &Context<'_>, region: &Region, rounds: i32) -> 
     Ok(())
 }
 
-pub async fn resetting_tournament_config(ctx: &Context<'_>, region: &Region, backup: Option<Document>) -> Result<(), Error> {
+pub async fn resetting_tournament_config(
+    ctx: &Context<'_>,
+    region: &Region,
+    backup: Option<Document>,
+) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = database.collection::<Document>("Config");
-    config.delete_one(doc!{}, None).await?;
-    config.insert_one(backup.unwrap_or(reset_config()), None).await?;
+    config.delete_one(doc! {}, None).await?;
+    config
+        .insert_one(backup.unwrap_or(reset_config()), None)
+        .await?;
     Ok(())
 }

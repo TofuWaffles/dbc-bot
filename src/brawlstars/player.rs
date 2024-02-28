@@ -66,7 +66,6 @@ pub async fn stat(
                                 } else {
                                     "Undefined".to_string()
                                 }
-                                
                             },
                         ),
                         true,
