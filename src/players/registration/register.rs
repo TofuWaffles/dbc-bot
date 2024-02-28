@@ -9,7 +9,7 @@ use crate::{Context, Error};
 use dbc_bot::{CustomError, Region};
 use futures::StreamExt;
 use mongodb::bson::Document;
-use poise::serenity_prelude::{self as serenity, ReactionType};
+use poise::serenity_prelude::{self as serenity};
 use poise::ReplyHandle;
 use std::ops::Deref;
 use std::sync::Arc;

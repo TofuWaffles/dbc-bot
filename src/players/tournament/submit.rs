@@ -208,10 +208,10 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
     for log in logs.unwrap() {
         let mode_log = log["event"]["mode"].as_str().unwrap();
         let map_log = log["event"]["map"].as_str().unwrap();
-        if log["battle"]["type"].as_str().unwrap() != "friendly" || *mode_log != *mode {
+        if !compare_strings(log["battle"]["type"].as_str().unwrap(), "friendly") || !compare_strings(mode_log, mode) {
             continue;
         } 
-        if !map.is_empty() && *map_log != *map {
+        if !map.is_empty() && !compare_strings(map_log, map){
             continue;
         }
         
@@ -261,4 +261,18 @@ fn compare_tag(s1: &str, s2: &str) -> bool {
         .zip(s2.chars())
         .all(|(c1, c2)| c1 == c2 || (c1 == 'O' && c2 == '0') || (c1 == '0' && c2 == 'O'))
         && s1.len() == s2.len()
+}
+
+fn compare_strings(str1: &str, str2: &str) -> bool {
+    // Remove punctuation and convert to lowercase
+    let str1_normalized = str1.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect::<String>();
+
+    let str2_normalized = str2.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect::<String>();
+    str1_normalized == str2_normalized
 }
