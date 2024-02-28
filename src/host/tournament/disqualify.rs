@@ -31,9 +31,18 @@ pub async fn disqualify_players(
     region: &Region,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |s| {
-        s.ephemeral(true)
-            .reply(true)
-            .content("Attempting to disqualify player...")
+        s.embed(|e| {
+            e.title("🔨 Disqualify Players")
+                .description("Please enter the user ID of the player you want to disqualify.")
+        })
+        .components(|c| {
+            c.create_action_row(|a| {
+                a.create_button(|b| {
+                    b.custom_id("open_modal")
+                        .label("Disqualify Player")
+                })
+            })
+        })
     })
     .await?;
     let mut disqualification = PlayerDisqualification {

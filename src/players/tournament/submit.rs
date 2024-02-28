@@ -208,13 +208,15 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
     for log in logs.unwrap() {
         let mode_log = log["event"]["mode"].as_str().unwrap();
         let map_log = log["event"]["map"].as_str().unwrap();
-        if !compare_strings(log["battle"]["type"].as_str().unwrap(), "friendly") || !compare_strings(mode_log, mode) {
-            continue;
-        } 
-        if !map.is_empty() && !compare_strings(map_log, map){
+        if !compare_strings(log["battle"]["type"].as_str().unwrap(), "friendly")
+            || !compare_strings(mode_log, mode)
+        {
             continue;
         }
-        
+        if !map.is_empty() && !compare_strings(map_log, map) {
+            continue;
+        }
+
         let player1 = log["battle"]["teams"][0][0]["tag"].as_str().unwrap();
         let player2 = log["battle"]["teams"][1][0]["tag"].as_str().unwrap();
         if (compare_tag(caller_tag, player1) || compare_tag(caller_tag, player2))
@@ -222,7 +224,6 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
         {
             results.push(log["battle"]["result"].as_str().unwrap().to_string());
         }
-        
     }
     info!("{:?}", results);
     //If there are more than 1 result (best of 2), then we need to check the time
@@ -265,12 +266,14 @@ fn compare_tag(s1: &str, s2: &str) -> bool {
 
 fn compare_strings(str1: &str, str2: &str) -> bool {
     // Remove punctuation and convert to lowercase
-    let str1_normalized = str1.chars()
+    let str1_normalized = str1
+        .chars()
         .filter(|c| c.is_alphanumeric())
         .flat_map(char::to_lowercase)
         .collect::<String>();
 
-    let str2_normalized = str2.chars()
+    let str2_normalized = str2
+        .chars()
         .filter(|c| c.is_alphanumeric())
         .flat_map(char::to_lowercase)
         .collect::<String>();

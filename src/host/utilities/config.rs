@@ -3,7 +3,6 @@ use crate::{Context, Error};
 use dbc_bot::{Mode, Region};
 use futures::StreamExt;
 use mongodb::{bson::doc, bson::Document, Collection};
-use poise::modal;
 use std::sync::Arc;
 
 use poise::{
@@ -83,12 +82,12 @@ async fn display_config(
             collection.find_one(doc! {}, None).await?.unwrap()
         }
     };
-    let registration_status = if config.get_bool("registration").unwrap_or_else(|_|false) {
+    let registration_status = if config.get_bool("registration").unwrap_or_else(|_| false) {
         "Open"
     } else {
         "Closed"
     };
-    let tournament_status = if config.get_bool("tournament").unwrap_or_else(|_|false) {
+    let tournament_status = if config.get_bool("tournament").unwrap_or_else(|_| false) {
         "Ongoing"
     } else {
         "Not yet started"
@@ -98,15 +97,15 @@ async fn display_config(
         Ok(mode) => format!("{}", Mode::find_key(mode).unwrap()),
         Err(_) => "Not yet set".to_string(),
     };
-    let role = match config.get("role").unwrap().as_str() {
-        Some(role) => {
+    let role = match config.get_str("role") {
+        Ok(role) => {
             format!("<@&{}>", role)
         }
-        None => "Not yet set".to_string(),
+        Err(_) => "Not yet set".to_string(),
     };
-    let channel = match config.get("channel").unwrap().as_str() {
-        Some(channel) => format!("<#{}>", channel),
-        None => "Not yet set".to_string(),
+    let channel = match config.get_str("channel") {
+        Ok(channel) => format!("<#{}>", channel),
+        Err(_) => "Not yet set".to_string(),
     };
     let bracket_channel = match config.get_str("bracket_channel") {
         Ok(bracket_channel) => format!("<#{}>", bracket_channel),

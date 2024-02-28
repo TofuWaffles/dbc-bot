@@ -105,10 +105,7 @@ The tournament is available for all 3 regions:
         .components(|c| {
             c.create_action_row(|a| {
                 for region in Region::iter() {
-                    a.create_button(|b| {
-                        b.custom_id(region.short())
-                            .label(region.short())
-                    });
+                    a.create_button(|b| b.custom_id(region.short()).label(region.short()));
                 }
                 a
             })
