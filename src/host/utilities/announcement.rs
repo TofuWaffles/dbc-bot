@@ -318,11 +318,12 @@ Press confirm to send this announcement to <#{}>
         ))
         .embed(|e| {
             e.title(announcement_data.title.clone().unwrap_or("".to_string()))
-                .description(&announcement_data
+                .description(
+                    &announcement_data
                         .description
                         .clone()
-                        .unwrap_or("No description".to_string(),
-                ))
+                        .unwrap_or("No description".to_string()),
+                )
         })
         .components(|c| {
             c.create_action_row(|a| {

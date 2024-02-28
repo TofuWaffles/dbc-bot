@@ -158,7 +158,7 @@ async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     !config.get_bool("tournament").unwrap()
 }
 
-async fn is_mod(ctx: &Context<'_>) -> Result<bool, Error>{
+async fn is_mod(ctx: &Context<'_>) -> Result<bool, Error> {
     let member = ctx
         .serenity_context()
         .http

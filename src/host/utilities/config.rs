@@ -3,6 +3,7 @@ use crate::{Context, Error};
 use dbc_bot::{Mode, Region};
 use futures::StreamExt;
 use mongodb::{bson::doc, bson::Document, Collection};
+use poise::modal;
 use std::sync::Arc;
 
 use poise::{
@@ -12,8 +13,10 @@ use poise::{
 use strum::IntoEnumIterator;
 
 #[derive(Debug, poise::Modal)]
-#[allow(dead_code)] // fields only used for Debug print
+#[name = "Map is used for the tournament"]
 struct TournamentMap {
+    #[name = "Map Name"]
+    #[placeholder = "Write map name here, or leave blank if any map is allowed"]
     name: String,
 }
 
@@ -53,7 +56,6 @@ pub async fn configurate(
                 channel_option(ctx, msg, &collection).await?;
             }
             "map" => {
-                mci.defer(&ctx.http()).await?;
                 map_option(ctx, msg, mci.clone(), &collection).await?;
             }
             "bracket_channel" => {
@@ -74,27 +76,27 @@ async fn display_config(
 ) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Config");
-    let config = match collection.find_one(doc! {}, None).await?{
+    let config = match collection.find_one(doc! {}, None).await? {
         Some(config) => config,
         None => {
             collection.insert_one(make_config(), None).await?;
             collection.find_one(doc! {}, None).await?.unwrap()
         }
     };
-    let registration_status = if config.get("registration").unwrap().as_bool().unwrap() {
+    let registration_status = if config.get_bool("registration").unwrap_or_else(|_|false) {
         "Open"
     } else {
         "Closed"
     };
-    let tournament_status = if config.get("tournament").unwrap().as_bool().unwrap() {
+    let tournament_status = if config.get_bool("tournament").unwrap_or_else(|_|false) {
         "Ongoing"
     } else {
         "Not yet started"
     };
-    let map = config.get("map").unwrap().as_str().unwrap_or("Not yet set");
-    let mode = match config.get("mode").unwrap().as_str() {
-        Some(mode) => format!("{}", Mode::find_key(mode).unwrap()),
-        None => "Not yet set".to_string(),
+    let map = config.get_str("map").unwrap_or("Any");
+    let mode = match config.get_str("mode") {
+        Ok(mode) => format!("{}", Mode::find_key(mode).unwrap()),
+        Err(_) => "Not yet set".to_string(),
     };
     let role = match config.get("role").unwrap().as_str() {
         Some(role) => {
@@ -113,14 +115,13 @@ async fn display_config(
     msg.edit(*ctx, |s| {
         s.reply(true).ephemeral(true).embed(|e| {
             e.title("Current Configuration").description(format!(
-                "**Registration status:** {}
-                    **Tournament status:** {}
-                    **Mode:** {}
-                    **Map:** {}
-                    **Role assigned to players:** {}
-                    **Channel to publish results of matches:** {}
-                    **Channel to publish the tournament bracket:** {}",
-                registration_status, tournament_status, mode, map, role, channel, bracket_channel
+                "**Registration status:** {registration_status}
+                    **Tournament status:** {tournament_status}
+                    **Mode:** {mode}
+                    **Map:** {map}
+                    **Role assigned to players:** {role}
+                    **Channel to publish results of matches:** {channel}
+                    **Channel to publish the tournament bracket:** {bracket_channel}",
             ))
         })
     })

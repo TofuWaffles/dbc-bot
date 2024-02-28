@@ -242,7 +242,7 @@ async fn confirm(
         ctx,
         msg,
         "Congratulations! You are one of our participants!",
-        format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </index:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
+        format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </menu:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
         None,
         Some(0xFFFF00)).await
 }

@@ -18,10 +18,7 @@ async fn create_battle_image(
     mode: &str,
 ) -> Result<DynamicImage, Error> {
     let current_dir = match env::current_dir() {
-        Ok(dir) => {
-            info!("Current directory: {:?}", dir);
-            dir
-        }
+        Ok(dir) => dir,
         Err(e) => {
             error!("Failed to get current directory: {}", e);
             return Err(Box::new(CustomError(format!("{e}"))));
@@ -41,7 +38,19 @@ async fn create_battle_image(
     };
     info!("Background path: {}", bg_path);
     let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
-
+    info!("Getting vesus image");
+    let vs_path = match current_dir
+        .join("/assets/battle/versus.png")
+        .into_os_string()
+        .into_string()
+    {
+        Ok(path) => path,
+        Err(e) => {
+            error!("Failed to get versus img path: {:?}", e);
+            return Err(Box::new(CustomError(format!("{:?}", e))));
+        }
+    };
+    info!("Versus path: {}", vs_path);
     let mut vs = model::Component::new(
         image::open(current_dir.join("assets/battle/versus.png"))?.resize(
             150,

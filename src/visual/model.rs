@@ -76,7 +76,7 @@ pub trait Borderable {
         for (x, y, pixel) in overlay_image.enumerate_pixels_mut() {
             if self.is_inside(x as i64, y as i64) {
                 *pixel = Rgba([r, g, b, a]);
-            } else if self.is_border(x as i64, y as i64){
+            } else if self.is_border(x as i64, y as i64) {
                 *pixel = Rgba([br, bg, bb, ba]);
             }
         }
@@ -359,6 +359,6 @@ fn get_color(color: u32) -> (u8, u8, u8, u8) {
     let r = color >> 24_u8;
     let g = color >> 16_u8;
     let b = color >> 8_u8;
-    let a = (color << 24_u8) >> 24_u8 ;
+    let a = (color << 24_u8) >> 24_u8;
     (r as u8, g as u8, b as u8, a as u8)
 }

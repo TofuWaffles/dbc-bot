@@ -12,9 +12,7 @@ use tracing::{error, info};
 
 pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
     let current_dir = match env::current_dir() {
-        Ok(dir) => {
-            dir
-        }
+        Ok(dir) => dir,
         Err(e) => {
             error!("Failed to get current directory: {e}");
             return Err(Box::new(CustomError(format!("{e}"))));
@@ -31,7 +29,10 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 Some(caller) => caller,
                 None => {
                     info!("Player is not in a tournament, but the function did not return early.");
-                    return Err("Player is not in a tournament, but the function did not return early.".into());
+                    return Err(
+                        "Player is not in a tournament, but the function did not return early."
+                            .into(),
+                    );
                 }
             };
             Region::find_key(caller.get_str("region").unwrap()).unwrap()
@@ -113,7 +114,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         match_ids.clear();
     }
     info!("Generating bracket.");
-   
+
     let output = Command::new("python3")
         .arg("bracket_generation.py")
         .arg(current_region.to_string())
@@ -152,7 +153,10 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 .and_then(|v| v.as_str().map(|s| s.parse::<u64>().ok()))
             {
                 Some(bracket_message_id) => {
-                    info!("Editing bracket messages at {}.", bracket_message_id.unwrap());
+                    info!(
+                        "Editing bracket messages at {}.",
+                        bracket_message_id.unwrap()
+                    );
                     match poise::serenity_prelude::ChannelId(channel_id.unwrap())
                         .edit_message(&ctx, bracket_message_id.unwrap(), |m| {
                             m.attachment(attachment)
@@ -160,10 +164,13 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                         .await
                     {
                         Ok(_) => {
-                            info!("Bracket message is edited at {}", bracket_message_id.unwrap());
+                            info!(
+                                "Bracket message is edited at {}",
+                                bracket_message_id.unwrap()
+                            );
                         }
                         Err(err) => {
-                            error!{"{err}"};
+                            error! {"{err}"};
                             return Err(Error::from(err));
                         }
                     }
@@ -202,7 +209,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                             }
                         }
                         Err(err) => {
-                            error!{"{err}"};
+                            error! {"{err}"};
                             return Err(err.into());
                         }
                     }
