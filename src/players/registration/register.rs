@@ -107,7 +107,7 @@ The tournament is available for all 3 regions:
                 for region in Region::iter() {
                     a.create_button(|b| {
                         b.custom_id(region.short())
-                            .emoji(ReactionType::Unicode(region.get_emoji()))
+                            .label(region.short())
                     });
                 }
                 a
@@ -242,7 +242,7 @@ async fn confirm(
         ctx,
         msg,
         "Congratulations! You are one of our participants!",
-        format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </menu:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
+        format!("<@{}>, we have collected your registration with the account tagged {}\nYou can run </index:1181542953542488205> again to view your registration!", ctx.author().id, register.player.clone().unwrap().get_str("tag").unwrap()),
         None,
         Some(0xFFFF00)).await
 }
