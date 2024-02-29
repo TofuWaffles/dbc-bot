@@ -13,7 +13,7 @@ jobs:
       - name: Shutdown Deployment
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.DROPLET_IP }}
+          host: ${{ secrets.DROPLET_IP }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |

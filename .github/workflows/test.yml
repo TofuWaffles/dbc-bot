@@ -79,7 +79,7 @@ jobs:
     - name: Copy docker-compose.yml to droplet
       uses: appleboy/scp-action@v0.1.7
       with:
-        host: ${{ vars.DROPLET_IP }}
+        host: ${{ secrets.DROPLET_IP }}
         username: root
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: docker-compose.yml
