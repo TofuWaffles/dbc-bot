@@ -122,7 +122,6 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 a
         }).collect::<Vec<String>>().join(",")
     };
-    info!("Parsing data: {data}");
     info!("Generating bracket.");
     let output = Command::new("python3")
         .arg("bracket_generation.py")
