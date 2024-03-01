@@ -10,7 +10,7 @@ use mongodb::{
     Collection, Database,
 };
 use poise::ReplyHandle;
-use tracing::info;
+use tracing::{error, info};
 const PROMPTS: [&str; 7] = [
     "<:info:1187845402163167363> Getting ready to reset the tournament...", //0
     "<a:loading:1187839622680690689> Clearing all rounds and resetting the config to default...", //1
@@ -20,7 +20,29 @@ const PROMPTS: [&str; 7] = [
     "<a:loading:1187839622680690689> Clearing all players registration...",                      //5
     "<:tick:1187839626338111600> Complete! Registration is empty!",                              //6
 ];
-pub async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+
+pub async fn reset_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+    match reset(ctx, msg, region).await{
+        Ok(_) => Ok(()),
+        Err(e) => {
+            prompt(
+                ctx,
+                msg,
+                "Tournament Reset",
+                format!(
+                    r#"An error occurred while resetting the tournament. Please try again later. Error: {e}"#,
+                    e = e
+                ),
+                None,
+                Some(0xFF0000),
+            )
+            .await?;
+            error!("Error occurred while resetting the tournament: {e}");
+            Ok(())
+        }
+    }
+}
+async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
     info!(
         "{} decides to reset the tournament.",
         ctx.author_member()
@@ -44,7 +66,7 @@ pub async fn reset(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) ->
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let collection: Collection<Document> = database.collection("Players");
     let config = get_config(ctx, region).await;
-    let role = config.get_str("role").unwrap().parse::<u64>().unwrap_or(0);
+    let role = config.get_str("role")?.parse::<u64>().unwrap_or(0);
     prompt(
         ctx,
         msg,
@@ -156,6 +178,9 @@ async fn remove_regional_roles(
 ) -> Result<(), Error> {
     let mut cursor = collection.find(doc! {}, None).await?;
     while let Some(player) = cursor.next().await {
+        if player.clone()?.get_str("name").unwrap() == "Mannequin" {
+            continue;
+        }
         let id = player?
             .get_str("discord_id")
             .unwrap()

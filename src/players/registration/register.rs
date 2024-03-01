@@ -180,6 +180,7 @@ async fn display_confirmation(
             Ok(Some(make_player_doc(
                 &player,
                 &ctx.author_member().await.unwrap().user.id.to_string(),
+                &ctx.author().name,
                 &register.region.clone().unwrap(),
             )))
         }

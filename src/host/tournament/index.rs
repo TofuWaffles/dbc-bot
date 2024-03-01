@@ -10,7 +10,7 @@ use poise::ReplyHandle;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
-use super::reset::reset;
+use super::reset::reset_wrapper as reset;
 use super::setup::starter_wrapper;
 const TIMEOUT: u64 = 300;
 
