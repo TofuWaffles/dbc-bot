@@ -22,6 +22,7 @@ def generate_bracket_image(region, total_rounds, args):
 
     results = []
     for arg in args.split(","):
+        
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split("|")
         results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         

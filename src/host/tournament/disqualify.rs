@@ -228,8 +228,6 @@ async fn display_confirmation(
                 })
             })
         })
-        .reply(true)
-        .ephemeral(true)
         .embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
                 .title("🔨 Disqualify Players - Step 2: User confirmation")

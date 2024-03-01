@@ -95,7 +95,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                     }),
                 current_document
                     .get("winner")
-                    .map_or(false, |is_winner| is_winner.as_bool().unwrap()),
+                    .map_or_else(|| false, |is_winner| is_winner.as_bool().unwrap()),
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
                     &current_region,
@@ -121,7 +121,11 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         .arg(config.get("total").unwrap().to_string())
         .arg(match player_data.is_empty() {
             true => "1|1| | | | ".to_string(),
-            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| format!("{round}|{match_id}|{player1_tag}|{player2_tag}|{is_winner1}|{is_winner2}")).collect::<Vec<String>>().join(",")
+            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| {
+                    let a = format!("{round}|{match_id}|{player1_tag}|{player2_tag}|{is_winner1}|{is_winner2}");
+                    info!("{a}");
+                    a
+            }).collect::<Vec<String>>().join(",")
         })
         .stdout(Stdio::piped())
         .current_dir(current_dir)
