@@ -97,7 +97,11 @@ async fn display_start_menu(
             msg.edit(*ctx, |m| {
                 m.embed(|e| {
                     e.title("Tournament menu")
-                        .description(format!("Tournament is at {round}!\n{menu}", round = round, menu = menu))
+                        .description(format!(
+                            "Tournament is at {round}!\n{menu}",
+                            round = round,
+                            menu = menu
+                        ))
                         .color(0xFFFF00)
                 })
             })

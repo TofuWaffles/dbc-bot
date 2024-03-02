@@ -21,8 +21,12 @@ const PROMPTS: [&str; 7] = [
     "<:tick:1187839626338111600> Complete! Registration is empty!",                              //6
 ];
 
-pub async fn reset_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
-    match reset(ctx, msg, region).await{
+pub async fn reset_wrapper(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
+    match reset(ctx, msg, region).await {
         Ok(_) => Ok(()),
         Err(e) => {
             prompt(

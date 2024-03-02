@@ -91,7 +91,11 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 )
                 .await)
                     .map_or(" ".to_string(), |document| {
-                        document.get("discord_name").unwrap().to_string().strip_quote()
+                        document
+                            .get("discord_name")
+                            .unwrap()
+                            .to_string()
+                            .strip_quote()
                     }),
                 current_document
                     .get("winner")
