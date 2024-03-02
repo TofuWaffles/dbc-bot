@@ -80,7 +80,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 round_number,
                 match_id,
                 current_document
-                    .get("name")
+                    .get("discord_name")
                     .map_or(" ".to_string(), |name| name.to_string().strip_quote()),
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
@@ -91,11 +91,11 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 )
                 .await)
                     .map_or(" ".to_string(), |document| {
-                        document.get("name").unwrap().to_string().strip_quote()
+                        document.get("discord_name").unwrap().to_string().strip_quote()
                     }),
                 current_document
                     .get("winner")
-                    .map_or(false, |is_winner| is_winner.as_bool().unwrap()),
+                    .map_or_else(|| false, |is_winner| is_winner.as_bool().unwrap()),
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
                     &current_region,
@@ -113,16 +113,21 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         }
         match_ids.clear();
     }
+    let sep = "/se/pa/ra/tor/";
+    let data = match player_data.is_empty() {
+        true => format!("1{sep}1{sep} {sep} {sep} {sep} "),
+        false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| {
+                let a = format!("{round}{sep}{match_id}{sep}{player1_tag}{sep}{player2_tag}{sep}{is_winner1}{sep}{is_winner2}");
+                info!("{a}");
+                a
+        }).collect::<Vec<String>>().join(",")
+    };
     info!("Generating bracket.");
-
     let output = Command::new("python3")
         .arg("bracket_generation.py")
         .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
-        .arg(match player_data.is_empty() {
-            true => "1|1| | | | ".to_string(),
-            false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| format!("{round}|{match_id}|{player1_tag}|{player2_tag}|{is_winner1}|{is_winner2}")).collect::<Vec<String>>().join(",")
-        })
+        .arg(data)
         .stdout(Stdio::piped())
         .current_dir(current_dir)
         .spawn()?;

@@ -10,7 +10,7 @@ use poise::ReplyHandle;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
-use super::reset::reset;
+use super::reset::reset_wrapper as reset;
 use super::setup::starter_wrapper;
 const TIMEOUT: u64 = 300;
 
@@ -97,7 +97,7 @@ async fn display_start_menu(
             msg.edit(*ctx, |m| {
                 m.embed(|e| {
                     e.title("Tournament menu")
-                        .description(format!("Tournament is at {round}!"))
+                        .description(format!("Tournament is at {round}!\n{menu}", round = round, menu = menu))
                         .color(0xFFFF00)
                 })
             })

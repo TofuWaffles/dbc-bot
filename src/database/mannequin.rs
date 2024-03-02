@@ -7,6 +7,7 @@ pub fn add_mannequin(region: &Region, match_id: Option<i32>) -> Document {
     };
     let mannequin = doc! {
       "name": "Mannequin",
+      "discord_name": "Mannequin",
       "tag": Null,
       "discord_id": Null,
       "region": format!("{:?}", *region),
