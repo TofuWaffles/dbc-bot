@@ -12,6 +12,7 @@ use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
 use poise::{serenity_prelude as serenity, ReplyHandle};
+use tracing::info;
 
 /// View your opponent
 pub async fn view_opponent(
@@ -85,7 +86,22 @@ pub async fn view_opponent(
             }
         };
 
-    let prebattle = get_image(&caller, &enemy, &config).await?;
+    let prebattle = match get_image(&caller, &enemy, &config).await {
+        Ok(prebattle) => prebattle,
+        Err(e) => {
+            info!("{e}");
+            prompt(
+                ctx,
+                msg,
+                "An error occurred!",
+                "An error occurred while getting enemy. Please notify to the Host.",
+                None,
+                Some(0xFF0000),
+            )
+            .await?;
+            return Err(e);
+        }
+    };
     let attachment = serenity::model::channel::AttachmentType::Bytes {
         data: prebattle.into(),
         filename: "pre_battle.png".to_string(),

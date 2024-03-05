@@ -37,10 +37,7 @@ pub async fn disqualify_players(
         })
         .components(|c| {
             c.create_action_row(|a| {
-                a.create_button(|b| {
-                    b.custom_id("open_modal")
-                        .label("Disqualify Player")
-                })
+                a.create_button(|b| b.custom_id("open_modal").label("Disqualify Player"))
             })
         })
     })
