@@ -54,10 +54,15 @@ async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
     let guild = ctx.guild_id().unwrap();
     for host in hosts.iter() {
         let id = host.as_str().unwrap().parse::<u64>()?;
+        info!("Checking {id}");
         let role = RoleId::to_role_cached(RoleId(id), ctx.cache()).unwrap();
-        match ctx.author().has_role(ctx.http(), guild, role).await {
-            Ok(true) => return Ok(true),
+        match ctx.author().has_role(ctx.http(), guild, &role).await {
+            Ok(true) => return {
+                info!("{} is authenticated to host due to the role {}", ctx.author().name, role.name);
+                Ok(true)
+            },
             Ok(false) => {
+                info!("{} doesn't have the role {}", ctx.author().name, role.name);
                 continue;
             }
             Err(e) => {
