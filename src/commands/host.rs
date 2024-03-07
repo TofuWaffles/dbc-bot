@@ -1,6 +1,6 @@
 use crate::{discord::menu::mod_menu, Context, Error};
 use dbc_bot::Region;
-use mongodb::bson::Document;
+use mongodb::bson::{doc, Document};
 use poise::serenity_prelude::RoleId;
 use tracing::{error, info};
 
@@ -42,12 +42,13 @@ pub async fn host(
 }
 
 async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
+    let server_id = ctx.guild_id().unwrap().to_string();
     let doc: Document = ctx
         .data()
         .database
         .general
         .collection("Managers")
-        .find_one(None, None)
+        .find_one(doc!{"server_id": server_id}, None)
         .await?
         .unwrap();
     let hosts = doc.get_array("role_id").unwrap().to_vec();

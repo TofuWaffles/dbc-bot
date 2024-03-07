@@ -9,7 +9,7 @@ use poise::serenity_prelude::{MessageComponentInteraction, ReactionType};
 use poise::ReplyHandle;
 use std::sync::Arc;
 use std::vec;
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Debug, poise::Modal)]
 #[name = "Role Selection"]
@@ -27,6 +27,9 @@ struct RoleSelection{
 )]
 pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let server_id = ctx.guild().unwrap().id.to_string();
+    let server_name = ctx.guild().unwrap().name.clone();
+    let user = ctx.author().id.to_string();
+    info!("{user} is setting up the role in {server_name}({server_id})...");
     let collection: Collection<Document> = ctx.data().database.general.collection("Managers");
     let doc = match collection
         .find_one(doc! {"server_id": &server_id}, None)
