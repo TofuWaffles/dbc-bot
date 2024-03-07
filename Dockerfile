@@ -21,11 +21,11 @@ RUN cargo build --release --target x86_64-unknown-linux-musl
 
 
 # Create a python environment with Rust binary files, as no longer do we need the Rust compiler
-FROM python:3.12.2-bullseye
+FROM python:3.12-slim
 COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /dbc-bot
 COPY assets/ /assets
+COPY scripts/ /scripts
 COPY requirements.txt .
-COPY src/bracket_tournament/bracket_generation.py .
 RUN pip install --no-cache-dir -r requirements.txt
 CMD ["python3", "--version"]
 ENTRYPOINT ["/dbc-bot"]

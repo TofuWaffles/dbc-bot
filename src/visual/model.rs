@@ -1,12 +1,17 @@
 use crate::Error;
 use async_trait::async_trait;
+use base64::{engine::general_purpose, Engine as _};
 use bytes::Bytes;
+use image::io::Reader as ImageReader;
+use image::{GenericImage, GenericImageView, Pixel};
 use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
-use text_to_png::TextRenderer;
-use tracing::error;
+use std::env;
+use std::io::{Cursor, Read};
+use std::process::{Command, Stdio};
+use tracing::{error, info};
 const DEFAULT_ICON: &str = "https://cdn.brawlify.com/profile/28000000.png?v=1";
 const DEFAULT_MODE_ICON: &str =
     "https://pbs.twimg.com/media/F2_Uy9rXgAAXXnP?format=png&name=360x360";
@@ -28,6 +33,7 @@ pub struct Text {
     pub text: String,
     pub font_size: u8,
     pub font_color: u32,
+    pub outline: Option<Border>,
 }
 pub struct Rectangle {
     pub width: i64,
@@ -166,24 +172,12 @@ impl Borderable for Circle {
 #[async_trait]
 impl Image for Text {
     async fn build(&mut self) -> Result<DynamicImage, Error> {
-        let renderer = TextRenderer::try_new_with_ttf_font_data(include_bytes!(
-            "../../assets/battle/LilitaOne-Regular.ttf"
-        ))?;
-        let img =
-            renderer.render_text_to_png_data(self.text.clone(), self.font_size, self.font_color)?;
-
-        match image::load_from_memory(&img.data) {
-            Ok(img) => Ok(img),
-            Err(e) => {
-                error!("{e}");
-                return Err(Error::from(e));
-            }
-        }
+        self.generate_text_img()
     }
 }
 
 impl Text {
-    pub fn new<S>(text: S, font_size: u8, font_color: u32) -> Self
+    pub fn new<S>(text: S, font_size: u8, font_color: u32, outline: Option<Border>) -> Self
     where
         S: Into<String>,
     {
@@ -191,7 +185,62 @@ impl Text {
             text: text.into(),
             font_size,
             font_color,
+            outline: outline,
         }
+    }
+    fn generate_text_img(&self) -> Result<DynamicImage, Error> {
+        info!("Generating text image on the string: {}", self.text);
+        let (stroke, stroke_color) = self
+            .outline
+            .as_ref()
+            .map_or_else(|| (0, 0x00000000_u32), |b| (b.thickness, b.color));
+        let data = format!(
+            r#"{{
+                "text": "{text}",
+                "font_size": {font_size},
+                "font_color": "{font_color}",
+                "stroke_width": "{stroke}",
+                "stroke_color": "{stroke_color}"
+            }}"#,
+            text = self.text,
+            font_size = self.font_size,
+            font_color = self.font_color
+        );
+        let current_dir = match env::current_dir() {
+            Ok(dir) => dir,
+            Err(e) => {
+                error!("Failed to get current directory: {e}");
+                return Err(e.into());
+            }
+        };
+        let output = Command::new("python3")
+            .arg("scripts/text.py")
+            .arg(data)
+            .stdout(Stdio::piped())
+            .current_dir(current_dir)
+            .spawn()?;
+
+        let mut stdout = output
+            .stdout
+            .ok_or_else(|| Error::from("Failed to capture Python script output"))?;
+        let mut buffer = String::new();
+        stdout.read_to_string(&mut buffer)?;
+        if buffer.len() < 100 {
+            info!("{buffer}");
+            return Err("Failed to capture Python script output".into());
+        }
+        let image_bytes = match general_purpose::STANDARD.decode(&buffer.trim_end()) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                error!("{e}");
+                info!("Debug: {buffer}");
+                return Err(e.into());
+            }
+        };
+        let img = ImageReader::new(Cursor::new(image_bytes))
+            .with_guessed_format()?
+            .decode()?;
+        Ok(img)
     }
 }
 
@@ -314,8 +363,78 @@ impl Component {
     }
 
     /// Overlay another component on this component
-    pub fn overlay(&mut self, overlay: Component) {
-        imageops::overlay(&mut self.img, &overlay.img, overlay.x, overlay.y);
+    /// 
+    /// I copy from the source code and add another conditions lol.
+    pub fn overlay(&mut self, top: Component){
+        let top_dims = top.img.dimensions();
+    
+        // Crop our top image if we're going out of bounds
+        let (origin_bottom_x, origin_bottom_y, origin_top_x, origin_top_y, range_width, range_height) =
+            self.overlay_bounds_ext(top_dims, top.x, top.y);
+    
+        for y in 0..range_height {
+            for x in 0..range_width {
+                let p = top.img.get_pixel(origin_top_x + x, origin_top_y + y);
+                let mut bottom_pixel = self.img.get_pixel(origin_bottom_x + x, origin_bottom_y + y);
+                bottom_pixel.blend(&p);
+                let place_x = origin_bottom_x + x;
+                let place_y = origin_bottom_y + y;
+                if self.img.get_pixel(place_x, place_y)[3] == 0{
+                    continue;
+                } else{
+                    self.img.put_pixel(place_x, place_y, bottom_pixel);
+                }
+            }
+        }
+    }
+
+    fn overlay_bounds_ext(
+        &self,
+        (top_width, top_height): (u32, u32),
+        x: i64,
+        y: i64,
+    ) -> (u32, u32, u32, u32, u32, u32) {
+        let (bottom_width, bottom_height) = (self.width(), self.height());
+        // Return a predictable value if the two images don't overlap at all.
+        if x > i64::from(bottom_width)
+            || y > i64::from(bottom_height)
+            || x.saturating_add(i64::from(top_width)) <= 0
+            || y.saturating_add(i64::from(top_height)) <= 0
+        {
+            return (0, 0, 0, 0, 0, 0);
+        }
+    
+        // Find the maximum x and y coordinates in terms of the bottom image.
+        let max_x = x.saturating_add(i64::from(top_width));
+        let max_y = y.saturating_add(i64::from(top_height));
+    
+        // Clip the origin and maximum coordinates to the bounds of the bottom image.
+        // Casting to a u32 is safe because both 0 and `bottom_{width,height}` fit
+        // into 32-bits.
+        let max_inbounds_x = max_x.clamp(0, i64::from(bottom_width)) as u32;
+        let max_inbounds_y = max_y.clamp(0, i64::from(bottom_height)) as u32;
+        let origin_bottom_x = x.clamp(0, i64::from(bottom_width)) as u32;
+        let origin_bottom_y = y.clamp(0, i64::from(bottom_height)) as u32;
+    
+        // The range is the difference between the maximum inbounds coordinates and
+        // the clipped origin. Unchecked subtraction is safe here because both are
+        // always positive and `max_inbounds_{x,y}` >= `origin_{x,y}` due to
+        // `top_{width,height}` being >= 0.
+        let x_range = max_inbounds_x - origin_bottom_x;
+        let y_range = max_inbounds_y - origin_bottom_y;
+    
+        // If x (or y) is negative, then the origin of the top image is shifted by -x (or -y).
+        let origin_top_x = x.saturating_mul(-1).clamp(0, i64::from(top_width)) as u32;
+        let origin_top_y = y.saturating_mul(-1).clamp(0, i64::from(top_height)) as u32;
+    
+        (
+            origin_bottom_x,
+            origin_bottom_y,
+            origin_top_x,
+            origin_top_y,
+            x_range,
+            y_range,
+        )
     }
 }
 

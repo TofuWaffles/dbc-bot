@@ -128,7 +128,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     };
     info!("Generating bracket.");
     let output = Command::new("python3")
-        .arg("bracket_generation.py")
+        .arg("scripts/bracket_generation.py")
         .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
         .arg(data)
@@ -146,7 +146,14 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         return Err("Failed to capture Python script output".into());
     }
 
-    let image_bytes = general_purpose::STANDARD.decode(buffer.trim_end()).unwrap();
+    let image_bytes = match general_purpose::STANDARD.decode(&buffer.trim_end()) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            error!("{e}");
+            info!("Debug: {buffer}");
+            return Err(e.into());
+        }
+    };
     let attachment = poise::serenity_prelude::AttachmentType::Bytes {
         data: image_bytes.into(),
         filename: format!("Tournament_bracket_{}.png", current_region.short()),

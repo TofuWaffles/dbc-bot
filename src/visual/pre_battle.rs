@@ -26,7 +26,7 @@ async fn create_battle_image(
     };
 
     let bg_path = match current_dir
-        .join("/assets/battle/battle_background.jpg")
+        .join("/assets/battle/battle_background.png")
         .into_os_string()
         .into_string()
     {
@@ -50,19 +50,15 @@ async fn create_battle_image(
             return Err(Box::new(CustomError(format!("{:?}", e))));
         }
     };
-    info!("Versus path: {}", vs_path);
     let mut vs = model::Component::new(
-        image::open(current_dir.join("assets/battle/versus.png"))?.resize(
-            150,
-            150,
-            imageops::FilterType::Nearest,
-        ),
+        image::open(vs_path)?.resize(150, 150, imageops::FilterType::Nearest),
         None,
         None,
         Some("versus"),
     );
     vs.set_center_x(img.width);
     vs.set_center_y(img.height);
+    info!("vs icon is set!");
 
     let mut icon1 = model::Component::new(
         model::CustomImage::new(
@@ -77,6 +73,7 @@ async fn create_battle_image(
         Some("icon1"),
     );
     icon1.set_center_y(img.height);
+    info!("Icon1 is set!");
 
     let mut icon2 = model::Component::new(
         model::CustomImage::new(
@@ -92,13 +89,15 @@ async fn create_battle_image(
     );
     icon2.set_x(img.width - icon1.x - icon2.width());
     icon2.set_center_y(img.height);
+    info!("Icon2 is set!");
 
     let mut name1 = model::Component::new(
-        model::Text {
-            text: player1.get_str("name").unwrap().to_string(),
-            font_size: FONT_SIZE,
-            font_color: u32::from_str_radix(&(player1.get_str("name_color").unwrap()[2..]), 16)?,
-        }
+        model::Text::new(
+            player1.get_str("name").unwrap(),
+            FONT_SIZE,
+            0xFFFFFFFF,
+            None,
+        )
         .build()
         .await?,
         None,
@@ -107,12 +106,14 @@ async fn create_battle_image(
     );
     name1.set_relative_center_x(&icon1);
     name1.set_y(icon1.y + icon1.height() + 10);
+    info!("Name1 is set!");
 
     let mut name2 = model::Component::new(
         model::Text::new(
             player2.get_str("name").unwrap(),
             FONT_SIZE,
-            u32::from_str_radix(&(player2.get_str("name_color").unwrap()[2..]), 16)?,
+            0xFFFFFFFF,
+            None
         )
         .build()
         .await?,
@@ -122,13 +123,15 @@ async fn create_battle_image(
     );
     name2.set_relative_center_x(&icon2);
     name2.set_y(icon2.y + icon2.height() + 10);
+    info!("Name2 is set!");
 
     let mut tag1 = model::Component::new(
-        model::Text {
-            text: player1.get_str("tag").unwrap().to_string(),
-            font_size: FONT_SIZE,
-            font_color: u32::from_str_radix(&(player1.get_str("name_color").unwrap()[2..]), 16)?,
-        }
+        model::Text::new(
+            player1.get_str("tag").unwrap(),
+            FONT_SIZE,
+            0xFFFFFFFF,
+            None,
+        )
         .build()
         .await?,
         None,
@@ -137,12 +140,14 @@ async fn create_battle_image(
     );
     tag1.set_relative_center_x(&name1);
     tag1.set_y(name1.y + name1.height() + 10);
+    info!("Tag1 is set!");
 
     let mut tag2 = model::Component::new(
         model::Text::new(
             player2.get_str("tag").unwrap(),
             FONT_SIZE,
-            u32::from_str_radix(&(player2.get_str("name_color").unwrap()[2..]), 16)?,
+            0xFFFFFFFF,
+            None,
         )
         .build()
         .await?,
@@ -152,6 +157,7 @@ async fn create_battle_image(
     );
     tag2.set_relative_center_x(&name2);
     tag2.set_y(name2.y + name2.height() + 10);
+    info!("Tag2 is set!");
 
     // Create text images for title, mode, VS, and footer
     let mut title_box = model::Component::new(
@@ -207,21 +213,39 @@ async fn create_battle_image(
     title_box.overlay(title_box_overlay);
 
     let mut upper_title = model::Component::new(
-        model::Text::new(format!("Round {round}"), 35, 0xFFFFFF)
-            .build()
-            .await?,
+        model::Text::new(
+            format!("Round {round}"),
+            35,
+            0xFFFFFFFF,
+            Some(model::Border {
+                thickness: 3,
+                color: 0x000000FF,
+            }),
+        )
+        .build()
+        .await?,
         None,
         None,
         Some("title"),
     );
+    info!("Title: Round {round} is set!");
     let mut lower_title = model::Component::new(
-        model::Text::new(format!("Match {match_id}\n"), 35, 0xFFFFFF)
-            .build()
-            .await?,
+        model::Text::new(
+            format!("Match {match_id}"),
+            35,
+            0xFFFFFFFF,
+            Some(model::Border {
+                thickness: 3,
+                color: 0x000000FF,
+            }),
+        )
+        .build()
+        .await?,
         None,
         None,
         Some("title"),
     );
+    info!("Title: Match {match_id} is set!");
     upper_title.set_center_x(title_box.width());
     lower_title.set_center_x(title_box.width());
     let a = (title_box.height() - 2 * upper_title.height() - 5) / 2;
@@ -229,6 +253,7 @@ async fn create_battle_image(
     lower_title.set_y(upper_title.y + upper_title.height() + 5);
     title_box.overlay(upper_title);
     title_box.overlay(lower_title);
+    info!("Title is set!");
     // Create mode components
     let mut mode_bg = model::Component::new(
         model::Trapezoid {
@@ -251,14 +276,16 @@ async fn create_battle_image(
     );
     mode_bg.set_center_x(img.width);
 
-    let mode_icon = model::Component::new(
-        model::CustomImage::new(get_mode_icon(mode.to_string()), Some(60), Some(60))
+    let mut mode_icon = model::Component::new(
+        model::CustomImage::new(get_mode_icon(mode.to_string()), Some(150), Some(150))
             .build()
             .await?,
-        Some(50),
+        None,
         None,
         Some("mode_icon"),
     );
+    mode_icon.set_center_x(mode_bg.width());
+    mode_icon.set_center_y(mode_bg.height());
     mode_bg.overlay(mode_icon);
 
     let mode_overlay = model::Component::new(
@@ -283,9 +310,17 @@ async fn create_battle_image(
     mode_bg.overlay(mode_overlay);
 
     let mut mode_text = model::Component::new(
-        model::Text::new(mode.to_uppercase(), 40, 0xFFFFFF)
-            .build()
-            .await?,
+        model::Text::new(
+            mode.to_uppercase(),
+            40,
+            0xFFFFFFFF,
+            Some(model::Border {
+                thickness: 3,
+                color: 0x000000FF,
+            }),
+        )
+        .build()
+        .await?,
         None,
         None,
         Some("mode_text"),
@@ -293,6 +328,7 @@ async fn create_battle_image(
     mode_text.set_center_x(mode_bg.width());
     mode_text.set_center_y(mode_bg.height());
     mode_bg.overlay(mode_text);
+    info!("Mode is set!");
 
     // Component elements onto the base img
     img.add_overlay(title_box);
@@ -304,7 +340,7 @@ async fn create_battle_image(
     img.add_overlay(tag1);
     img.add_overlay(tag2);
     img.add_overlay(vs);
-
+    info!("All components are set!");
     // Build the final composed img
     Ok(img.build())
 }

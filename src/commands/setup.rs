@@ -1,26 +1,33 @@
 use crate::database::config::make_server_doc;
+use crate::discord::prompt::prompt;
 use crate::Document;
 use crate::{Context, Error};
 use futures::StreamExt;
 use mongodb::bson::{doc, Bson};
 use mongodb::Collection;
-use poise::serenity_prelude::ReactionType;
-use poise::{
-    serenity_prelude::{CreateSelectMenuOption, Role, RoleId},
-    ReplyHandle,
-};
-use std::collections::HashMap;
+use poise::serenity_prelude::{MessageComponentInteraction, ReactionType};
+use poise::ReplyHandle;
+use std::sync::Arc;
 use std::vec;
 use tracing::error;
+
+#[derive(Debug, poise::Modal)]
+#[name = "Role Selection"]
+struct RoleSelection{
+    #[name = "Role id"]
+    #[placeholder = "Please write role id here"]
+    role_id: String
+}
+
+
 
 /// Setup role to interact with the  configurations of this bot
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_MESSAGES",
-    aliases("role-allow")
+    rename = "role-allow"
 )]
 pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
-    let roles = ctx.guild_id().unwrap().roles(ctx.http()).await?;
     let server_id = ctx.guild().unwrap().id.to_string();
     let collection: Collection<Document> = ctx.data().database.general.collection("Managers");
     let doc = match collection
@@ -52,7 +59,7 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let msg = ctx
         .send(|s| s.reply(true).ephemeral(true).embed(|e| e.title("Setup...")))
         .await?;
-    display_select_menu(&ctx, &msg, &roles, &hosts).await?;
+    display_select_menu(&ctx, &msg, &hosts).await?;
     let mut cic = msg
         .clone()
         .into_message()
@@ -61,15 +68,10 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
         .timeout(std::time::Duration::from_secs(120))
         .build();
     while let Some(mci) = &cic.next().await {
-        mci.defer(ctx.http()).await?;
 
         match mci.data.custom_id.as_str() {
-            "setup" => {
-                let role = mci.data.values[0].as_str();
-                let update = doc! { "$push": { "role_id": role } };
-                collection
-                    .update_one(doc! {"server_id": &server_id}, update, None)
-                    .await?;
+            "open" => {
+                role_option(&ctx, &msg, mci.clone(), &collection).await?;
             }
             _ => {
                 let update = doc! { "$set": { "role_id": [] } };
@@ -85,7 +87,7 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
             .get_array("role_id")
             .unwrap()
             .to_vec();
-        display_select_menu(&ctx, &msg, &roles, &hosts).await?;
+        display_select_menu(&ctx, &msg, &hosts).await?;
     }
 
     Ok(())
@@ -94,7 +96,6 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
 async fn display_select_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    roles: &HashMap<RoleId, Role>,
     hosts: &[Bson],
 ) -> Result<(), Error> {
     let accept: String = hosts
@@ -112,18 +113,12 @@ Following roles can access Host menu:\n{accept}"
             ))
         })
         .components(|c| {
-            c.create_action_row(|c| {
-                c.create_select_menu(|s| {
-                    s.custom_id("setup")
-                        .placeholder("Select a host role to access the bot's configuration.")
-                        .options(|o| {
-                            for (role_id, role) in roles.iter() {
-                                let mut option = CreateSelectMenuOption::default();
-                                option.label(role.clone().name).value(role_id.to_string());
-                                o.add_option(option);
-                            }
-                            o
-                        })
+            c.create_action_row(|a| {
+                a.create_button(|b| {
+                    b.custom_id("open")
+                        .label("Add role")
+                        .style(poise::serenity_prelude::ButtonStyle::Success)
+                        .emoji(ReactionType::Unicode("👮".to_string()))
                 })
             })
             .create_action_row(|a| {
@@ -137,5 +132,45 @@ Following roles can access Host menu:\n{accept}"
         })
     })
     .await?;
+    Ok(())
+}
+
+
+async fn role_option(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    mci: Arc<MessageComponentInteraction>,
+    collection: &Collection<Document>,
+) -> Result<(), Error> {
+    let server_id = ctx.guild().unwrap().id.to_string();
+    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None)
+        .await{
+        Ok(Some(r)) => {
+                let update = doc! { "$push": { "role_id": &r.role_id } };
+                collection
+                    .update_one(doc! {"server_id": &server_id}, update, None)
+                    .await?;
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("The role has been set!").description(format!(
+                        "The role **<@&{}>** has been selected for this tournament!
+                        Directing back to selecting role menu...", r.role_id
+                        
+                    ))
+                })
+            })
+            .await?;
+        }
+        Ok(None) | Err(_) => {
+            prompt(
+                ctx,
+                msg,
+                "Failed to add more role!",
+                "No role has been selected! Please try again!",
+                None,
+                Some(0xFFFF00),
+            ).await?;
+        }
+    }
     Ok(())
 }
