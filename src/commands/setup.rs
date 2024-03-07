@@ -9,7 +9,7 @@ use poise::serenity_prelude::{MessageComponentInteraction, ReactionType};
 use poise::ReplyHandle;
 use std::sync::Arc;
 use std::vec;
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Debug, poise::Modal)]
 #[name = "Role Selection"]
@@ -19,21 +19,21 @@ struct RoleSelection{
     role_id: String
 }
 
-
-
 /// Setup role to interact with the  configurations of this bot
 #[poise::command(
     slash_command,
-    required_permissions = "MANAGE_MESSAGES",
-    rename = "role-allow"
+    rename = "role-allow",
+    check = "is_mod",
 )]
 pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let server_id = ctx.guild().unwrap().id.to_string();
+    let server_name = ctx.guild().unwrap().name.clone();
+    let user = ctx.author().id.to_string();
+    info!("{user} is setting up the role in {server_name}({server_id})...");
     let collection: Collection<Document> = ctx.data().database.general.collection("Managers");
     let doc = match collection
         .find_one(doc! {"server_id": &server_id}, None)
-        .await?
-    {
+        .await?{
         Some(document) => document,
         None => {
             collection
@@ -73,12 +73,14 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
             "open" => {
                 role_option(&ctx, &msg, mci.clone(), &collection).await?;
             }
-            _ => {
+            "reset" => {
+                mci.defer(ctx.http()).await?;
                 let update = doc! { "$set": { "role_id": [] } };
                 collection
                     .update_one(doc! {"server_id": &server_id}, update, None)
                     .await?;
             }
+            _ => {}
         }
         hosts = collection
             .find_one(doc! {"server_id": &server_id}, None)
@@ -107,9 +109,7 @@ async fn display_select_menu(
 
     msg.edit(*ctx, |m| {
         m.embed(|e| {
-            e.title("Setup").description(format!(
-                "
-Following roles can access Host menu:\n{accept}"
+            e.title("Setup").description(format!("Following roles can access Host menu:\n{accept}"
             ))
         })
         .components(|c| {
@@ -124,9 +124,9 @@ Following roles can access Host menu:\n{accept}"
             .create_action_row(|a| {
                 a.create_button(|b| {
                     b.custom_id("reset")
-                        .label("Reset")
+                        .label("Remove all")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
-                        .emoji(ReactionType::Unicode("🔴".to_string()))
+                        .emoji(ReactionType::Unicode("🗑️".to_string()))
                 })
             })
         })
@@ -134,7 +134,6 @@ Following roles can access Host menu:\n{accept}"
     .await?;
     Ok(())
 }
-
 
 async fn role_option(
     ctx: &Context<'_>,
@@ -173,4 +172,14 @@ async fn role_option(
         }
     }
     Ok(())
+}
+
+async fn is_mod(ctx: Context<'_>) -> Result<bool, Error> {
+    let member = ctx
+        .serenity_context()
+        .http
+        .get_member(ctx.guild_id().unwrap().into(), ctx.author().id.into())
+        .await?;
+    let permission = member.permissions(ctx.cache())?;
+    Ok(permission.ban_members())
 }
