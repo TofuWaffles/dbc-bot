@@ -59,6 +59,7 @@ async fn run() -> Result<(), Error> {
         commands::host::host(),
         commands::context_menu::get_individual_player_data(),
         commands::setup::setup(),
+        commands::player_lookup::lookup_player(),
     ];
     info!("{} commands registered", commands.len());
     // match dotenv::dotenv() {
