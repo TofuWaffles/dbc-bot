@@ -1,6 +1,7 @@
 use crate::database::config::get_config;
 use crate::database::find::find_round_from_config;
 use crate::database::stat::count_registers;
+use crate::discord::checks::is_mod;
 use crate::Context;
 use crate::Error;
 use dbc_bot::Region;
@@ -116,7 +117,7 @@ async fn display_start_buttons(
     start: &bool,
     next: &bool,
 ) -> Result<(), Error> {
-    let is_mod = is_mod(ctx).await.unwrap_or(false);
+    let is_mod = is_mod(*ctx).await.unwrap_or(false);
     msg.edit(*ctx, |m| {
         m.components(|c| {
             c.create_action_row(|row| {
@@ -163,13 +164,3 @@ async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     !config.get_bool("tournament").unwrap()
 }
 
-async fn is_mod(ctx: &Context<'_>) -> Result<bool, Error> {
-    let member = ctx
-        .serenity_context()
-        .http
-        .get_member(ctx.guild_id().unwrap().into(), ctx.author().id.into())
-        .await?;
-    let permission = member.permissions(ctx.cache())?;
-
-    Ok(permission.ban_members())
-}

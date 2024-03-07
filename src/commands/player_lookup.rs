@@ -8,12 +8,13 @@ use strum::IntoEnumIterator as _;
 use tracing::{error, span, Level};
 
 use crate::{database::find::find_tag, Context, Error};
-
-#[poise::command(slash_command, guild_only, required_permissions = "MANAGE_MESSAGES")]
+use crate::discord::checks::is_host;
+/// Lookup player by tag or user
+#[poise::command(slash_command, guild_only, check = "is_host")]
 pub async fn lookup_player(
     ctx: Context<'_>,
     player_tag: Option<String>,
-    user: Option<User>,
+    user: Option<User>
 ) -> Result<(), Error> {
     span!(Level::INFO, "lookup_player", player_tag);
 
