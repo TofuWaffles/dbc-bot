@@ -136,6 +136,7 @@ async fn display_start_buttons(
                     b.custom_id("disqualify")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🔨".to_string()))
+                        .disabled(!is_mod)
                 })
                 .create_button(|b| {
                     b.custom_id("reset")
