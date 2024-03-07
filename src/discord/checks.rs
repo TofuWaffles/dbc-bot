@@ -1,36 +1,51 @@
-use dbc_bot::QuoteStripper;
+use poise::serenity_prelude::RoleId;
 use crate::{Context, Error};
-use futures::TryStreamExt;
 use mongodb::bson::{doc, Document};
-use tracing::{info, instrument};
-pub async fn user_is_manager(ctx: Context<'_>) -> Result<bool, Error> {
-    info!("Checking permissions...");
-    let guild_id = ctx.guild_id().unwrap().to_string();
-    let database = &ctx.data().database.general;
+use tracing::info;
+use tracing::error;
 
-    let mut managers = database
-        .collection::<Document>("Managers")
-        .find(doc! {"guild_id": &guild_id}, None)
-        .await?;
-    while let Some(manager) = managers.try_next().await? {
-        let role_id = manager.get("role_id").unwrap().to_string().strip_quote();
-        if ctx
-            .author()
-            .has_role(
-                ctx.http(),
-                guild_id.parse::<u64>().unwrap(),
-                role_id.parse::<u64>().unwrap(),
-            )
-            .await?
-        {
-            return Ok(true);
+pub async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
+    let server_id = ctx.guild_id().unwrap().to_string();
+    let doc: Document = ctx
+        .data()
+        .database
+        .general
+        .collection("Managers")
+        .find_one(doc!{"server_id": server_id}, None)
+        .await?
+        .unwrap();
+    let hosts = doc.get_array("role_id").unwrap().to_vec();
+    let guild = ctx.guild_id().unwrap();
+    for host in hosts.iter() {
+        let id = host.as_str().unwrap().parse::<u64>()?;
+        info!("Checking {id}");
+        let role = RoleId::to_role_cached(RoleId(id), ctx.cache()).unwrap();
+        match ctx.author().has_role(ctx.http(), guild, &role).await {
+            Ok(true) => return {
+                info!("{} is authenticated to host due to the role {}", ctx.author().name, role.name);
+                Ok(true)
+            },
+            Ok(false) => {
+                info!("{} doesn't have the role {}", ctx.author().name, role.name);
+                continue;
+            }
+            Err(e) => {
+                error!("{e}");
+                return Ok(false);
+            }
         }
     }
-    ctx.send(|s| {
-        s.content("Sorry, you do not have the permissions required to run this command!")
-            .ephemeral(true)
-            .reply(true)
-    })
-    .await?;
+    info!("No permissions to host");
     Ok(false)
+}
+
+pub async fn is_mod(ctx: Context<'_>) -> Result<bool, Error> {
+    let member = ctx
+        .serenity_context()
+        .http
+        .get_member(ctx.guild_id().unwrap().into(), ctx.author().id.into())
+        .await?;
+    let permission = member.permissions(ctx.cache())?;
+
+    Ok(permission.ban_members())
 }

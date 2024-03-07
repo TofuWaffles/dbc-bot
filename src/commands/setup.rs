@@ -1,4 +1,5 @@
 use crate::database::config::make_server_doc;
+use crate::discord::checks::is_mod;
 use crate::discord::prompt::prompt;
 use crate::Document;
 use crate::{Context, Error};
@@ -172,14 +173,4 @@ async fn role_option(
         }
     }
     Ok(())
-}
-
-async fn is_mod(ctx: Context<'_>) -> Result<bool, Error> {
-    let member = ctx
-        .serenity_context()
-        .http
-        .get_member(ctx.guild_id().unwrap().into(), ctx.author().id.into())
-        .await?;
-    let permission = member.permissions(ctx.cache())?;
-    Ok(permission.ban_members())
 }
