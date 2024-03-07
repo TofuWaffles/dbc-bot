@@ -1,4 +1,5 @@
 use crate::database::config::make_server_doc;
+use crate::discord::prompt::prompt;
 use crate::Document;
 use crate::{Context, Error};
 use futures::StreamExt;
@@ -67,7 +68,6 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
         .timeout(std::time::Duration::from_secs(120))
         .build();
     while let Some(mci) = &cic.next().await {
-        mci.defer(ctx.http()).await?;
 
         match mci.data.custom_id.as_str() {
             "open" => {
@@ -144,9 +144,8 @@ async fn role_option(
 ) -> Result<(), Error> {
     let server_id = ctx.guild().unwrap().id.to_string();
     match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None)
-        .await?
-    {
-        Some(r) => {
+        .await{
+        Ok(Some(r)) => {
                 let update = doc! { "$push": { "role_id": &r.role_id } };
                 collection
                     .update_one(doc! {"server_id": &server_id}, update, None)
@@ -162,16 +161,15 @@ async fn role_option(
             })
             .await?;
         }
-        None => {
-            msg.edit(*ctx, |s| {
-                s.components(|c| c).embed(|e| {
-                    e.title("Failed to add more role!").description(format!(
-                        "No role has been selected! Please try again!"
-                        
-                    ))
-                })
-            })
-            .await?;
+        Ok(None) | Err(_) => {
+            prompt(
+                ctx,
+                msg,
+                "Failed to add more role!",
+                "No role has been selected! Please try again!",
+                None,
+                Some(0xFFFF00),
+            ).await?;
         }
     }
     Ok(())
