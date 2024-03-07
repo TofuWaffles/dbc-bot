@@ -19,6 +19,22 @@ struct TournamentMap {
     name: String,
 }
 
+
+#[derive(Debug, poise::Modal)]
+#[name = "Role Selection"]
+struct RoleSelection{
+    #[name = "Role id"]
+    #[placeholder = "Please write role id here"]
+    role_id: String
+}
+
+#[derive(Debug, poise::Modal)]
+#[name = "Channel"]
+struct Channel{
+    #[name = "Enter the ID of the channel"]
+    channel_id: String,
+}
+
 pub async fn configurate(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
@@ -47,19 +63,16 @@ pub async fn configurate(
                 mode_option(ctx, msg, &collection).await?;
             }
             "role" => {
-                mci.defer(&ctx.http()).await?;
-                role_option(ctx, msg, &collection).await?;
+                role_option(ctx, msg, mci.clone(), &collection).await?;
             }
             "channel" => {
-                mci.defer(&ctx.http()).await?;
-                channel_option(ctx, msg, &collection).await?;
+                channel_option(ctx, msg, mci.clone(), &collection).await?;
             }
             "map" => {
                 map_option(ctx, msg, mci.clone(), &collection).await?;
             }
             "bracket_channel" => {
-                mci.defer(&ctx.http()).await?;
-                bracket_channel_option(ctx, msg, &collection).await?;
+                bracket_channel_option(ctx, msg, mci.clone(), &collection).await?;
             }
             _ => create_select_menu(ctx, msg).await?,
         };
@@ -229,106 +242,39 @@ async fn mode_option(
 async fn role_option(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
+    mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    let roles = ctx.guild_id().unwrap().roles(ctx.http()).await?;
-    msg.edit(*ctx, |s| {
-        s.content("Setting a role to assign to players!")
-            .ephemeral(false)
-            .components(|c| {
-                c.create_action_row(|c| {
-                    c.create_select_menu(|m| {
-                        m.custom_id("menu")
-                            .placeholder("Select a role.")
-                            .options(|o| {
-                                for (role_id, role) in roles.iter() {
-                                    let mut option = CreateSelectMenuOption::default();
-                                    option.label(role.clone().name).value(role_id.to_string());
-                                    o.add_option(option);
-                                }
-                                o
-                            })
-                    })
+    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None)
+        .await?
+    {
+        Some(role) => {
+            collection
+                .update_one(doc! {}, set_config("role", Some(&role.role_id)), None)
+                .await?;
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("The role has been set!").description(format!(
+                        "The role **<@&{}>** has been selected for this tournament!
+                        Directing back to configuration menu...",
+                        role.role_id
+                    ))
                 })
             })
-    })
-    .await?;
-    let resp = msg.clone().into_message().await?;
-    let cib = resp
-        .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(120));
-    let mut cic = cib.build();
-    if let Some(mci2) = &cic.next().await {
-        mci2.defer(ctx.http()).await?;
-        let role_id = mci2.data.values[0].as_str();
-        collection
-            .update_one(doc! {}, set_config("role", Some(role_id)), None)
             .await?;
-        msg.edit(*ctx, |s| {
-            s.components(|c| c).embed(|e| {
-                e.title("Role has been set!").description(format!(
-                    "<@&{}> will be assigned to players when they register.
-                    Directing back to configuration menu...",
-                    role_id
-                ))
-            })
-        })
-        .await?;
-    }
-    std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
-    Ok(())
-}
-
-async fn channel_option(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>,
-    collection: &Collection<Document>,
-) -> Result<(), Error> {
-    let channels = ctx.guild_id().unwrap().channels(ctx.http()).await?;
-    msg.edit(*ctx, |s| {
-        s.content("Setting a channel to publish matches' result!")
-            .ephemeral(false)
-            .components(|c| {
-                c.create_action_row(|c| {
-                    c.create_select_menu(|m| {
-                        m.custom_id("menu")
-                            .placeholder("Select a channel")
-                            .options(|o| {
-                                for (channel_id, channel) in channels.iter() {
-                                    let mut option = CreateSelectMenuOption::default();
-                                    option
-                                        .label(channel.clone().name)
-                                        .value(channel_id.to_string());
-                                    o.add_option(option);
-                                }
-                                o
-                            })
-                    })
+        
+        }
+        None => {
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("Failed to add more role!").description(format!(
+                        "No role has been selected! Please try again!"
+                        
+                    ))
                 })
             })
-    })
-    .await?;
-    let resp = msg.clone().into_message().await?;
-    let cib = resp
-        .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(120));
-    let mut cic = cib.build();
-    if let Some(mci2) = &cic.next().await {
-        mci2.defer(ctx.http()).await?;
-        let channel_id = mci2.data.values[0].as_str();
-        collection
-            .update_one(doc! {}, set_config("channel", Some(channel_id)), None)
             .await?;
-        msg.edit(*ctx, |s| {
-            s.components(|c| c).embed(|e| {
-                e.title("Channel has been set!").description(format!(
-                    "All tournament updates will be posted in <#{}>.
-                    Directing back to configuration menu...",
-                    channel_id
-                ))
-            })
-        })
-        .await?;
+        }
     }
     Ok(())
 }
@@ -367,60 +313,70 @@ async fn map_option(
     Ok(())
 }
 
+async fn channel_option(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    mci: Arc<MessageComponentInteraction>,
+    collection: &Collection<Document>,
+) -> Result<(), Error> {
+    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None)
+        .await?
+    {
+        Some(channel) => {
+            collection
+                .update_one(doc! {}, set_config("channel", Some(channel.channel_id.as_str())), None)
+                .await?;
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("The channel has been set!").description(format!(
+                        "Channel **<#{}>** has been set to post announcement!
+                        Directing back to configuration menu...",
+                        channel.channel_id
+                    ))
+                })
+            })
+            .await?;
+        }
+        None => {
+            collection
+                .update_one(doc! {}, set_config("channel", None), None)
+                .await?;
+        }
+    };
+    std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
+    Ok(())
+}
+
 async fn bracket_channel_option(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
+    mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    let channels = ctx.guild_id().unwrap().channels(ctx.http()).await?;
-    msg.edit(*ctx, |s| {
-        s.content("Setting a channel to publish the tournament bracket!")
-            .ephemeral(false)
-            .components(|c| {
-                c.create_action_row(|c| {
-                    c.create_select_menu(|m| {
-                        m.custom_id("menu")
-                            .placeholder("Select a channel")
-                            .options(|o| {
-                                for (channel_id, channel) in channels.iter() {
-                                    let mut option = CreateSelectMenuOption::default();
-                                    option
-                                        .label(channel.clone().name)
-                                        .value(channel_id.to_string());
-                                    o.add_option(option);
-                                }
-                                o
-                            })
-                    })
+    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None)
+        .await?
+    {
+        Some(channel) => {
+            collection
+                .update_one(doc! {}, set_config("bracket_channel", Some(channel.channel_id.as_str())), None)
+                .await?;
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("The channel has been set!").description(format!(
+                        "Channel **<#{}>** has been set to update the bracket!
+                        Directing back to configuration menu...",
+                        channel.channel_id
+                    ))
                 })
             })
-    })
-    .await?;
-    let resp = msg.clone().into_message().await?;
-    let cib = resp
-        .await_component_interactions(&ctx.serenity_context().shard)
-        .timeout(std::time::Duration::from_secs(120));
-    let mut cic = cib.build();
-    if let Some(mci2) = &cic.next().await {
-        mci2.defer(ctx.http()).await?;
-        let channel_id = mci2.data.values[0].as_str();
-        collection
-            .update_one(
-                doc! {},
-                set_config("bracket_channel", Some(channel_id)),
-                None,
-            )
             .await?;
-        msg.edit(*ctx, |s| {
-            s.components(|c| c).embed(|e| {
-                e.title("Channel has been set!").description(format!(
-                    "All tournament bracket updates will be posted in <#{}>.
-                    Directing back to configuration menu...",
-                    channel_id
-                ))
-            })
-        })
-        .await?;
-    }
+        }
+        None => {
+            collection
+                .update_one(doc! {}, set_config("bracket_channel", None), None)
+                .await?;
+        }
+    };
+    std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
     Ok(())
 }
