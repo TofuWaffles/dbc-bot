@@ -8,7 +8,7 @@ use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
-use serde::de::IntoDeserializer;
+
 use std::env;
 use std::io::{Cursor, Read};
 use std::process::{Command, Stdio};
