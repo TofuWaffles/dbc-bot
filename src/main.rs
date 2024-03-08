@@ -1,14 +1,24 @@
-/*
+d/*
 TODO:
 - Build out self role and new channel alert feature
 - Plan and subsequently build the tournament bracket feature
 */
 mod bracket_tournament;
 mod commands;
+mod self_role;
 mod utils;
 
-use poise::serenity_prelude as serenity;
-use utils::types::Data;
+use dashmap::DashMap;
+use poise::serenity_prelude::{self as serenity, GatewayIntents, MessageComponentInteraction, InteractionType};
+
+
+// This data struct is used to pass data (such as the db_pool) to the context object
+pub struct Data {
+    // db_pool: sqlx::PgPool,
+    // self_role_messages: DashMap<i64, self_role::SelfRoleMessage>, // Required for the self_role module
+}
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() {
@@ -39,3 +49,4 @@ async fn main() {
     println!("The bot is starting...");
     framework.run().await.unwrap();
 }
+

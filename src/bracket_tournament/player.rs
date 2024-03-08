@@ -4,7 +4,7 @@ use crate::utils::api::api_handlers;
 
 #[derive(Serialize, Deserialize)]
 pub struct Icon{
-  id: i32,
+  pub id: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -34,9 +34,9 @@ pub struct Player{
 
 impl Player {
   pub async fn new(tag: &str) -> Player {
-      let endpoint = api_handlers::get_api_link("player", tag);
-      let player = api_handlers::request::<Player>(&endpoint).await.unwrap();
-      return player;
+    let endpoint = api_handlers::get_api_link("player", tag);
+    let player = api_handlers::request::<Player>(&endpoint).await.unwrap();
+    return player;
   }
 }
 
