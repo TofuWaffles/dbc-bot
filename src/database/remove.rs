@@ -32,12 +32,10 @@ pub async fn remove_player(
                 .await?;
             let (_, r_u32) = current_round.split_at(6);
             let next_round_collection = database.collection::<Document>(&format!("Round {}",r_u32.trim().parse::<u32>().unwrap_or(0)+1_u32));
-            match next_round_collection
+            if next_round_collection
                 .delete_one(doc! {"_id": player.get("_id")}, None)
-                .await{ // in case we disqualify a player who already moved to the next round
-                    Ok(_) => {}
-                    Err(_) => {}
-                };
+                .await
+                .is_ok(){};
         }
     }
     Ok(find_round_from_config(&config))

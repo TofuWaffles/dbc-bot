@@ -29,7 +29,7 @@ struct CreateAnnouncementModal {
     #[placeholder = "If you have any image or gif, please display it as an URL. Leave blank if not needed."]
     image: String,
     #[name = "Embed color"]
-    #[placeholder = "If you want to change the color of the embed, please enter the hex code of the color such as #ABCDEF. Leave blank if not needed."]
+    #[placeholder = "If you want to set the embed color, enter the color code like #ABCDEF. Leave blank if not needed."]
     color: String,
     #[name = "Announcement channel(id)"]
     #[placeholder = "Enter the ID of the channel where the announcement will be sent."]

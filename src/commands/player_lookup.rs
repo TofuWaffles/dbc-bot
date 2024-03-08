@@ -116,13 +116,11 @@ pub async fn lookup_player(
                     .embed(|e| e.title("Player not found"))
             })
             .await?;
-            return Ok(());
+            Ok(())
         }
         None => {
             error!("Neither the player tag nor the user were provided",);
-            return Err(Box::new(CustomError(
-                "Neither the player tag nor the user were provided".to_string(),
-            )));
+            Err("Neither the player tag nor the user were provided".into())
         }
     }
 }

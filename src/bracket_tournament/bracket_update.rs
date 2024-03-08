@@ -146,7 +146,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         return Err("Failed to capture Python script output".into());
     }
 
-    let image_bytes = match general_purpose::STANDARD.decode(&buffer.trim_end()) {
+    let image_bytes = match general_purpose::STANDARD.decode(buffer.trim_end()) {
         Ok(bytes) => bytes,
         Err(e) => {
             error!("{e}");

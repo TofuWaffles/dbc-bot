@@ -26,7 +26,7 @@ async fn create_battle_image(
     };
 
     let bg_path = match current_dir
-        .join("/assets/battle/battle_background.png")
+        .join("assets/battle/battle_background.png")
         .into_os_string()
         .into_string()
     {
@@ -40,7 +40,7 @@ async fn create_battle_image(
     let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
     info!("Getting vesus image");
     let vs_path = match current_dir
-        .join("/assets/battle/versus.png")
+        .join("assets/battle/versus.png")
         .into_os_string()
         .into_string()
     {

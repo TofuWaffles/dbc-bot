@@ -8,6 +8,7 @@ use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
+use serde::de::IntoDeserializer;
 use std::env;
 use std::io::{Cursor, Read};
 use std::process::{Command, Stdio};
@@ -185,7 +186,7 @@ impl Text {
             text: text.into(),
             font_size,
             font_color,
-            outline: outline,
+            outline,
         }
     }
     fn generate_text_img(&self) -> Result<DynamicImage, Error> {
@@ -229,7 +230,7 @@ impl Text {
             info!("{buffer}");
             return Err("Failed to capture Python script output".into());
         }
-        let image_bytes = match general_purpose::STANDARD.decode(&buffer.trim_end()) {
+        let image_bytes = match general_purpose::STANDARD.decode(buffer.trim_end()) {
             Ok(bytes) => bytes,
             Err(e) => {
                 error!("{e}");
@@ -396,10 +397,10 @@ impl Component {
     ) -> (u32, u32, u32, u32, u32, u32) {
         let (bottom_width, bottom_height) = (self.width(), self.height());
         // Return a predictable value if the two images don't overlap at all.
-        if x > i64::from(bottom_width)
-            || y > i64::from(bottom_height)
-            || x.saturating_add(i64::from(top_width)) <= 0
-            || y.saturating_add(i64::from(top_height)) <= 0
+        if x > bottom_width
+            || y > bottom_height
+            || x.saturating_add(top_width.into()) <= 0
+            || y.saturating_add(top_height.into()) <= 0
         {
             return (0, 0, 0, 0, 0, 0);
         }
@@ -411,10 +412,10 @@ impl Component {
         // Clip the origin and maximum coordinates to the bounds of the bottom image.
         // Casting to a u32 is safe because both 0 and `bottom_{width,height}` fit
         // into 32-bits.
-        let max_inbounds_x = max_x.clamp(0, i64::from(bottom_width)) as u32;
-        let max_inbounds_y = max_y.clamp(0, i64::from(bottom_height)) as u32;
-        let origin_bottom_x = x.clamp(0, i64::from(bottom_width)) as u32;
-        let origin_bottom_y = y.clamp(0, i64::from(bottom_height)) as u32;
+        let max_inbounds_x = max_x.clamp(0, bottom_width) as u32;
+        let max_inbounds_y = max_y.clamp(0, bottom_height) as u32;
+        let origin_bottom_x = x.clamp(0, bottom_width) as u32;
+        let origin_bottom_y = y.clamp(0, bottom_height) as u32;
     
         // The range is the difference between the maximum inbounds coordinates and
         // the clipped origin. Unchecked subtraction is safe here because both are
