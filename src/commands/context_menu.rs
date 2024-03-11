@@ -31,7 +31,7 @@ pub async fn get_individual_player_data(
             .await;
         }
     };
-    let region = match get_region_from_role(&ctx, roles) {
+    let region = match get_region_from_role(&ctx, roles).await {
         Some(region) => region,
         None => {
             return prompt(

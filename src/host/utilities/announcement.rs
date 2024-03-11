@@ -19,35 +19,42 @@ pub struct AnnouncementData {
 #[derive(Debug, poise::Modal)]
 #[name = "Create Announcement Modal"]
 struct CreateAnnouncementModal {
-    #[name = "Enter the title of the announcement"]
+    #[name = "Announcement title"]
+    #[placeholder= "Enter the title of the announcement"]
     title: String,
-    #[name = "Enter the description of the announcement"]
+    #[name = "Announcement description"]
+    #[placeholder = "Enter the description of the announcement"]
     description: String,
     #[name = "Image"]
     #[placeholder = "If you have any image or gif, please display it as an URL. Leave blank if not needed."]
-    image: String,
-    #[name = "Embed color (leave blank if not needed)"]
-    #[placeholder = "If you want to change the color of the embed, please enter the hex code of the color such as #ABCDEF. Leave blank if not needed."]
-    color: String,
-    #[name = "Enter the ID of the announcement channel"]
+    image: Option<String>,
+    #[name = "Embed color"]
+    #[placeholder = "If you want to set the embed color, enter the color code like #ABCDEF. Leave blank if not needed."]
+    color: Option<String>,
+    #[name = "Announcement channel(id)"]
+    #[placeholder = "Enter the ID of the channel where the announcement will be sent."]
     channel_id: String,
 }
 #[derive(Debug, poise::Modal)]
 #[name = "Edit Announcement Modal"]
 struct EditAnnouncementModal {
-    #[name = "Enter the new title of the announcement"]
+    #[name = "Announcement title"]
+    #[placeholder= "Enter the title of the announcement"]
     title: String,
-    #[name = "Enter the new description of the announcement"]
+    #[name = "Announcement description"]
+    #[placeholder = "Enter the description of the announcement"]
     description: String,
     #[name = "Image"]
     #[placeholder = "If you have any image or gif, please display it as an URL. Leave blank if not needed."]
-    image: String,
-    #[name = "Embed color (leave blank if not needed)"]
+    image: Option<String>,
+    #[name = "Embed color"]
     #[placeholder = "If you want to change the color of the embed, please enter the hex code of the color such as #ABCDEF. Leave blank if not needed."]
-    color: String,
-    #[name = "Enter the announcement channel ID was originally sent in"]
+    color: Option<String>,
+    #[name = "Announcement channel(id)"]
+    #[placeholder = "Enter the ID of the channel where the announcement will be sent."]
     channel_id: String,
-    #[name = "Enter the ID of the announcement message"]
+    #[name = "Message ID"]
+    #[placeholder = "Enter the ID of the announcement message that you want to edit."]
     message_id: String,
 }
 
@@ -365,8 +372,8 @@ pub async fn create_announcement_modal(
                 let announcement_data = AnnouncementData {
                     title: Some(data.title),
                     description: Some(data.description),
-                    image: Some(data.image),
-                    color: Some(data.color[1..].parse::<u32>().unwrap()),
+                    image: data.image,
+                    color: data.color.map(|c| c[1..].parse::<u32>().unwrap_or(0)),
                     channel_id: Some(data.channel_id.parse::<u64>().unwrap()),
                     message_id: None,
                 };
@@ -394,8 +401,8 @@ pub async fn edit_announcement_modal(
                 let announcement_data = AnnouncementData {
                     title: Some(data.title),
                     description: Some(data.description),
-                    image: Some(data.image),
-                    color: Some(data.color[1..].parse::<u32>().unwrap()),
+                    image: data.image,
+                    color: data.color.map(|c| c[1..].parse::<u32>().unwrap_or(0)),
                     channel_id: Some(data.channel_id.parse::<u64>().unwrap()),
                     message_id: Some(data.message_id.parse::<u64>().unwrap()),
                 };

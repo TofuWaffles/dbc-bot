@@ -270,10 +270,9 @@ async fn role_option(
         Ok(None) | Err(_) => {
             msg.edit(*ctx, |s| {
                 s.components(|c| c).embed(|e| {
-                    e.title("Failed to add more role!").description(format!(
-                        "No role has been selected! Please try again!"
-                        
-                    ))
+                    e.title("Failed to add more role!").description(
+                        "No role has been selected! Please try again!" 
+                )
                 })
             })
             .await?;

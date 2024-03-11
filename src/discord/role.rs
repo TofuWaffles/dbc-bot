@@ -5,12 +5,14 @@ use poise::serenity_prelude::RoleId;
 use poise::serenity_prelude::User;
 use strum::IntoEnumIterator;
 
-pub fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Option<Region> {
+pub async fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Option<Region> {
     for role in roles.iter() {
         for region in Region::iter() {
+            let config = get_config(ctx, &region).await;
+            let role_id_from_db = config.get_str("role").unwrap().parse::<u64>().unwrap();
             match role.to_role_cached(ctx.cache()) {
                 Some(role) => {
-                    if role.name.to_lowercase() == region.short().to_lowercase() {
+                    if role.id == role_id_from_db { 
                         return Some(region);
                     }
                 }
