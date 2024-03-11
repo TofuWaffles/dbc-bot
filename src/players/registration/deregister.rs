@@ -52,7 +52,7 @@ pub async fn deregister_menu(
                     b.components(|c| c)
                         .embed(|e| {
                             e.title("Deregistration").description(
-                                "You have been deregistered from the tournament\nYou can safely dismiss this message\nOr you can run </menu:1181542953542488205> again."
+                                "You have been deregistered from the tournament\nYou can safely dismiss this message\nOr you can run </menu:1211629882564677664> again."
                             )
                         })
                 })
