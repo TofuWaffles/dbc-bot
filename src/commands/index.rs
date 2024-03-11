@@ -39,9 +39,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     // Found role => check registration status to display either registration menu or tournament menu
     // No role => check registration status to display either register or nothing
     let roles = get_roles_from_user(&ctx, None).await.unwrap();
-    let region = get_region_from_role(&ctx, roles);
+    let region = get_region_from_role(&ctx, roles).await;
     match region {
         Some(region) => {
+            info!("{region:?}");
             let player = match find_self_by_discord_id(&ctx, "Players".to_string())
                 .await
                 .unwrap()
@@ -102,6 +103,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
         }
         None => {
             if registration_open(&ctx).await {
+                info!("Players did not register for the tournament! So allowing them to register...");
+                info!("{region:?}");
                 registration_menu(&ctx, &msg, true, false, false, true, None).await
             } else {
                 prompt(
