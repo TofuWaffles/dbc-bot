@@ -5,6 +5,7 @@ use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
 use poise::ReplyHandle;
+use tracing::{error, info};
 use std::collections::HashMap;
 const TIMEOUT: u64 = 300;
 pub async fn display_next_round(
@@ -12,8 +13,10 @@ pub async fn display_next_round(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
+    info!("Next round is triggered by {}", ctx.author().name);
     let battles = display_false_battles(ctx, region).await;
     if battles.is_empty() {
+        info!("All matches are finished!");
         msg.edit(*ctx, |m| {
             m.embed(|e| {
                 e.title("All matches are finished!")
@@ -27,6 +30,7 @@ pub async fn display_next_round(
         })
         .await?;
     } else {
+        error!("Some matches are not finished! Cannot continue to next round!");
         msg.edit(*ctx,|m| {
         m.embed(|e|{
           e.title("Some matches are not finished!")

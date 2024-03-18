@@ -42,7 +42,6 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     let region = get_region_from_role(&ctx, roles).await;
     match region {
         Some(region) => {
-            info!("{region:?}");
             let player = match find_self_by_discord_id(&ctx, "Players".to_string())
                 .await
                 .unwrap()
@@ -76,16 +75,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                         )
                         .await?
                         {
-                            info!(
-                                "{} has not done any battle in the current round!",
-                                player.get_str("tag").unwrap()
-                            );
                             tournament_menu(&ctx, &msg, true, true, true, true, player).await
                         } else {
-                            info!(
-                                "{} has done battle in the current round!",
-                                player.get_str("tag").unwrap()
-                            );
                             tournament_menu(&ctx, &msg, false, true, false, false, player).await
                         }
                     }
@@ -103,8 +94,6 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
         }
         None => {
             if registration_open(&ctx).await {
-                info!("Players did not register for the tournament! So allowing them to register...");
-                info!("{region:?}");
                 registration_menu(&ctx, &msg, true, false, false, true, None).await
             } else {
                 prompt(
