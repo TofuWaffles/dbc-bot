@@ -99,8 +99,8 @@ pub async fn submit_result(
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
-    let bracket_chn_id = config.get_str("bracket_channel").unwrap();
+    // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
+    // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
     let server_id = ctx.guild_id().unwrap().0;
     let channel_to_announce = ChannelId(channel);
     match get_result(mode, map, caller, enemy).await {
@@ -118,12 +118,13 @@ pub async fn submit_result(
                         e.title("Result is here!")
                             .description(format!(
                                 r#"{}({}) has won this round!
-The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
+
+"#,
                                 winner.get_str("name").unwrap(),
                                 winner.get_str("tag").unwrap(),
-                                guild = server_id,
-                                chn = bracket_chn_id,
-                                msg_id = bracket_msg_id
+                                // guild = server_id,
+                                // chn = bracket_chn_id,
+                                // msg_id = bracket_msg_id
                             ))
                             .color(0xFFFF00)
                     })
@@ -135,12 +136,12 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
                                 r#"{}({}) has won this round!
-                                The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
+                               "#,
                                                             winner.get_str("name").unwrap(),
                                                             winner.get_str("tag").unwrap(),
-                                                            guild = server_id,
-                                                            chn = bracket_chn_id,
-                                                            msg_id = bracket_msg_id
+                                                            // guild = server_id,
+                                                            // chn = bracket_chn_id,
+                                                            // msg_id = bracket_msg_id
                                                         ))
                         .color(0xFFFF00)})
                     })

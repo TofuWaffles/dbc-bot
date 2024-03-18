@@ -5,7 +5,7 @@ use mongodb::{
 };
 use poise::serenity_prelude::User;
 use strum::IntoEnumIterator as _;
-use tracing::{error, span, Level};
+use tracing::{error, info, span, Level};
 
 use crate::{database::find::find_tag, Context, Error};
 use crate::discord::checks::is_host;
@@ -76,6 +76,7 @@ pub async fn lookup_player(
 
             for region in Region::iter() {
                 let database = ctx.data().database.regional_databases.get(&region).unwrap();
+                info!("Looking for player in {}", region.full());
                 let player_data: Collection<Document> = database.collection("Players");
                 match player_data
                     .find_one(doc! {"discord_id": user_id.clone()}, None)

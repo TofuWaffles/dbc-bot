@@ -93,7 +93,7 @@ async fn create_battle_image(
 
     let mut name1 = model::Component::new(
         model::Text::new(
-            player1.get_str("name").unwrap(),
+            player1.get_str("discord_name").unwrap(),
             FONT_SIZE,
             0xFFFFFFFF,
             None,
@@ -110,7 +110,7 @@ async fn create_battle_image(
 
     let mut name2 = model::Component::new(
         model::Text::new(
-            player2.get_str("name").unwrap(),
+            player2.get_str("discord_name").unwrap(),
             FONT_SIZE,
             0xFFFFFFFF,
             None
