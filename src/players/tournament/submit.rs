@@ -8,7 +8,7 @@ use crate::database::find::{
 };
 use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
-use crate::discord::prompt::prompt;
+use crate::discord::prompt::{self, prompt};
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::{doc, Document};
@@ -200,13 +200,14 @@ pub async fn submit_result(
             }
         }
         None => {
-            ctx.send(|s| {
-                s.embed(|e| {
-                        e.title("There are not enough results yet!")
-                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!")              
-                    })
-                    .components(|c|c)
-            }).await?;
+            prompt(
+                ctx,
+                msg,
+                "There are not enough results yet!",
+                "As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!",
+                None,
+                Some(0xFFFF00),
+            ).await?;   
         }
     }
     Ok(())
