@@ -99,12 +99,14 @@ pub async fn submit_result(
             .send_message(ctx, |m| {
                 m.embed(|e| {
                     e.title("Result is here!").description(format!(
-                        "Congratulations! {}({}) has won round {} and proceeds to round {}!",
+                        "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
+                        caller.get_str("discord_id").unwrap(),
                         caller.get_str("name").unwrap(),
                         caller.get_str("tag").unwrap(),
                         round,
                         round + 1
                     ))
+                    .color(0xFFFF00)
                 })
             })
             .await?;
@@ -151,16 +153,16 @@ pub async fn submit_result(
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
-                                r#"{}({}) has won round {} and proceeds to round {}!
-                               "#,
-                                                            winner.get_str("name").unwrap(),
-                                                            winner.get_str("tag").unwrap(),
-                                                            round,
-                                                            round+1
-                                                            // guild = server_id,
-                                                            // chn = bracket_chn_id,
-                                                            // msg_id = bracket_msg_id
-                                                        ))
+                                r#"<@{}> ({}-{}) has won round {} and proceeds to round {}!"#,                         
+                                winner.get_str("discord_id").unwrap(),
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap(),
+                                round,
+                                round+1
+                                // guild = server_id,
+                                // chn = bracket_chn_id,
+                                // msg_id = bracket_msg_id
+                            ))
                         .color(0xFFFF00)})
                     })
                     .await?;
@@ -178,10 +180,12 @@ pub async fn submit_result(
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!").description(format!(
-                            "CONGRATULATIONS! {}({}) IS THE TOURNAMENT CHAMPION!",
+                            "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
+                            winner.get_str("discord_id").unwrap(),
                             winner.get_str("name").unwrap(),
                             winner.get_str("tag").unwrap()
                         ))
+                        .color(0xFFFF00)
                     })
                     .components(|c| c)
                 })
