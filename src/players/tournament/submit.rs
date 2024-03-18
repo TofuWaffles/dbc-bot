@@ -88,7 +88,7 @@ pub async fn submit_result(
         )
         .await?;
         update_battle(database, round, match_id).await?;
-        update_bracket(ctx, None).await?;
+        // update_bracket(ctx, None).await?;
         return Ok(());
     }
     println!("{:?}", config);
@@ -112,7 +112,7 @@ pub async fn submit_result(
                     .insert_one(update_match_id(winner.clone()), None)
                     .await?;
                 update_battle(database, round, match_id).await?;
-                update_bracket(ctx, None).await?;
+                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
@@ -155,7 +155,7 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                     )
                     .await?;
                 update_battle(database, round, match_id).await?;
-                update_bracket(ctx, None).await?;
+                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!").description(format!(

@@ -148,49 +148,49 @@ pub async fn start_tournament(
         })
     })
     .await?;
-    match update_bracket(ctx, Some(region)).await {
-        Ok(_) => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("Setting up tournament").description(format!(
-                        "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
-                        prompts[0],
-                        prompts[1],
-                        prompts[3],
-                        &count,
-                        prompts[7],
-                        &rounds,
-                        prompts[5],
-                        &byes,
-                        prompts[9],
-                        prompts[11]
-                    ))
-                })
-            })
-            .await?;
-        }
-        Err(e) => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("Setting up tournament").description(format!(
-                        "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
-                        prompts[0],
-                        prompts[1],
-                        prompts[3],
-                        &count,
-                        prompts[7],
-                        &rounds,
-                        prompts[5],
-                        &byes,
-                        prompts[9],
-                        prompts[12]
-                    ))
-                })
-            })
-            .await?;
-            return Err(e);
-        }
-    }
+    // match update_bracket(ctx, Some(region)).await {
+    //     Ok(_) => {
+    //         msg.edit(*ctx, |s| {
+    //             s.embed(|e| {
+    //                 e.title("Setting up tournament").description(format!(
+    //                     "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
+    //                     prompts[0],
+    //                     prompts[1],
+    //                     prompts[3],
+    //                     &count,
+    //                     prompts[7],
+    //                     &rounds,
+    //                     prompts[5],
+    //                     &byes,
+    //                     prompts[9],
+    //                     prompts[11]
+    //                 ))
+    //             })
+    //         })
+    //         .await?;
+    //     }
+    //     Err(e) => {
+    //         msg.edit(*ctx, |s| {
+    //             s.embed(|e| {
+    //                 e.title("Setting up tournament").description(format!(
+    //                     "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
+    //                     prompts[0],
+    //                     prompts[1],
+    //                     prompts[3],
+    //                     &count,
+    //                     prompts[7],
+    //                     &rounds,
+    //                     prompts[5],
+    //                     &byes,
+    //                     prompts[9],
+    //                     prompts[12]
+    //                 ))
+    //             })
+    //         })
+    //         .await?;
+    //         return Err(e);
+    //     }
+    // }
     Ok(())
 }
 
