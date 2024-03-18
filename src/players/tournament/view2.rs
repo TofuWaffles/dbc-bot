@@ -121,11 +121,11 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
 - Map: {}.
 - Turn off all bots.
 **🗒️ After the battle:**
-- Wait for 30s 
+- Wait for 30s. 
 - Run this bot again to submit the result.
 **⚠️ Note:**
-- Only 2 **LATEST** matches with the opponent are considered once you submit the result.
-- Due to limitation, only as most 25 battles are viewable, so please submit the result as soon as possible.
+- Only the EARLIEST determinable number of matches with the opponent is considered once you submit your results.
+- Due to limitations, only up to 25 battles are viewable, so please submit the result as soon as possible!
 # Good luck!"#, 
                         caller.get_str("discord_id").unwrap(),
                         enemy.get_str("discord_id").unwrap(),

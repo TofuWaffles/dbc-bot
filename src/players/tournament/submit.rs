@@ -135,7 +135,7 @@ pub async fn submit_result(
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
-                                r#"{}({}) has won round {} and proceed to round {}!
+                                r#"{}({}) has won round {} and proceeds to round {}!
                                "#,
                                                             winner.get_str("name").unwrap(),
                                                             winner.get_str("tag").unwrap(),
@@ -187,7 +187,7 @@ pub async fn submit_result(
             ctx.send(|s| {
                 s.embed(|e| {
                         e.title("There are not enough results yet!")
-                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battlelog")              
+                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!")              
                     })
                     .components(|c|c)
             }).await?;
@@ -208,7 +208,7 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
     };
     let mut results: Vec<String> = vec![];
 
-    for log in logs.unwrap() {
+    for log in logs.unwrap().iter().rev() {
         if !log_check(&log, mode, map) {
             continue;
         }
