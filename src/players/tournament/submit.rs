@@ -56,6 +56,14 @@ pub async fn submit_result(
 
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, &region).await;
+    let channel = config
+    .get("channel")
+    .unwrap()
+    .as_str()
+    .unwrap()
+    .parse::<u64>()
+    .unwrap();
+    let channel_to_announce = ChannelId(channel);
 
     //Get player document via their discord_id
     let match_id: i32 = caller.get_i32("match_id").unwrap();
@@ -76,7 +84,7 @@ pub async fn submit_result(
         .unwrap();
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
-        next_round.insert_one(update_match_id(caller), None).await?;
+        next_round.insert_one(update_match_id(caller.clone()), None).await?;
         prompt(
             ctx,
             msg,
@@ -87,22 +95,30 @@ pub async fn submit_result(
             Some(0xFFFF00),
         )
         .await?;
+        channel_to_announce
+            .send_message(ctx, |m| {
+                m.embed(|e| {
+                    e.title("Result is here!").description(format!(
+                        "Congratulations! {}({}) has won round {} and proceeds to round {}!",
+                        caller.get_str("name").unwrap(),
+                        caller.get_str("tag").unwrap(),
+                        round,
+                        round + 1
+                    ))
+                })
+            })
+            .await?;
+        
         update_battle(database, round, match_id).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
     println!("{:?}", config);
-    let channel = config
-        .get("channel")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+   
     // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
     // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
     // let server_id = ctx.guild_id().unwrap().0;
-    let channel_to_announce = ChannelId(channel);
+    
     match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
             if round < config.get("total").unwrap().as_i32().unwrap() {

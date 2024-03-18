@@ -8,7 +8,6 @@ use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use poise::ReplyHandle;
-use tracing::info;
 const DELAY: u64 = 1;
 
 /// Tournament all-in-one command
