@@ -298,7 +298,7 @@ fn compare_strings(str1: &str, str2: &str) -> bool {
 }
 
 fn log_check(log: &serde_json::Value, mode: &str, map: &str) -> bool {
-    info!("{:?}", log);
+    // info!("{:?}", log); // Debugging purposes
     match log["event"]["mode"].as_str(){
        Some(m) => {
               if !compare_strings(m, mode){

@@ -14,21 +14,8 @@ use mongodb::Collection;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
 
-/// View your opponent
-pub async fn view_opponent(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>,
-    region: &Region,
-) -> Result<(), Error> {
-    prompt(
-        ctx,
-        msg,
-        "Getting your opponent...",
-        "<a:loading:1187839622680690689> Searching for your opponent...",
-        None,
-        Some(0xFFFF00),
-    )
-    .await?;
+
+pub async fn view_opponent_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region)-> Result<(), Error>{
     let round = find_round_from_config(&get_config(ctx, region).await);
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
@@ -43,6 +30,26 @@ pub async fn view_opponent(
             return Ok(());
         }
     };
+    return view_opponent(ctx, msg, region, caller).await;
+}
+/// View your opponent
+pub async fn view_opponent(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    caller: Document,
+) -> Result<(), Error> {
+    prompt(
+        ctx,
+        msg,
+        "Getting your opponent...",
+        "<a:loading:1187839622680690689> Searching for your opponent...",
+        None,
+        Some(0xFFFF00),
+    )
+    .await?;
+    
+    
 
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;

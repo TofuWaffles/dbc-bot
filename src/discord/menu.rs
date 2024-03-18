@@ -5,7 +5,7 @@ use crate::host::utilities::index::utilities_mod_panel;
 use crate::players::registration::deregister::deregister_menu;
 use crate::players::registration::register::register_menu;
 use crate::players::tournament::submit::submit_result;
-use crate::players::tournament::view2::{view_managers, view_opponent};
+use crate::players::tournament::view2::{view_managers, view_opponent_wrapper};
 use crate::players::view::view_info;
 use crate::Context;
 use crate::Error;
@@ -128,13 +128,13 @@ pub async fn tournament_menu(
                     b.custom_id("enemy")
                         .disabled(!schedule)
                         .style(ButtonStyle::Primary)
-                        .emoji(ReactionType::Unicode("🤓".to_string()))
+                        .emoji(ReactionType::Unicode("⚔️".to_string()))
                 })
                 .create_button(|b| {
                     b.custom_id("submit")
                         .disabled(!submit)
                         .style(ButtonStyle::Success)
-                        .emoji(ReactionType::Unicode("⚔️".to_string()))
+                        .emoji(ReactionType::Unicode("📥".to_string()))
                 })
                 .create_button(|b| {
                     b.custom_id("help")
@@ -156,8 +156,8 @@ pub async fn tournament_menu(
             e.title("Tournament Menu")
                 .description(
                     r#"Below are the available options!
-🤓: Find out who is your opponent in current round!
-⚔️: Submit your result!
+⚔️: Find out who your opponent is for the current round!
+📥: Submit your result!
 ❓: Help.
 "#,
                 )
@@ -174,7 +174,7 @@ pub async fn tournament_menu(
         match mci.data.custom_id.as_str() {
             "enemy" => {
                 mci.defer(&ctx.http()).await?;
-                return view_opponent(ctx, msg, &region).await;
+                return view_opponent_wrapper(ctx, msg, &region).await;
             }
             "managers" => {
                 mci.defer(&ctx.http()).await?;

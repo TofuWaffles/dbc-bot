@@ -37,15 +37,7 @@ pub async fn display_next_round(
           .description("Please require the players to finish their matches before continuing to next round!")
           .fields(battles)
         })
-        .components(|c|{
-          c.create_action_row(|a|{
-            a.create_button(|b|{
-              b.label("Next Round")
-              .disabled(true)
-              .custom_id("continue")
-            })
-          })
-        })
+        .components(|c|c)
     }).await?;
     }
     let resp = msg.clone().into_message().await?;
