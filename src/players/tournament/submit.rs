@@ -63,7 +63,7 @@ pub async fn submit_result(
     //Check if the user has already submitted the result or not yet disqualified
 
     let mode = config.get_str("mode").unwrap();
-    let map = config.get_str("map").unwrap_or_default();
+    let map = config.get_str("map").unwrap_or("Any");
     let current_round: Collection<Document> =
         database.collection(find_round_from_config(&config).as_str());
     let round = config.get("round").unwrap().as_i32().unwrap();
@@ -101,7 +101,7 @@ pub async fn submit_result(
         .unwrap();
     // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
     // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
-    let server_id = ctx.guild_id().unwrap().0;
+    // let server_id = ctx.guild_id().unwrap().0;
     let channel_to_announce = ChannelId(channel);
     match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
@@ -135,10 +135,12 @@ pub async fn submit_result(
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
-                                r#"{}({}) has won this round!
+                                r#"{}({}) has won round {} and proceed to round {}!
                                "#,
                                                             winner.get_str("name").unwrap(),
                                                             winner.get_str("tag").unwrap(),
+                                                            round,
+                                                            round+1
                                                             // guild = server_id,
                                                             // chn = bracket_chn_id,
                                                             // msg_id = bracket_msg_id
@@ -207,14 +209,7 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
     let mut results: Vec<String> = vec![];
 
     for log in logs.unwrap() {
-        let mode_log = log["event"]["mode"].as_str().unwrap();
-        let map_log = log["event"]["map"].as_str().unwrap();
-        if !compare_strings(log["battle"]["type"].as_str().unwrap(), "friendly")
-            || !compare_strings(mode_log, mode)
-        {
-            continue;
-        }
-        if !map.is_empty() && !compare_strings(map_log, map) {
+        if !log_check(&log, mode, map) {
             continue;
         }
 
@@ -279,4 +274,49 @@ fn compare_strings(str1: &str, str2: &str) -> bool {
         .flat_map(char::to_lowercase)
         .collect::<String>();
     str1_normalized == str2_normalized
+}
+
+fn log_check(log: &serde_json::Value, mode: &str, map: &str) -> bool {
+    info!("{:?}", log);
+    match log["event"]["mode"].as_str(){
+       Some(m) => {
+              if !compare_strings(m, mode){
+                return false
+              }
+       }
+       None => return false};
+    match log["battle"]["type"].as_str(){
+        Some(t) => {
+               if !compare_strings(t, "friendly"){
+                 return false
+               }
+        }
+        None => return false
+    }
+    match log["event"]["map"].as_str(){
+         Some(m) => {
+            if map != "Any" && !compare_strings(m, map){
+                return false
+            }
+         }
+         None => return false
+    };
+    match log["battle"]["teams"][0].as_array(){
+        Some(t) => {
+            if t.len() > 1{
+                return false
+            }
+        },
+        None => return false
+    }
+
+    match log["battle"]["teams"][1].as_array(){
+        Some(t) => {
+            if t.len() > 1{
+                return false
+            }
+        },
+        None => return false
+    }
+    true
 }
