@@ -8,6 +8,7 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
+use tracing::info;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
@@ -33,6 +34,7 @@ pub async fn tournament_mod_panel(
                 return starter_wrapper(ctx, msg, region).await;
             }
             "next" => {
+                info!("Pressing next button");
                 mci.defer(&ctx.http()).await?;
                 return display_next_round(ctx, msg, region).await;
             }

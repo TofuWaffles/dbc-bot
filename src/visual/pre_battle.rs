@@ -36,9 +36,7 @@ async fn create_battle_image(
             return Err(Box::new(CustomError(format!("{:?}", e))));
         }
     };
-    info!("Background path: {}", bg_path);
     let mut img = model::BSImage::new(None, None, bg_path, Some("Prebattle"));
-    info!("Getting vesus image");
     let vs_path = match current_dir
         .join("assets/battle/versus.png")
         .into_os_string()
@@ -58,7 +56,6 @@ async fn create_battle_image(
     );
     vs.set_center_x(img.width);
     vs.set_center_y(img.height);
-    info!("vs icon is set!");
 
     let mut icon1 = model::Component::new(
         model::CustomImage::new(
@@ -73,7 +70,6 @@ async fn create_battle_image(
         Some("icon1"),
     );
     icon1.set_center_y(img.height);
-    info!("Icon1 is set!");
 
     let mut icon2 = model::Component::new(
         model::CustomImage::new(
@@ -89,7 +85,6 @@ async fn create_battle_image(
     );
     icon2.set_x(img.width - icon1.x - icon2.width());
     icon2.set_center_y(img.height);
-    info!("Icon2 is set!");
 
     let mut name1 = model::Component::new(
         model::Text::new(
@@ -106,7 +101,6 @@ async fn create_battle_image(
     );
     name1.set_relative_center_x(&icon1);
     name1.set_y(icon1.y + icon1.height() + 10);
-    info!("Name1 is set!");
 
     let mut name2 = model::Component::new(
         model::Text::new(
@@ -123,7 +117,6 @@ async fn create_battle_image(
     );
     name2.set_relative_center_x(&icon2);
     name2.set_y(icon2.y + icon2.height() + 10);
-    info!("Name2 is set!");
 
     let mut tag1 = model::Component::new(
         model::Text::new(player1.get_str("tag").unwrap(), FONT_SIZE, 0xFFFFFFFF, None)
@@ -135,7 +128,6 @@ async fn create_battle_image(
     );
     tag1.set_relative_center_x(&name1);
     tag1.set_y(name1.y + name1.height() + 10);
-    info!("Tag1 is set!");
 
     let mut tag2 = model::Component::new(
         model::Text::new(player2.get_str("tag").unwrap(), FONT_SIZE, 0xFFFFFFFF, None)
@@ -147,7 +139,6 @@ async fn create_battle_image(
     );
     tag2.set_relative_center_x(&name2);
     tag2.set_y(name2.y + name2.height() + 10);
-    info!("Tag2 is set!");
 
     // Create text images for title, mode, VS, and footer
     let mut title_box = model::Component::new(
@@ -218,7 +209,6 @@ async fn create_battle_image(
         None,
         Some("title"),
     );
-    info!("Title: Round {round} is set!");
     let mut lower_title = model::Component::new(
         model::Text::new(
             format!("Match {match_id}"),
@@ -235,7 +225,6 @@ async fn create_battle_image(
         None,
         Some("title"),
     );
-    info!("Title: Match {match_id} is set!");
     upper_title.set_center_x(title_box.width());
     lower_title.set_center_x(title_box.width());
     let a = (title_box.height() - 2 * upper_title.height() - 5) / 2;
@@ -243,7 +232,6 @@ async fn create_battle_image(
     lower_title.set_y(upper_title.y + upper_title.height() + 5);
     title_box.overlay(upper_title);
     title_box.overlay(lower_title);
-    info!("Title is set!");
     // Create mode components
     let mut mode_bg = model::Component::new(
         model::Trapezoid {
@@ -318,7 +306,6 @@ async fn create_battle_image(
     mode_text.set_center_x(mode_bg.width());
     mode_text.set_center_y(mode_bg.height());
     mode_bg.overlay(mode_text);
-    info!("Mode is set!");
 
     // Component elements onto the base img
     img.add_overlay(title_box);
@@ -330,7 +317,6 @@ async fn create_battle_image(
     img.add_overlay(tag1);
     img.add_overlay(tag2);
     img.add_overlay(vs);
-    info!("All components are set!");
     // Build the final composed img
     Ok(img.build())
 }

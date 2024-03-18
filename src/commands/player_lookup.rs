@@ -17,9 +17,12 @@ pub async fn lookup_player(
 ) -> Result<(), Error> {
     span!(Level::INFO, "lookup_player", player_tag);
     let msg = ctx.send(|s|{
+        
         s.embed(|e|{
             e.title("Looking up player")
         })
+        .ephemeral(true)
+        .reply(true)
     }).await?;
     // We probably don't need this. I'll give it another look later. - Doof
     match (player_tag, user){
