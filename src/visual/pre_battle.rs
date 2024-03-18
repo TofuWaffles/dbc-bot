@@ -113,7 +113,7 @@ async fn create_battle_image(
             player2.get_str("discord_name").unwrap(),
             FONT_SIZE,
             0xFFFFFFFF,
-            None
+            None,
         )
         .build()
         .await?,
@@ -126,14 +126,9 @@ async fn create_battle_image(
     info!("Name2 is set!");
 
     let mut tag1 = model::Component::new(
-        model::Text::new(
-            player1.get_str("tag").unwrap(),
-            FONT_SIZE,
-            0xFFFFFFFF,
-            None,
-        )
-        .build()
-        .await?,
+        model::Text::new(player1.get_str("tag").unwrap(), FONT_SIZE, 0xFFFFFFFF, None)
+            .build()
+            .await?,
         None,
         None,
         Some("tag1"),
@@ -143,14 +138,9 @@ async fn create_battle_image(
     info!("Tag1 is set!");
 
     let mut tag2 = model::Component::new(
-        model::Text::new(
-            player2.get_str("tag").unwrap(),
-            FONT_SIZE,
-            0xFFFFFFFF,
-            None,
-        )
-        .build()
-        .await?,
+        model::Text::new(player2.get_str("tag").unwrap(), FONT_SIZE, 0xFFFFFFFF, None)
+            .build()
+            .await?,
         None,
         None,
         Some("tag2"),

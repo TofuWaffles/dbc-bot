@@ -14,8 +14,11 @@ use mongodb::Collection;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
 
-
-pub async fn view_opponent_wrapper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region)-> Result<(), Error>{
+pub async fn view_opponent_wrapper(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
@@ -48,8 +51,6 @@ pub async fn view_opponent(
         Some(0xFFFF00),
     )
     .await?;
-    
-    
 
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;

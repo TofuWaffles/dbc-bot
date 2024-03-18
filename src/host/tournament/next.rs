@@ -5,8 +5,8 @@ use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
 use poise::ReplyHandle;
-use tracing::{error, info};
 use std::collections::HashMap;
+use tracing::{error, info};
 const TIMEOUT: u64 = 300;
 pub async fn display_next_round(
     ctx: &Context<'_>,

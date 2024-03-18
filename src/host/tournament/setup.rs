@@ -201,15 +201,18 @@ pub async fn starter_wrapper(
 ) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
     match start_tournament(ctx, msg, region).await {
-        Ok(_) =>{ 
+        Ok(_) => {
             prompt(
-                ctx, 
-                msg, 
-                "Tournament starts!", 
-                format!("The tournament has begun for {}", region.full()), 
-                None, 
-                Some(0xFFFF0000)).await?;
-            Ok(())},
+                ctx,
+                msg,
+                "Tournament starts!",
+                format!("The tournament has begun for {}", region.full()),
+                None,
+                Some(0xFFFF0000),
+            )
+            .await?;
+            Ok(())
+        }
         Err(e) => {
             error!("{e}");
             revert(ctx, region).await?;

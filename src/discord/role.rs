@@ -12,7 +12,7 @@ pub async fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Opti
             let role_id_from_db = config.get_str("role").unwrap().parse::<u64>().unwrap();
             match role.to_role_cached(ctx.cache()) {
                 Some(role) => {
-                    if role.id == role_id_from_db { 
+                    if role.id == role_id_from_db {
                         return Some(region);
                     }
                 }

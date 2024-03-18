@@ -57,12 +57,12 @@ pub async fn submit_result(
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, &region).await;
     let channel = config
-    .get("channel")
-    .unwrap()
-    .as_str()
-    .unwrap()
-    .parse::<u64>()
-    .unwrap();
+        .get("channel")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
     let channel_to_announce = ChannelId(channel);
 
     //Get player document via their discord_id
@@ -84,7 +84,9 @@ pub async fn submit_result(
         .unwrap();
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
-        next_round.insert_one(update_match_id(caller.clone()), None).await?;
+        next_round
+            .insert_one(update_match_id(caller.clone()), None)
+            .await?;
         prompt(
             ctx,
             msg,
@@ -98,7 +100,8 @@ pub async fn submit_result(
         channel_to_announce
             .send_message(ctx, |m| {
                 m.embed(|e| {
-                    e.title("Result is here!").description(format!(
+                    e.title("Result is here!")
+                        .description(format!(
                         "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
                         caller.get_str("discord_id").unwrap(),
                         caller.get_str("name").unwrap(),
@@ -106,21 +109,21 @@ pub async fn submit_result(
                         round,
                         round + 1
                     ))
-                    .color(0xFFFF00)
+                        .color(0xFFFF00)
                 })
             })
             .await?;
-        
+
         update_battle(database, round, match_id).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
     println!("{:?}", config);
-   
+
     // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
     // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
     // let server_id = ctx.guild_id().unwrap().0;
-    
+
     match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
             if round < config.get("total").unwrap().as_i32().unwrap() {
@@ -152,18 +155,19 @@ pub async fn submit_result(
                 channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
-                            e.title("Result is here!").description(format!(
-                                r#"<@{}> ({}-{}) has won round {} and proceeds to round {}!"#,                         
-                                winner.get_str("discord_id").unwrap(),
-                                winner.get_str("name").unwrap(),
-                                winner.get_str("tag").unwrap(),
-                                round,
-                                round+1
-                                // guild = server_id,
-                                // chn = bracket_chn_id,
-                                // msg_id = bracket_msg_id
-                            ))
-                        .color(0xFFFF00)})
+                            e.title("Result is here!")
+                                .description(format!(
+                                    r#"<@{}> ({}-{}) has won round {} and proceeds to round {}!"#,
+                                    winner.get_str("discord_id").unwrap(),
+                                    winner.get_str("name").unwrap(),
+                                    winner.get_str("tag").unwrap(),
+                                    round,
+                                    round + 1 // guild = server_id,
+                                              // chn = bracket_chn_id,
+                                              // msg_id = bracket_msg_id
+                                ))
+                                .color(0xFFFF00)
+                        })
                     })
                     .await?;
             } else {
@@ -179,13 +183,14 @@ pub async fn submit_result(
                 // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
-                        e.title("Result is here!").description(format!(
-                            "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
-                            winner.get_str("discord_id").unwrap(),
-                            winner.get_str("name").unwrap(),
-                            winner.get_str("tag").unwrap()
-                        ))
-                        .color(0xFFFF00)
+                        e.title("Result is here!")
+                            .description(format!(
+                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
+                                winner.get_str("discord_id").unwrap(),
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap()
+                            ))
+                            .color(0xFFFF00)
                     })
                     .components(|c| c)
                 })
@@ -211,7 +216,7 @@ pub async fn submit_result(
                 "As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!",
                 None,
                 Some(0xFFFF00),
-            ).await?;   
+            ).await?;
         }
     }
     Ok(())
@@ -299,45 +304,46 @@ fn compare_strings(str1: &str, str2: &str) -> bool {
 
 fn log_check(log: &serde_json::Value, mode: &str, map: &str) -> bool {
     // info!("{:?}", log); // Debugging purposes
-    match log["event"]["mode"].as_str(){
-       Some(m) => {
-              if !compare_strings(m, mode){
-                return false
-              }
-       }
-       None => return false};
-    match log["battle"]["type"].as_str(){
-        Some(t) => {
-               if !compare_strings(t, "friendly"){
-                 return false
-               }
+    match log["event"]["mode"].as_str() {
+        Some(m) => {
+            if !compare_strings(m, mode) {
+                return false;
+            }
         }
-        None => return false
-    }
-    match log["event"]["map"].as_str(){
-         Some(m) => {
-            if map != "Any" && !compare_strings(m, map){
-                return false
-            }
-         }
-         None => return false
+        None => return false,
     };
-    match log["battle"]["teams"][0].as_array(){
+    match log["battle"]["type"].as_str() {
         Some(t) => {
-            if t.len() > 1{
-                return false
+            if !compare_strings(t, "friendly") {
+                return false;
             }
-        },
-        None => return false
+        }
+        None => return false,
+    }
+    match log["event"]["map"].as_str() {
+        Some(m) => {
+            if map != "Any" && !compare_strings(m, map) {
+                return false;
+            }
+        }
+        None => return false,
+    };
+    match log["battle"]["teams"][0].as_array() {
+        Some(t) => {
+            if t.len() > 1 {
+                return false;
+            }
+        }
+        None => return false,
     }
 
-    match log["battle"]["teams"][1].as_array(){
+    match log["battle"]["teams"][1].as_array() {
         Some(t) => {
-            if t.len() > 1{
-                return false
+            if t.len() > 1 {
+                return false;
             }
-        },
-        None => return false
+        }
+        None => return false,
     }
     true
 }

@@ -1,8 +1,8 @@
-use poise::serenity_prelude::RoleId;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
-use tracing::info;
+use poise::serenity_prelude::RoleId;
 use tracing::error;
+use tracing::info;
 
 pub async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
     let server_id = ctx.guild_id().unwrap().to_string();
@@ -11,7 +11,7 @@ pub async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
         .database
         .general
         .collection("Managers")
-        .find_one(doc!{"server_id": server_id}, None)
+        .find_one(doc! {"server_id": server_id}, None)
         .await?
         .unwrap();
     let hosts = doc.get_array("role_id").unwrap().to_vec();
@@ -21,10 +21,16 @@ pub async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
         info!("Checking {id}");
         let role = RoleId::to_role_cached(RoleId(id), ctx.cache()).unwrap();
         match ctx.author().has_role(ctx.http(), guild, &role).await {
-            Ok(true) => return {
-                info!("{} is authenticated to host due to the role {}", ctx.author().name, role.name);
-                Ok(true)
-            },
+            Ok(true) => {
+                return {
+                    info!(
+                        "{} is authenticated to host due to the role {}",
+                        ctx.author().name,
+                        role.name
+                    );
+                    Ok(true)
+                }
+            }
             Ok(false) => {
                 info!("{} doesn't have the role {}", ctx.author().name, role.name);
                 continue;

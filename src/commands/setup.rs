@@ -14,18 +14,14 @@ use tracing::{error, info};
 
 #[derive(Debug, poise::Modal)]
 #[name = "Role Selection"]
-struct RoleSelection{
+struct RoleSelection {
     #[name = "Role id"]
     #[placeholder = "Please write role id here"]
-    role_id: String
+    role_id: String,
 }
 
 /// Setup role to interact with the  configurations of this bot
-#[poise::command(
-    slash_command,
-    rename = "role-allow",
-    check = "is_mod",
-)]
+#[poise::command(slash_command, rename = "role-allow", check = "is_mod")]
 pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let server_id = ctx.guild().unwrap().id.to_string();
     let server_name = ctx.guild().unwrap().name.clone();
@@ -34,7 +30,8 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
     let collection: Collection<Document> = ctx.data().database.general.collection("Managers");
     let doc = match collection
         .find_one(doc! {"server_id": &server_id}, None)
-        .await?{
+        .await?
+    {
         Some(document) => document,
         None => {
             collection
@@ -69,7 +66,6 @@ pub async fn setup(ctx: Context<'_>) -> Result<(), Error> {
         .timeout(std::time::Duration::from_secs(120))
         .build();
     while let Some(mci) = &cic.next().await {
-
         match mci.data.custom_id.as_str() {
             "open" => {
                 role_option(&ctx, &msg, mci.clone(), &collection).await?;
@@ -110,8 +106,8 @@ async fn display_select_menu(
 
     msg.edit(*ctx, |m| {
         m.embed(|e| {
-            e.title("Setup").description(format!("Following roles can access Host menu:\n{accept}"
-            ))
+            e.title("Setup")
+                .description(format!("Following roles can access Host menu:\n{accept}"))
         })
         .components(|c| {
             c.create_action_row(|a| {
@@ -143,19 +139,19 @@ async fn role_option(
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
     let server_id = ctx.guild().unwrap().id.to_string();
-    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None)
-        .await{
+    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None).await
+    {
         Ok(Some(r)) => {
-                let update = doc! { "$push": { "role_id": &r.role_id } };
-                collection
-                    .update_one(doc! {"server_id": &server_id}, update, None)
-                    .await?;
+            let update = doc! { "$push": { "role_id": &r.role_id } };
+            collection
+                .update_one(doc! {"server_id": &server_id}, update, None)
+                .await?;
             msg.edit(*ctx, |s| {
                 s.components(|c| c).embed(|e| {
                     e.title("The role has been set!").description(format!(
                         "The role **<@&{}>** has been selected for this tournament!
-                        Directing back to selecting role menu...", r.role_id
-                        
+                        Directing back to selecting role menu...",
+                        r.role_id
                     ))
                 })
             })
@@ -169,7 +165,8 @@ async fn role_option(
                 "No role has been selected! Please try again!",
                 None,
                 Some(0xFFFF00),
-            ).await?;
+            )
+            .await?;
         }
     }
     Ok(())

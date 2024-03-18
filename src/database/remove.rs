@@ -14,8 +14,7 @@ pub async fn remove_player(
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;
     let current_round = find_round_from_config(&config);
-    let round_collection =
-        database.collection::<Document>(&current_round);
+    let round_collection = database.collection::<Document>(&current_round);
     let players_collection = database.collection::<Document>("Players");
     match round_collection.name() {
         "Players" => {
@@ -31,11 +30,15 @@ pub async fn remove_player(
                 .delete_one(doc! {"_id": player.get("_id")}, None)
                 .await?;
             let (_, r_u32) = current_round.split_at(6);
-            let next_round_collection = database.collection::<Document>(&format!("Round {}",r_u32.trim().parse::<u32>().unwrap_or(0)+1_u32));
+            let next_round_collection = database.collection::<Document>(&format!(
+                "Round {}",
+                r_u32.trim().parse::<u32>().unwrap_or(0) + 1_u32
+            ));
             if next_round_collection
                 .delete_one(doc! {"_id": player.get("_id")}, None)
                 .await
-                .is_ok(){};
+                .is_ok()
+            {};
         }
     }
     Ok(find_round_from_config(&config))

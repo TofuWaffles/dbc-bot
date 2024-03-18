@@ -163,4 +163,3 @@ async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !config.get_bool("tournament").unwrap()
 }
-

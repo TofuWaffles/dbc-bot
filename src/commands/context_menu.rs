@@ -105,11 +105,14 @@ pub async fn get_individual_player_data(
 }
 
 #[poise::command(context_menu_command = "View battle", guild_only)]
-pub async fn view_battle(
-    ctx: Context<'_>,
-    user: serenity::User,
-) -> Result<(), Error>{
-    let msg = ctx.send(|s| s.reply(true).ephemeral(true).embed(|e| e.title("Getting battle from this player..."))).await?;
+pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), Error> {
+    let msg = ctx
+        .send(|s| {
+            s.reply(true)
+                .ephemeral(true)
+                .embed(|e| e.title("Getting battle from this player..."))
+        })
+        .await?;
 
     let roles = match get_roles_from_user(&ctx, Some(&user)).await {
         Some(roles) => roles,
@@ -139,7 +142,7 @@ pub async fn view_battle(
             .await;
         }
     };
-    if !tournament(&ctx, &region).await{
+    if !tournament(&ctx, &region).await {
         return prompt(
             &ctx,
             &msg,
@@ -150,7 +153,7 @@ pub async fn view_battle(
         )
         .await;
     }
-   
+
     let round = find_round_from_config(&get_config(&ctx, &region).await);
     let user_doc = match find_player_by_discord_id(&ctx, &region, user.id.into(), round).await {
         Ok(user) => match user {

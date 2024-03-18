@@ -1,11 +1,11 @@
 use crate::database::config::{make_config, set_config};
+use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::{Mode, Region};
 use futures::StreamExt;
 use mongodb::{bson::doc, bson::Document, Collection};
 use std::sync::Arc;
-use crate::discord::prompt::prompt;
-  
+
 use poise::{
     serenity_prelude::{CreateSelectMenuOption, MessageComponentInteraction},
     ReplyHandle,
@@ -20,18 +20,17 @@ struct TournamentMap {
     name: String,
 }
 
-
 #[derive(Debug, poise::Modal)]
 #[name = "Role Selection"]
-struct RoleSelection{
+struct RoleSelection {
     #[name = "Role id"]
     #[placeholder = "Please write role id here"]
-    role_id: String
+    role_id: String,
 }
 
 #[derive(Debug, poise::Modal)]
 #[name = "Channel"]
-struct Channel{
+struct Channel {
     #[name = "Enter the ID of the channel"]
     channel_id: String,
 }
@@ -76,7 +75,7 @@ pub async fn configurate(
             }
             _ => {}
         };
-        
+
         display_config(ctx, msg, region).await?;
     }
     Ok(())
@@ -134,54 +133,48 @@ async fn display_config(
         **Channel to publish results of matches:** {}
         **Channel to publish the tournament bracket:** {}
         "#,
-        registration_status,
-        tournament_status,
-        mode,
-        map,
-        role,
-        channel,
-        bracket_channel,
+        registration_status, tournament_status, mode, map, role, channel, bracket_channel,
     );
 
     msg.edit(*ctx, |s| {
-        s.embed(|e| {
-            e.title("Current Configuration").description(description)
-        })
-        .components(|c| {
-            c.create_action_row(|a| {
-                a.create_select_menu(|m| {
-                    m.custom_id("config")
-                        .placeholder("Select a field to configure")
-                        .options(|o| {
-                            o.create_option(|o| {
-                                o.label("Mode")
-                                    .value("mode")
-                                    .description("Select game mode for the tournament")
+        s.embed(|e| e.title("Current Configuration").description(description))
+            .components(|c| {
+                c.create_action_row(|a| {
+                    a.create_select_menu(|m| {
+                        m.custom_id("config")
+                            .placeholder("Select a field to configure")
+                            .options(|o| {
+                                o.create_option(|o| {
+                                    o.label("Mode")
+                                        .value("mode")
+                                        .description("Select game mode for the tournament")
+                                })
+                                .create_option(|o| {
+                                    o.label("Map")
+                                        .value("map")
+                                        .description("Set the map for that game mode")
+                                })
+                                .create_option(|o| {
+                                    o.label("Role").value("role").description(
+                                        "Set the role to assign the players for the tournament",
+                                    )
+                                })
+                                .create_option(|o| {
+                                    o.label("Channel").value("channel").description(
+                                        "Set the channel to send the tournament updates",
+                                    )
+                                })
+                                .create_option(|o| {
+                                    o.label("Bracket Channel")
+                                        .value("bracket_channel")
+                                        .description(
+                                            "Set the channel to send the tournament bracket",
+                                        )
+                                })
                             })
-                            .create_option(|o| {
-                                o.label("Map")
-                                    .value("map")
-                                    .description("Set the map for that game mode")
-                            })
-                            .create_option(|o| {
-                                o.label("Role").value("role").description(
-                                    "Set the role to assign the players for the tournament",
-                                )
-                            })
-                            .create_option(|o| {
-                                o.label("Channel")
-                                    .value("channel")
-                                    .description("Set the channel to send the tournament updates")
-                            })
-                            .create_option(|o| {
-                                o.label("Bracket Channel")
-                                    .value("bracket_channel")
-                                    .description("Set the channel to send the tournament bracket")
-                            })
-                        })
+                    })
                 })
             })
-        })
     })
     .await?;
     Ok(())
@@ -249,9 +242,9 @@ async fn role_option(
     mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None)
-        .await{
-        Ok(Some(role))=> {
+    match poise::execute_modal_on_component_interaction::<RoleSelection>(ctx, mci, None, None).await
+    {
+        Ok(Some(role)) => {
             collection
                 .update_one(doc! {}, set_config("role", Some(&role.role_id)), None)
                 .await?;
@@ -265,14 +258,12 @@ async fn role_option(
                 })
             })
             .await?;
-        
         }
         Ok(None) | Err(_) => {
             msg.edit(*ctx, |s| {
                 s.components(|c| c).embed(|e| {
-                    e.title("Failed to add more role!").description(
-                        "No role has been selected! Please try again!" 
-                )
+                    e.title("Failed to add more role!")
+                        .description("No role has been selected! Please try again!")
                 })
             })
             .await?;
@@ -287,8 +278,8 @@ async fn map_option(
     mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    match poise::execute_modal_on_component_interaction::<TournamentMap>(ctx, mci, None, None)
-        .await{
+    match poise::execute_modal_on_component_interaction::<TournamentMap>(ctx, mci, None, None).await
+    {
         Ok(Some(map)) => {
             collection
                 .update_one(doc! {}, set_config("map", Some(map.name.as_str())), None)
@@ -304,7 +295,8 @@ async fn map_option(
                 ),
                 None,
                 None,
-            ).await?;
+            )
+            .await?;
         }
         Ok(None) | Err(_) => {
             prompt(
@@ -314,7 +306,8 @@ async fn map_option(
                 "No map has been selected! Please try again!",
                 None,
                 Some(0xFF0000),
-            ).await?;
+            )
+            .await?;
             collection
                 .update_one(doc! {}, set_config("map", None), None)
                 .await?;
@@ -330,11 +323,14 @@ async fn channel_option(
     mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None)
-        .await{
+    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None).await {
         Ok(Some(channel)) => {
             collection
-                .update_one(doc! {}, set_config("channel", Some(channel.channel_id.as_str())), None)
+                .update_one(
+                    doc! {},
+                    set_config("channel", Some(channel.channel_id.as_str())),
+                    None,
+                )
                 .await?;
             msg.edit(*ctx, |s| {
                 s.components(|c| c).embed(|e| {
@@ -355,7 +351,8 @@ async fn channel_option(
                 "No channel has been selected! Please try again!",
                 None,
                 Some(0xFF0000),
-            ).await?;
+            )
+            .await?;
             collection
                 .update_one(doc! {}, set_config("channel", None), None)
                 .await?;
@@ -371,11 +368,14 @@ async fn bracket_channel_option(
     mci: Arc<MessageComponentInteraction>,
     collection: &Collection<Document>,
 ) -> Result<(), Error> {
-    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None)
-        .await{
+    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None).await {
         Ok(Some(channel)) => {
             collection
-                .update_one(doc! {}, set_config("bracket_channel", Some(channel.channel_id.as_str())), None)
+                .update_one(
+                    doc! {},
+                    set_config("bracket_channel", Some(channel.channel_id.as_str())),
+                    None,
+                )
                 .await?;
             msg.edit(*ctx, |s| {
                 s.components(|c| c).embed(|e| {
@@ -396,7 +396,8 @@ async fn bracket_channel_option(
                 "No channel has been selected! Please try again!",
                 None,
                 Some(0xFF0000),
-            ).await?;
+            )
+            .await?;
             collection
                 .update_one(doc! {}, set_config("bracket_channel", None), None)
                 .await?;
