@@ -72,14 +72,14 @@ pub async fn lookup_player(
 
     match user {
         Some(user) => {
-            let user_id = user.id.as_u64().to_string();
+            let user_id = user.id.0;
 
             for region in Region::iter() {
                 let database = ctx.data().database.regional_databases.get(&region).unwrap();
                 info!("Looking for player in {}", region.full());
                 let player_data: Collection<Document> = database.collection("Players");
                 match player_data
-                    .find_one(doc! {"discord_id": user_id.clone()}, None)
+                    .find_one(doc! {"discord_id": user_id.to_string()}, None)
                     .await?
                 {
                     Some(player_doc) => {
