@@ -130,24 +130,24 @@ pub async fn start_tournament(
         })
     })
     .await?;
-    msg.edit(*ctx, |s| {
-        s.embed(|e| {
-            e.title("Setting up tournament").description(format!(
-                "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
-                prompts[0],
-                prompts[1],
-                prompts[3],
-                &count,
-                prompts[7],
-                &rounds,
-                prompts[5],
-                &byes,
-                prompts[9],
-                prompts[10]
-            ))
-        })
-    })
-    .await?;
+    // msg.edit(*ctx, |s| {
+    //     s.embed(|e| {
+    //         e.title("Setting up tournament").description(format!(
+    //             "{}\n{}\n{}{}\n{}{}\n{}{}\n{}\n{}",
+    //             prompts[0],
+    //             prompts[1],
+    //             prompts[3],
+    //             &count,
+    //             prompts[7],
+    //             &rounds,
+    //             prompts[5],
+    //             &byes,
+    //             prompts[9],
+    //             prompts[10]
+    //         ))
+    //     })
+    // })
+    // .await?;
     // match update_bracket(ctx, Some(region)).await {
     //     Ok(_) => {
     //         msg.edit(*ctx, |s| {
@@ -201,7 +201,15 @@ pub async fn starter_wrapper(
 ) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
     match start_tournament(ctx, msg, region).await {
-        Ok(_) => Ok(()),
+        Ok(_) =>{ 
+            prompt(
+                ctx, 
+                msg, 
+                "Tournament starts!", 
+                format!("The tournament has begun for {}", region.full()), 
+                None, 
+                Some(0xFFFF0000)).await?;
+            Ok(())},
         Err(e) => {
             error!("{e}");
             revert(ctx, region).await?;
