@@ -62,7 +62,7 @@ pub async fn utilities_mod_panel(
             }
             "bracket" => {
                 mci.defer(&ctx.http()).await?;
-                return bracket_display(ctx, region).await;
+                return bracket_display(ctx, msg, region).await;
             }
             _ => {}
         }
