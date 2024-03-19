@@ -145,7 +145,7 @@ async fn display_start_buttons(
                     b.custom_id("reset")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚩".to_string()))
-                        .disabled(!is_mod)
+                        .disabled(true)
                 })
             })
         })

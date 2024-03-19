@@ -4,7 +4,7 @@ use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
-use poise::ReplyHandle;
+use poise::{serenity_prelude as sereniy, ReplyHandle};
 use std::collections::HashMap;
 use tracing::{error, info};
 const TIMEOUT: u64 = 300;
@@ -31,14 +31,7 @@ pub async fn display_next_round(
         .await?;
     } else {
         error!("Some matches are not finished! Cannot continue to next round!");
-        msg.edit(*ctx,|m| {
-        m.embed(|e|{
-          e.title("Some matches are not finished!")
-          .description("Please require the players to finish their matches before continuing to next round!")
-          .fields(battles)
-        })
-        .components(|c|c)
-    }).await?;
+        return paginate(ctx, msg, battles).await;
     }
     let resp = msg.clone().into_message().await?;
     let cib = resp
@@ -63,10 +56,11 @@ pub async fn display_next_round(
     Ok(())
 }
 
+
 pub async fn display_false_battles(
     ctx: &Context<'_>,
     region: &Region,
-) -> Vec<(String, String, bool)> {
+) -> Vec<String> {
     let mut players = vec![];
     let mut result = find_all_false_battles(ctx, region).await;
     while let Some(player) = result.next().await {
@@ -84,7 +78,7 @@ pub async fn display_false_battles(
             match_groups.entry(match_id).or_default().push(player);
         }
     }
-    let mut battles: Vec<(String, String, bool)> = match_groups
+    let mut battles: Vec<String> = match_groups
         .values()
         .map(|group| {
             if group.len() == 2 {
@@ -96,19 +90,74 @@ pub async fn display_false_battles(
                 let dis2 = player2.get_str("discord_id").unwrap_or("").to_string();
                 let name2 = player2.get_str("name").unwrap_or("").to_string();
                 let tag2 = player2.get_str("tag").unwrap_or("").to_string();
-                (
-                    format!("Match {}", player1.get_i32("match_id").unwrap()),
-                    format!(
-                        "<@{}> - <@{}>\n{}({}) - {}({})",
-                        dis1, dis2, name1, tag1, name2, tag2
-                    ),
-                    false,
-                )
+                return format!(
+r#"**Some battles are not finished!**
+# Match {} 
+<@{}> - <@{}>
+{}({}) - {}({})"#, player1.get_i32("match_id").unwrap(), dis1, dis2, name1, tag1, name2, tag2);
             } else {
-                unreachable!("There should be 2 players in each match!")
+                unreachable!("There should be 2 players in each match!");
             }
         })
-        .collect::<Vec<(String, String, bool)>>();
-    battles.sort_by(|a, b| a.0.cmp(&b.0));
+        .collect::<Vec<String>>();
+    battles.sort();
     battles
+}
+
+//I stole from poise's example
+pub async fn paginate(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    pages: Vec<String>,
+) -> Result<(), Error> {
+    // Define some unique identifiers for the navigation buttons
+    let ctx_id = ctx.id();
+    let prev_button_id = format!("{}prev", ctx_id);
+    let next_button_id = format!("{}next", ctx_id);
+
+    // Send the embed with the first page as content
+    let mut current_page = 0;
+    msg.edit(*ctx,|b| {
+        b.embed(|b| b.description(pages[current_page].clone()))
+            .components(|b| {
+                b.create_action_row(|b| {
+                    b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
+                        .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
+                })
+            })
+    })
+    .await?;
+
+    // Loop through incoming interactions with the navigation buttons
+    while let Some(press) = poise::serenity_prelude::CollectComponentInteraction::new(ctx)
+        // We defined our button IDs to start with `ctx_id`. If they don't, some other command's
+        // button was pressed
+        .filter(move |press| press.data.custom_id.starts_with(&ctx_id.to_string()))
+        // Timeout when no navigation button has been pressed for 24 hours
+        .timeout(std::time::Duration::from_secs(3600 * 24))
+        .await
+    {
+        // Depending on which button was pressed, go to next or previous page
+        if press.data.custom_id == next_button_id {
+            current_page += 1;
+            if current_page >= pages.len() {
+                current_page = 0;
+            }
+        } else if press.data.custom_id == prev_button_id {
+            current_page = current_page.checked_sub(1).unwrap_or(pages.len() - 1);
+        } else {
+            // This is an unrelated button interaction
+            continue;
+        }
+
+        // Update the message with the new page contents
+        press
+            .create_interaction_response(ctx, |b| {
+                b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
+                    .interaction_response_data(|b| b.embed(|b| b.description(pages[current_page].clone())))
+            })
+            .await?;
+    }
+
+    Ok(())
 }
