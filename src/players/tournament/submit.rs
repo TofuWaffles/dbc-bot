@@ -109,7 +109,7 @@ pub async fn submit_result(
                     e.title("Result is here!")
                     .thumbnail(format!(
                         "https://cdn-old.brawlify.com/profile/{}.png",
-                        caller.get_i32("icon").unwrap_or(28000000)
+                        caller.get_i64("icon").unwrap_or(28000000)
                     ))
                         .description(format!(
                         "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
@@ -168,7 +168,7 @@ pub async fn submit_result(
                             e.title("Result is here!")
                             .thumbnail(format!(
                                 "https://cdn-old.brawlify.com/profile/{}.png",
-                                winner.get_i32("icon").unwrap_or(28000000)
+                                winner.get_i64("icon").unwrap_or(28000000)
                             ))
                                 .description(format!(
                                     r#"Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!"#,
@@ -201,7 +201,7 @@ pub async fn submit_result(
                         e.title("Result is here!")
                         .thumbnail(format!(
                             "https://cdn-old.brawlify.com/profile/{}.png",
-                            winner.get_i32("icon").unwrap_or(28000000)
+                            winner.get_i64("icon").unwrap_or(28000000)
                         ))
                             .description(format!(
                                 "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
