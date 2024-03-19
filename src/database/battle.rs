@@ -1,4 +1,4 @@
-use crate::{Context, Error};
+use crate::{discord::prompt::prompt, Context, Error};
 use mongodb::bson::doc;
 use poise::ReplyHandle;
 
@@ -17,6 +17,7 @@ pub async fn battle_happened(
                 .unwrap_or(false)
             {
                 msg.edit(*ctx, |s| s.content("You have already submitted the result! Please wait until the next round begins!")).await?;
+                prompt(ctx, msg, "You've already played this round!", "Please wait until next round starts!", None, Some(0x00FF00)).await?;
                 Ok(None)
             } else {
                 Ok(Some(player))
