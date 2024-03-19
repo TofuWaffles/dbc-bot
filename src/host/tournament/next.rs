@@ -122,7 +122,8 @@ pub async fn paginate(
     // Send the embed with the first page as content
     let mut current_page = 0;
     msg.edit(*ctx, |b| {
-        b.embed(|b| b.description(pages[current_page].clone()))
+        b.embed(|b| b.description(pages[current_page].clone())
+    .footer(|f| f.text(format!("Page {}/{}", current_page + 1, pages.len()))))
             .components(|b| {
                 b.create_action_row(|b| {
                     b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
