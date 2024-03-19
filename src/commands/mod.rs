@@ -3,3 +3,4 @@ pub mod host;
 pub mod index;
 pub mod player_lookup;
 pub mod setup;
+pub mod user;

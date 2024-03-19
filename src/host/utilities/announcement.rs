@@ -20,7 +20,7 @@ pub struct AnnouncementData {
 #[name = "Create Announcement Modal"]
 struct CreateAnnouncementModal {
     #[name = "Announcement title"]
-    #[placeholder= "Enter the title of the announcement"]
+    #[placeholder = "Enter the title of the announcement"]
     title: String,
     #[name = "Announcement description"]
     #[placeholder = "Enter the description of the announcement"]
@@ -39,7 +39,7 @@ struct CreateAnnouncementModal {
 #[name = "Edit Announcement Modal"]
 struct EditAnnouncementModal {
     #[name = "Announcement title"]
-    #[placeholder= "Enter the title of the announcement"]
+    #[placeholder = "Enter the title of the announcement"]
     title: String,
     #[name = "Announcement description"]
     #[placeholder = "Enter the description of the announcement"]

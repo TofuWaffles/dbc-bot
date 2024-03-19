@@ -17,6 +17,8 @@ use poise::serenity_prelude::ChannelId;
 use poise::ReplyHandle;
 use tracing::info;
 
+const HAMSTER_VIOLIN_MEME: &str = "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
+
 /// If you are a participant, run this command once you have finished your match round.
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
@@ -26,8 +28,14 @@ pub async fn submit_result(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    msg.edit(*ctx, |s| s.content("Checking your match result..."))
-        .await?;
+    prompt(
+        ctx,
+        msg,
+        "Submitting result...",
+        "Please wait while we are submitting your result...",
+        None,
+        Some(0xFFFF00),
+    ).await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
@@ -38,7 +46,7 @@ pub async fn submit_result(
                 msg,
                 "Sorry, you are not in the tournament!",
                 "You have to be in a tournament to use this command!",
-                None,
+                Some(HAMSTER_VIOLIN_MEME),
                 Some(0xFF0000),
             )
             .await;
@@ -56,42 +64,6 @@ pub async fn submit_result(
 
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(ctx, &region).await;
-
-    //Get player document via their discord_id
-    let match_id: i32 = caller.get_i32("match_id").unwrap();
-    let caller_tag = caller.get_str("tag").unwrap();
-    //Check if the user has already submitted the result or not yet disqualified
-
-    let mode = config.get_str("mode").unwrap();
-    let map = config.get_str("map").unwrap_or_default();
-    let current_round: Collection<Document> =
-        database.collection(find_round_from_config(&config).as_str());
-    let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
-        Some(caller) => caller, // Battle did not happen yet
-        None => return Ok(()),  // Battle already happened
-    };
-    let enemy = find_enemy_by_match_id_and_self_tag(ctx, &region, &round, &match_id, caller_tag)
-        .await
-        .unwrap();
-    if is_mannequin(&enemy) {
-        let next_round = database.collection(format!("Round {}", round + 1).as_str());
-        next_round.insert_one(update_match_id(caller), None).await?;
-        prompt(
-            ctx,
-            msg,
-            "Bye... See you next round",
-            "
-            Congratulation, you pass this round!",
-            None,
-            Some(0xFFFF00),
-        )
-        .await?;
-        update_battle(database, round, match_id).await?;
-        update_bracket(ctx, None).await?;
-        return Ok(());
-    }
-    println!("{:?}", config);
     let channel = config
         .get("channel")
         .unwrap()
@@ -99,10 +71,69 @@ pub async fn submit_result(
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
-    let bracket_chn_id = config.get_str("bracket_channel").unwrap();
-    let server_id = ctx.guild_id().unwrap().0;
     let channel_to_announce = ChannelId(channel);
+
+    //Get player document via their discord_id
+    let match_id: i32 = caller.get_i32("match_id").unwrap();
+    let caller_tag = caller.get_str("tag").unwrap();
+
+    let mode = config.get_str("mode").unwrap();
+    let map = config.get_str("map").unwrap_or("Any");
+    let round_name = find_round_from_config(&config);
+    let current_round: Collection<Document> = database.collection(&round_name);
+    let round = config.get("round").unwrap().as_i32().unwrap();
+    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
+        Some(caller) => caller, // Battle did not happen yet
+        None => return Ok(()),  // Battle already happened
+    };
+    let enemy =
+        find_enemy_by_match_id_and_self_tag(ctx, &region, &round_name, &match_id, caller_tag)
+            .await
+            .unwrap();
+    if is_mannequin(&enemy) {
+        let next_round = database.collection(format!("Round {}", round + 1).as_str());
+        next_round
+            .insert_one(update_match_id(caller.clone()), None)
+            .await?;
+        msg.edit(*ctx, |s|{
+            s.embed(|e|{
+                e.title("Bye... See you next round")
+                .description("Congratulation, you pass this round!")
+                .color(0xFFFF00)
+                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
+            })
+        }).await?;
+        channel_to_announce
+            .send_message(ctx, |m| {
+                m.embed(|e| {
+                    e.title("Result is here!")
+                    .thumbnail(format!(
+                        "https://cdn-old.brawlify.com/profile/{}.png",
+                        caller.get_i64("icon").unwrap_or(28000000)
+                    ))
+                        .description(format!(
+                        "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
+                        caller.get_str("discord_id").unwrap(),
+                        caller.get_str("name").unwrap(),
+                        caller.get_str("tag").unwrap(),
+                        round,
+                        round + 1
+                    ))
+                        .color(0xFFFF00)
+                        .timestamp(ctx.created_at())
+                })
+            })
+            .await?;
+
+        update_battle(database, round, match_id).await?;
+        // update_bracket(ctx, None).await?;
+        return Ok(());
+    }
+
+    // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
+    // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
+    // let server_id = ctx.guild_id().unwrap().0;
+
     match get_result(mode, map, caller, enemy).await {
         Some(winner) => {
             if round < config.get("total").unwrap().as_i32().unwrap() {
@@ -112,18 +143,19 @@ pub async fn submit_result(
                     .insert_one(update_match_id(winner.clone()), None)
                     .await?;
                 update_battle(database, round, match_id).await?;
-                update_bracket(ctx, None).await?;
+                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
                             .description(format!(
                                 r#"{}({}) has won this round!
-The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
+
+"#,
                                 winner.get_str("name").unwrap(),
                                 winner.get_str("tag").unwrap(),
-                                guild = server_id,
-                                chn = bracket_chn_id,
-                                msg_id = bracket_msg_id
+                                // guild = server_id,
+                                // chn = bracket_chn_id,
+                                // msg_id = bracket_msg_id
                             ))
                             .color(0xFFFF00)
                     })
@@ -133,16 +165,24 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                 channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
-                            e.title("Result is here!").description(format!(
-                                r#"{}({}) has won this round!
-                                The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
-                                                            winner.get_str("name").unwrap(),
-                                                            winner.get_str("tag").unwrap(),
-                                                            guild = server_id,
-                                                            chn = bracket_chn_id,
-                                                            msg_id = bracket_msg_id
-                                                        ))
-                        .color(0xFFFF00)})
+                            e.title("Result is here!")
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile/{}.png",
+                                winner.get_i64("icon").unwrap_or(28000000)
+                            ))
+                                .description(format!(
+                                    r#"Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!"#,
+                                    winner.get_str("discord_id").unwrap(),
+                                    winner.get_str("name").unwrap(),
+                                    winner.get_str("tag").unwrap(),
+                                    round,
+                                    round + 1 // guild = server_id,
+                                              // chn = bracket_chn_id,
+                                              // msg_id = bracket_msg_id
+                                ))
+                                .color(0xFFFF00)
+                                .timestamp(ctx.created_at())
+                        })
                     })
                     .await?;
             } else {
@@ -155,14 +195,21 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
                     )
                     .await?;
                 update_battle(database, round, match_id).await?;
-                update_bracket(ctx, None).await?;
+                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
-                        e.title("Result is here!").description(format!(
-                            "CONGRATULATIONS! {}({}) IS THE TOURNAMENT CHAMPION!",
-                            winner.get_str("name").unwrap(),
-                            winner.get_str("tag").unwrap()
+                        e.title("Result is here!")
+                        .thumbnail(format!(
+                            "https://cdn-old.brawlify.com/profile/{}.png",
+                            winner.get_i64("icon").unwrap_or(28000000)
                         ))
+                            .description(format!(
+                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
+                                winner.get_str("discord_id").unwrap(),
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap()
+                            ))
+                            .color(0xFFFF00)
                     })
                     .components(|c| c)
                 })
@@ -181,13 +228,14 @@ The [bracket](https://discord.com/channels/{guild}/{chn}/{msg_id}) is updated"#,
             }
         }
         None => {
-            ctx.send(|s| {
-                s.embed(|e| {
-                        e.title("There are not enough results yet!")
-                            .description("As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battlelog")              
-                    })
-                    .components(|c|c)
-            }).await?;
+            prompt(
+                ctx,
+                msg,
+                "There are not enough results yet!",
+                "As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!",
+                None,
+                Some(0xFFFF00),
+            ).await?;
         }
     }
     Ok(())
@@ -205,15 +253,8 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
     };
     let mut results: Vec<String> = vec![];
 
-    for log in logs.unwrap() {
-        let mode_log = log["event"]["mode"].as_str().unwrap();
-        let map_log = log["event"]["map"].as_str().unwrap();
-        if !compare_strings(log["battle"]["type"].as_str().unwrap(), "friendly")
-            || !compare_strings(mode_log, mode)
-        {
-            continue;
-        }
-        if !map.is_empty() && !compare_strings(map_log, map) {
+    for log in logs.unwrap().iter().rev() {
+        if !log_check(&log, mode, map) {
             continue;
         }
 
@@ -225,7 +266,6 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
             results.push(log["battle"]["result"].as_str().unwrap().to_string());
         }
     }
-    info!("{:?}", results);
     //If there are more than 1 result (best of 2), then we need to check the time
     if results.len() > 1 {
         let mut is_victory: Option<bool> = None;
@@ -278,4 +318,50 @@ fn compare_strings(str1: &str, str2: &str) -> bool {
         .flat_map(char::to_lowercase)
         .collect::<String>();
     str1_normalized == str2_normalized
+}
+
+fn log_check(log: &serde_json::Value, mode: &str, map: &str) -> bool {
+    // info!("{:?}", log); // Debugging purposes
+    match log["event"]["mode"].as_str() {
+        Some(m) => {
+            if !compare_strings(m, mode) {
+                return false;
+            }
+        }
+        None => return false,
+    };
+    match log["battle"]["type"].as_str() {
+        Some(t) => {
+            if !compare_strings(t, "friendly") {
+                return false;
+            }
+        }
+        None => return false,
+    }
+    match log["event"]["map"].as_str() {
+        Some(m) => {
+            if map != "Any" && !compare_strings(m, map) {
+                return false;
+            }
+        }
+        None => return false,
+    };
+    match log["battle"]["teams"][0].as_array() {
+        Some(t) => {
+            if t.len() > 1 {
+                return false;
+            }
+        }
+        None => return false,
+    }
+
+    match log["battle"]["teams"][1].as_array() {
+        Some(t) => {
+            if t.len() > 1 {
+                return false;
+            }
+        }
+        None => return false,
+    }
+    true
 }

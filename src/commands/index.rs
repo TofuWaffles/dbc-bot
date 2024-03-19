@@ -8,7 +8,6 @@ use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use poise::ReplyHandle;
-use tracing::info;
 const DELAY: u64 = 1;
 
 /// Tournament all-in-one command
@@ -38,11 +37,10 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     // Checking participation status with regional roles
     // Found role => check registration status to display either registration menu or tournament menu
     // No role => check registration status to display either register or nothing
-    let roles = get_roles_from_user(&ctx, None).await.unwrap();
+    let roles = get_roles_from_user(&ctx, None).await?;
     let region = get_region_from_role(&ctx, roles).await;
     match region {
         Some(region) => {
-            info!("{region:?}");
             let player = match find_self_by_discord_id(&ctx, "Players".to_string())
                 .await
                 .unwrap()
@@ -76,16 +74,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
                         )
                         .await?
                         {
-                            info!(
-                                "{} has not done any battle in the current round!",
-                                player.get_str("tag").unwrap()
-                            );
                             tournament_menu(&ctx, &msg, true, true, true, true, player).await
                         } else {
-                            info!(
-                                "{} has done battle in the current round!",
-                                player.get_str("tag").unwrap()
-                            );
                             tournament_menu(&ctx, &msg, false, true, false, false, player).await
                         }
                     }
@@ -103,8 +93,6 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
         }
         None => {
             if registration_open(&ctx).await {
-                info!("Players did not register for the tournament! So allowing them to register...");
-                info!("{region:?}");
                 registration_menu(&ctx, &msg, true, false, false, true, None).await
             } else {
                 prompt(

@@ -3,7 +3,7 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::{serenity_prelude::ReactionType, ReplyHandle};
 
-use super::{announcement::announcement, config::configurate};
+use super::{announcement::announcement, bracket_display::bracket_display, config::configurate};
 const TIMEOUT: u64 = 300;
 pub async fn utilities_mod_panel(
     ctx: &Context<'_>,
@@ -34,6 +34,11 @@ pub async fn utilities_mod_panel(
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🛠️".to_string()))
                 })
+                .create_button(|b| {
+                    b.custom_id("bracket")
+                        .style(poise::serenity_prelude::ButtonStyle::Secondary)
+                        .emoji(ReactionType::Unicode("🎾".to_string()))
+                })
             })
         })
     })
@@ -54,6 +59,10 @@ pub async fn utilities_mod_panel(
             "announcement" => {
                 mci.defer(&ctx.http()).await?;
                 return announcement(ctx, msg).await;
+            }
+            "bracket" => {
+                mci.defer(&ctx.http()).await?;
+                return bracket_display(ctx, msg, region).await;
             }
             _ => {}
         }

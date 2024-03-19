@@ -8,6 +8,7 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
+use tracing::info;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
@@ -33,6 +34,7 @@ pub async fn tournament_mod_panel(
                 return starter_wrapper(ctx, msg, region).await;
             }
             "next" => {
+                info!("Pressing next button");
                 mci.defer(&ctx.http()).await?;
                 return display_next_round(ctx, msg, region).await;
             }
@@ -117,7 +119,7 @@ async fn display_start_buttons(
     start: &bool,
     next: &bool,
 ) -> Result<(), Error> {
-    let is_mod = is_mod(*ctx).await.unwrap_or(false);
+    let _is_mod = is_mod(*ctx).await.unwrap_or(false);
     msg.edit(*ctx, |m| {
         m.components(|c| {
             c.create_action_row(|row| {
@@ -137,13 +139,13 @@ async fn display_start_buttons(
                     b.custom_id("disqualify")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🔨".to_string()))
-                        .disabled(!is_mod)
+                        .disabled(false)
                 })
                 .create_button(|b| {
                     b.custom_id("reset")
                         .style(poise::serenity_prelude::ButtonStyle::Danger)
                         .emoji(ReactionType::Unicode("🚩".to_string()))
-                        .disabled(!is_mod)
+                        .disabled(true)
                 })
             })
         })
@@ -163,4 +165,3 @@ async fn tournament_available(ctx: &Context<'_>, region: &Region) -> bool {
     let config = get_config(ctx, region).await;
     !config.get_bool("tournament").unwrap()
 }
-

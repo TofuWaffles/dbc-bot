@@ -52,13 +52,14 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     let mut match_ids = Vec::new();
 
     for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
+        let round_name = format!("Round {}", round_number);
         let mut database: mongodb::Cursor<mongodb::bson::Document> = ctx
             .data()
             .database
             .regional_databases
             .get(&current_region)
             .unwrap()
-            .collection(format!("Round {}", round_number).as_str())
+            .collection(&round_name)
             .find(None, None)
             .await?;
 
@@ -85,7 +86,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
                     &current_region,
-                    &round_number,
+                    &round_name,
                     &match_id,
                     tag,
                 )
@@ -103,7 +104,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 (find_enemy_by_match_id_and_self_tag(
                     ctx,
                     &current_region,
-                    &round_number,
+                    &round_name,
                     &match_id,
                     tag,
                 )

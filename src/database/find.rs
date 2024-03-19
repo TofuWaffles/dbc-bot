@@ -75,7 +75,7 @@ pub fn find_round_from_config(config: &Document) -> String {
 /// - `region` - The region of the player.
 /// - `round` - The round of the match.
 /// - `match_id` - The match id of the player.
-/// - `other_tag` - The tag of the other player.
+/// - `other_tag` - The tag of the player.
 ///
 /// # Returns
 ///
@@ -83,16 +83,16 @@ pub fn find_round_from_config(config: &Document) -> String {
 pub async fn find_enemy_by_match_id_and_self_tag(
     ctx: &Context<'_>,
     region: &Region,
-    round: &i32,
+    round: &str,
     match_id: &i32,
-    other_tag: &str,
+    player_tag: &str,
 ) -> Option<Document> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
-    let collection: Collection<Document> = database.collection(format!("Round {}", round).as_str());
+    let collection: Collection<Document> = database.collection(round);
     let filter = doc! {
         "match_id": match_id,
         "tag": {
-           "$ne": other_tag
+           "$ne": player_tag
         }
     };
     match collection.find_one(filter, None).await {

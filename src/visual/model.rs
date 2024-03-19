@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use bytes::Bytes;
 use image::io::Reader as ImageReader;
-use image::{GenericImage, GenericImageView, Pixel};
 use image::{
     imageops::{self, FilterType::Lanczos3},
     DynamicImage, ImageBuffer, Rgba,
 };
+use image::{GenericImage, GenericImageView, Pixel};
 
 use std::env;
 use std::io::{Cursor, Read};
@@ -364,15 +364,21 @@ impl Component {
     }
 
     /// Overlay another component on this component
-    /// 
+    ///
     /// I copy from the source code and add another conditions lol.
-    pub fn overlay(&mut self, top: Component){
+    pub fn overlay(&mut self, top: Component) {
         let top_dims = top.img.dimensions();
-    
+
         // Crop our top image if we're going out of bounds
-        let (origin_bottom_x, origin_bottom_y, origin_top_x, origin_top_y, range_width, range_height) =
-            self.overlay_bounds_ext(top_dims, top.x, top.y);
-    
+        let (
+            origin_bottom_x,
+            origin_bottom_y,
+            origin_top_x,
+            origin_top_y,
+            range_width,
+            range_height,
+        ) = self.overlay_bounds_ext(top_dims, top.x, top.y);
+
         for y in 0..range_height {
             for x in 0..range_width {
                 let p = top.img.get_pixel(origin_top_x + x, origin_top_y + y);
@@ -380,9 +386,9 @@ impl Component {
                 bottom_pixel.blend(&p);
                 let place_x = origin_bottom_x + x;
                 let place_y = origin_bottom_y + y;
-                if self.img.get_pixel(place_x, place_y)[3] == 0{
+                if self.img.get_pixel(place_x, place_y)[3] == 0 {
                     continue;
-                } else{
+                } else {
                     self.img.put_pixel(place_x, place_y, bottom_pixel);
                 }
             }
@@ -404,11 +410,11 @@ impl Component {
         {
             return (0, 0, 0, 0, 0, 0);
         }
-    
+
         // Find the maximum x and y coordinates in terms of the bottom image.
         let max_x = x.saturating_add(i64::from(top_width));
         let max_y = y.saturating_add(i64::from(top_height));
-    
+
         // Clip the origin and maximum coordinates to the bounds of the bottom image.
         // Casting to a u32 is safe because both 0 and `bottom_{width,height}` fit
         // into 32-bits.
@@ -416,18 +422,18 @@ impl Component {
         let max_inbounds_y = max_y.clamp(0, bottom_height) as u32;
         let origin_bottom_x = x.clamp(0, bottom_width) as u32;
         let origin_bottom_y = y.clamp(0, bottom_height) as u32;
-    
+
         // The range is the difference between the maximum inbounds coordinates and
         // the clipped origin. Unchecked subtraction is safe here because both are
         // always positive and `max_inbounds_{x,y}` >= `origin_{x,y}` due to
         // `top_{width,height}` being >= 0.
         let x_range = max_inbounds_x - origin_bottom_x;
         let y_range = max_inbounds_y - origin_bottom_y;
-    
+
         // If x (or y) is negative, then the origin of the top image is shifted by -x (or -y).
         let origin_top_x = x.saturating_mul(-1).clamp(0, i64::from(top_width)) as u32;
         let origin_top_y = y.saturating_mul(-1).clamp(0, i64::from(top_height)) as u32;
-    
+
         (
             origin_bottom_x,
             origin_bottom_y,

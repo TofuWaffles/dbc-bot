@@ -1,4 +1,7 @@
-use crate::{discord::{checks::is_host, menu::mod_menu}, Context, Error};
+use crate::{
+    discord::{checks::is_host, menu::mod_menu},
+    Context, Error,
+};
 use dbc_bot::Region;
 use mongodb::bson::doc;
 use tracing::error;

@@ -88,7 +88,8 @@ pub async fn detail(
         let option = mongodb::options::FindOneOptions::builder()
             .skip(Some((index - 1) as u64))
             .build();
-        let player = collection.find_one(doc! {}, option).await?.unwrap();
+        let filter = doc! { "discord_id": { "$ne": null } };
+        let player = collection.find_one(filter, option).await?.unwrap();
         get_player_data(ctx, msg, region, player, &round, &index, &total).await?;
     }
     Ok(())

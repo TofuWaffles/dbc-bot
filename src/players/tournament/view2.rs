@@ -14,21 +14,11 @@ use mongodb::Collection;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
 
-/// View your opponent
-pub async fn view_opponent(
+pub async fn view_opponent_wrapper(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    prompt(
-        ctx,
-        msg,
-        "Getting your opponent...",
-        "<a:loading:1187839622680690689> Searching for your opponent...",
-        None,
-        Some(0xFFFF00),
-    )
-    .await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
@@ -43,22 +33,40 @@ pub async fn view_opponent(
             return Ok(());
         }
     };
+    return view_opponent(ctx, msg, region, caller).await;
+}
+/// View your opponent
+pub async fn view_opponent(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    caller: Document,
+) -> Result<(), Error> {
+    prompt(
+        ctx,
+        msg,
+        "Getting your opponent...",
+        "<a:loading:1187839622680690689> Searching for your opponent...",
+        None,
+        Some(0xFFFF00),
+    )
+    .await?;
 
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;
     //Get player document via their discord_id
     let match_id: i32 = caller.get_i32("match_id").unwrap();
     let caller_tag = caller.get_str("tag").unwrap();
-
-    let current_round: Collection<Document> =
-        database.collection(find_round_from_config(&config).as_str());
+    let round_name = find_round_from_config(&config);
+    let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get_i32("round").unwrap();
     let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
     let enemy =
-        match find_enemy_by_match_id_and_self_tag(ctx, region, &round, &match_id, caller_tag).await
+        match find_enemy_by_match_id_and_self_tag(ctx, region, &round_name, &match_id, caller_tag)
+            .await
         {
             Some(enemy) => {
                 if is_mannequin(&enemy) {
@@ -121,11 +129,11 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
 - Map: {}.
 - Turn off all bots.
 **🗒️ After the battle:**
-- Wait for 30s 
+- Wait for 30s. 
 - Run this bot again to submit the result.
 **⚠️ Note:**
-- Only 2 **LATEST** matches with the opponent are considered once you submit the result.
-- Due to limitation, only as most 25 battles are viewable, so please submit the result as soon as possible.
+- Only the EARLIEST determinable number of matches with the opponent is considered once you submit your results.
+- Due to limitations, only up to 25 battles are viewable, so please submit the result as soon as possible!
 # Good luck!"#, 
                         caller.get_str("discord_id").unwrap(),
                         enemy.get_str("discord_id").unwrap(),
