@@ -111,6 +111,7 @@ pub async fn submit_result(
                         round + 1
                     ))
                         .color(0xFFFF00)
+                        .timestamp(ctx.created_at())
                 })
             })
             .await?;
@@ -168,6 +169,7 @@ pub async fn submit_result(
                                               // msg_id = bracket_msg_id
                                 ))
                                 .color(0xFFFF00)
+                                .timestamp(ctx.created_at())
                         })
                     })
                     .await?;

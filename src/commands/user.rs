@@ -9,7 +9,7 @@ use tracing::error;
 #[poise::command(slash_command, guild_only, check = "is_host")]
 pub async fn info(
     ctx: Context<'_>,
-    #[description = "Selected user"] user: u64,
+    #[description = "User id: "] user: String,
 ) -> Result<(), Error> {
     let msg = ctx
         .send(|s| {
@@ -19,7 +19,7 @@ pub async fn info(
             })
         })
         .await?;
-    let u = match serenity::UserId(user).to_user(&ctx).await {
+    let u = match serenity::UserId(user.parse::<u64>()?).to_user(&ctx).await {
         Ok(u) => u,
         Err(e) => {
             error!("{e}");
