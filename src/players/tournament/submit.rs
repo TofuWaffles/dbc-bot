@@ -17,6 +17,8 @@ use poise::serenity_prelude::ChannelId;
 use poise::ReplyHandle;
 use tracing::info;
 
+const HAMSTER_VIOLIN_MEME: &str = "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
+
 /// If you are a participant, run this command once you have finished your match round.
 ///
 /// Automatically grabs the user's match result from the game and updates the bracket.
@@ -26,8 +28,14 @@ pub async fn submit_result(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    msg.edit(*ctx, |s| s.content("Checking your match result..."))
-        .await?;
+    prompt(
+        ctx,
+        msg,
+        "Submitting result...",
+        "Please wait while we are submitting your result...",
+        None,
+        Some(0xFFFF00),
+    ).await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
@@ -38,7 +46,7 @@ pub async fn submit_result(
                 msg,
                 "Sorry, you are not in the tournament!",
                 "You have to be in a tournament to use this command!",
-                None,
+                Some(HAMSTER_VIOLIN_MEME),
                 Some(0xFF0000),
             )
             .await;
@@ -68,7 +76,6 @@ pub async fn submit_result(
     //Get player document via their discord_id
     let match_id: i32 = caller.get_i32("match_id").unwrap();
     let caller_tag = caller.get_str("tag").unwrap();
-    //Check if the user has already submitted the result or not yet disqualified
 
     let mode = config.get_str("mode").unwrap();
     let map = config.get_str("map").unwrap_or("Any");
@@ -88,20 +95,22 @@ pub async fn submit_result(
         next_round
             .insert_one(update_match_id(caller.clone()), None)
             .await?;
-        prompt(
-            ctx,
-            msg,
-            "Bye... See you next round",
-            "
-            Congratulation, you pass this round!",
-            None,
-            Some(0xFFFF00),
-        )
-        .await?;
+        msg.edit(*ctx, |s|{
+            s.embed(|e|{
+                e.title("Bye... See you next round")
+                .description("Congratulation, you pass this round!")
+                .color(0xFFFF00)
+                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye  the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round"))
+            })
+        }).await?;
         channel_to_announce
             .send_message(ctx, |m| {
                 m.embed(|e| {
                     e.title("Result is here!")
+                    .thumbnail(format!(
+                        "https://cdn-old.brawlify.com/profile/{}.png",
+                        caller.get_i32("icon").unwrap_or(28000000)
+                    ))
                         .description(format!(
                         "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
                         caller.get_str("discord_id").unwrap(),
@@ -158,8 +167,12 @@ pub async fn submit_result(
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!")
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile/{}.png",
+                                winner.get_i32("icon").unwrap_or(28000000)
+                            ))
                                 .description(format!(
-                                    r#"<@{}> ({}-{}) has won round {} and proceeds to round {}!"#,
+                                    r#"Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!"#,
                                     winner.get_str("discord_id").unwrap(),
                                     winner.get_str("name").unwrap(),
                                     winner.get_str("tag").unwrap(),
@@ -187,6 +200,10 @@ pub async fn submit_result(
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
+                        .thumbnail(format!(
+                            "https://cdn-old.brawlify.com/profile/{}.png",
+                            winner.get_i32("icon").unwrap_or(28000000)
+                        ))
                             .description(format!(
                                 "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
                                 winner.get_str("discord_id").unwrap(),
