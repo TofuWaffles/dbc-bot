@@ -122,14 +122,16 @@ pub async fn paginate(
     // Send the embed with the first page as content
     let mut current_page = 0;
     msg.edit(*ctx, |b| {
-        b.embed(|b| b.description(pages[current_page].clone())
-    .footer(|f| f.text(format!("Page {}/{}", current_page + 1, pages.len()))))
-            .components(|b| {
-                b.create_action_row(|b| {
-                    b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
-                        .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
-                })
+        b.embed(|b| {
+            b.description(pages[current_page].clone())
+                .footer(|f| f.text(format!("Page {}/{}", current_page + 1, pages.len())))
+        })
+        .components(|b| {
+            b.create_action_row(|b| {
+                b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
+                    .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
             })
+        })
     })
     .await?;
 
@@ -160,7 +162,11 @@ pub async fn paginate(
             .create_interaction_response(ctx, |b| {
                 b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
                     .interaction_response_data(|b| {
-                        b.embed(|b| b.description(pages[current_page].clone()))
+                        b.embed(|b| {
+                            b.description(pages[current_page].clone()).footer(|f| {
+                                f.text(format!("Page {}/{}", current_page + 1, pages.len()))
+                            })
+                        })
                     })
             })
             .await?;

@@ -17,7 +17,8 @@ use poise::serenity_prelude::ChannelId;
 use poise::ReplyHandle;
 use tracing::info;
 
-const HAMSTER_VIOLIN_MEME: &str = "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
+const HAMSTER_VIOLIN_MEME: &str =
+    "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
 
 /// If you are a participant, run this command once you have finished your match round.
 ///
@@ -35,7 +36,8 @@ pub async fn submit_result(
         "Please wait while we are submitting your result...",
         None,
         Some(0xFFFF00),
-    ).await?;
+    )
+    .await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
@@ -107,10 +109,10 @@ pub async fn submit_result(
             .send_message(ctx, |m| {
                 m.embed(|e| {
                     e.title("Result is here!")
-                    .thumbnail(format!(
-                        "https://cdn-old.brawlify.com/profile/{}.png",
-                        caller.get_i64("icon").unwrap_or(28000000)
-                    ))
+                        .thumbnail(format!(
+                            "https://cdn-old.brawlify.com/profile/{}.png",
+                            caller.get_i64("icon").unwrap_or(28000000)
+                        ))
                         .description(format!(
                         "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
                         caller.get_str("discord_id").unwrap(),
@@ -199,10 +201,10 @@ pub async fn submit_result(
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
-                        .thumbnail(format!(
-                            "https://cdn-old.brawlify.com/profile/{}.png",
-                            winner.get_i64("icon").unwrap_or(28000000)
-                        ))
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile/{}.png",
+                                winner.get_i64("icon").unwrap_or(28000000)
+                            ))
                             .description(format!(
                                 "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
                                 winner.get_str("discord_id").unwrap(),
