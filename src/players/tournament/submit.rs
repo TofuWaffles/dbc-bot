@@ -100,7 +100,7 @@ pub async fn submit_result(
                 e.title("Bye... See you next round")
                 .description("Congratulation, you pass this round!")
                 .color(0xFFFF00)
-                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye  the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round"))
+                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
             })
         }).await?;
         channel_to_announce
