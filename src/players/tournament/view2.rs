@@ -4,16 +4,17 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::discord::prompt::prompt;
+use crate::discord::prompt::{self, prompt};
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
+use poise::serenity_prelude::ButtonStyle;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
-
+const TIMEOUT: u64 = 1200;
 pub async fn view_opponent_wrapper(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
@@ -74,6 +75,7 @@ pub async fn view_opponent(
                         s.embed(|e| {
                             e.title("Congratulations! You are the bye player for this round!")
                                 .description("Please run the bot again to submit the result!")
+                                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
                         })
                     })
                     .await?;
@@ -144,11 +146,52 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
                     )
             })
             .attachment(attachment)
-            .components(|c|c)
+            .components(|c| {
+                c.create_action_row(|a| {
+                    a.create_button(|b| {
+                        b.custom_id("copy")
+                            .label("Get opponent")
+                            .style(ButtonStyle::Primary)
+                    })
+                })
+            })
     })
     .await?;
-    Ok(())
+let resp = msg.clone().into_message().await?;
+
+let mut cic = resp
+    .await_component_interactions(&ctx.serenity_context().shard)
+    .timeout(std::time::Duration::from_secs(TIMEOUT))
+    .build();
+while let Some(mci) = &cic.next().await {
+    match mci.data.custom_id.as_str(){
+        "copy" => {
+            mci.defer(&ctx.http()).await?;
+            msg.edit(*ctx,|s| {
+                s.content("Copy the content below.\n📱On mobile devices, you can hold press the content below to copy it easily.\n💻 On computers, you have the mouse cursor to select and copy 🤷‍♂️.")
+            }).await?;
+            return prompt(
+                ctx,
+                msg,
+                "Sample message to copy",
+                format!("Hi <@{enemy_id}>, I am your opponent in {round}. Let me know when you are available to play. Thanks!", 
+                enemy_id = enemy.get_str("discord_id").unwrap_or("0"),
+                round = round_name
+            ),
+                None,
+                None,
+            ).await;
+        }
+        _ => {
+            continue;
+        }
+    }
 }
+
+Ok(())
+}
+
+
 
 ///View list of roles as manager of the tournament
 pub async fn view_managers(ctx: &Context<'_>) -> Result<(), Error> {
