@@ -129,7 +129,6 @@ pub async fn submit_result(
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
-    println!("{:?}", config);
 
     // let bracket_msg_id = config.get_str("bracket_message_id").unwrap();
     // let bracket_chn_id = config.get_str("bracket_channel").unwrap();
@@ -267,7 +266,6 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
             results.push(log["battle"]["result"].as_str().unwrap().to_string());
         }
     }
-    info!("{:?}", results);
     //If there are more than 1 result (best of 2), then we need to check the time
     if results.len() > 1 {
         let mut is_victory: Option<bool> = None;
