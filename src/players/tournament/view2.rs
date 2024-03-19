@@ -174,8 +174,9 @@ while let Some(mci) = &cic.next().await {
                 ctx,
                 msg,
                 "Sample message to copy",
-                format!("Hi <@{enemy_id}>, I am your opponent in {round}. Let me know when you are available to play. Thanks!", 
+                format!("Hi <@{enemy_id}>({enemy_name}), I am your opponent in {round}. Let me know when you are available to play. Thanks!", 
                 enemy_id = enemy.get_str("discord_id").unwrap_or("0"),
+                enemy_name = enemy.get_str("name").unwrap_or("Unknown"),
                 round = round_name
             ),
                 None,
