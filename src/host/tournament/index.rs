@@ -119,7 +119,7 @@ async fn display_start_buttons(
     start: &bool,
     next: &bool,
 ) -> Result<(), Error> {
-    let is_mod = is_mod(*ctx).await.unwrap_or(false);
+    let _is_mod = is_mod(*ctx).await.unwrap_or(false);
     msg.edit(*ctx, |m| {
         m.components(|c| {
             c.create_action_row(|row| {

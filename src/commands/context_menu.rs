@@ -19,20 +19,7 @@ pub async fn get_individual_player_data(
     let msg = ctx
         .send(|s| s.content("Getting player info...").reply(true))
         .await?;
-    let roles = match get_roles_from_user(&ctx, Some(&user)).await {
-        Some(roles) => roles,
-        None => {
-            return prompt(
-                &ctx,
-                &msg,
-                "Failed to fetch roles from user",
-                "Please only use this feature in a server",
-                None,
-                None,
-            )
-            .await;
-        }
-    };
+    let roles = get_roles_from_user(&ctx, Some(&user)).await?;
     let region = match get_region_from_role(&ctx, roles).await {
         Some(region) => region,
         None => {
@@ -114,20 +101,7 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
         })
         .await?;
 
-    let roles = match get_roles_from_user(&ctx, Some(&user)).await {
-        Some(roles) => roles,
-        None => {
-            return prompt(
-                &ctx,
-                &msg,
-                "Failed to fetch roles from user",
-                "Please only use this feature in a server",
-                None,
-                None,
-            )
-            .await;
-        }
-    };
+    let roles = get_roles_from_user(&ctx, Some(&user)).await?;
     let region = match get_region_from_role(&ctx, roles).await {
         Some(region) => region,
         None => {

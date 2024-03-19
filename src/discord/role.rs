@@ -1,5 +1,6 @@
 use crate::database::config::get_config;
 use crate::Context;
+use crate::Error;
 use dbc_bot::Region;
 use poise::serenity_prelude::RoleId;
 use poise::serenity_prelude::User;
@@ -25,7 +26,10 @@ pub async fn get_region_from_role(ctx: &Context<'_>, roles: Vec<RoleId>) -> Opti
 
 /// Get the roles from a user
 /// user: Option<&User> - The user to get the roles from. If None, it will get the roles from the author of the message.
-pub async fn get_roles_from_user(ctx: &Context<'_>, user: Option<&User>) -> Option<Vec<RoleId>> {
+pub async fn get_roles_from_user(
+    ctx: &Context<'_>,
+    user: Option<&User>,
+) -> Result<Vec<RoleId>, Error> {
     match user {
         Some(user) => {
             let member = ctx
@@ -34,9 +38,12 @@ pub async fn get_roles_from_user(ctx: &Context<'_>, user: Option<&User>) -> Opti
                 .member(ctx.http(), user.id)
                 .await
                 .unwrap();
-            Some(member.roles)
+            Ok(member.roles)
         }
-        None => Some((ctx.author_member().await?.roles).clone()),
+        None => match ctx.author_member().await {
+            Some(m) => Ok(m.roles.clone()),
+            None => Err("Failed to get roles from user".into()),
+        },
     }
 }
 

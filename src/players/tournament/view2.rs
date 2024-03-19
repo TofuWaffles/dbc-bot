@@ -57,16 +57,16 @@ pub async fn view_opponent(
     //Get player document via their discord_id
     let match_id: i32 = caller.get_i32("match_id").unwrap();
     let caller_tag = caller.get_str("tag").unwrap();
-
-    let current_round: Collection<Document> =
-        database.collection(find_round_from_config(&config).as_str());
+    let round_name = find_round_from_config(&config);
+    let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get_i32("round").unwrap();
     let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
     let enemy =
-        match find_enemy_by_match_id_and_self_tag(ctx, region, &round, &match_id, caller_tag).await
+        match find_enemy_by_match_id_and_self_tag(ctx, region, &round_name, &match_id, caller_tag)
+            .await
         {
             Some(enemy) => {
                 if is_mannequin(&enemy) {

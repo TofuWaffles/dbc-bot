@@ -37,7 +37,7 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     // Checking participation status with regional roles
     // Found role => check registration status to display either registration menu or tournament menu
     // No role => check registration status to display either register or nothing
-    let roles = get_roles_from_user(&ctx, None).await.unwrap();
+    let roles = get_roles_from_user(&ctx, None).await?;
     let region = get_region_from_role(&ctx, roles).await;
     match region {
         Some(region) => {

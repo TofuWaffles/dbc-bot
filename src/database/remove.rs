@@ -4,7 +4,7 @@ use crate::Region;
 use crate::{Context, Error};
 use mongodb::bson::{doc, Document};
 
-use super::find::find_round_from_config;
+use super::find::{find_enemy_by_match_id_and_self_tag, find_round_from_config};
 
 pub async fn remove_player(
     ctx: &Context<'_>,
@@ -21,6 +21,10 @@ pub async fn remove_player(
             players_collection
                 .delete_one(doc! {"_id": player.get("_id")}, None)
                 .await?;
+            Ok(format!(
+                "Successfully removed player {}",
+                player.get_str("discord_id").unwrap()
+            ))
         }
         _ => {
             let match_id = player.get_i32("match_id").unwrap();
@@ -39,9 +43,40 @@ pub async fn remove_player(
                 .await
                 .is_ok()
             {};
+            let enemy = match find_enemy_by_match_id_and_self_tag(
+                ctx,
+                region,
+                &current_round,
+                &match_id,
+                player.get_str("tag").unwrap(),
+            )
+            .await
+            {
+                Some(e) => e,
+                None => doc! {
+                    "name": "No enemy found",
+                    "tag": "No enemy found",
+                    "discord_id": 0
+                },
+            };
+            Ok(format!(
+                r#"Successfully removed player {player}
+Please notify the opponent to run /menu and select "Submit"!
+Detail of the opponent:
+In-game name: {enemy_name}
+Player tag: {enemy_tag}
+Discord id: `{enemy_discord_id}`
+Mention: <@{enemy_discord_id}>
+Match id: {match_id}
+"#,
+                player = player.get_str("discord_id").unwrap_or(""),
+                enemy_name = enemy.get_str("name").unwrap_or(""),
+                enemy_tag = enemy.get_str("tag").unwrap_or(""),
+                enemy_discord_id = enemy.get_str("discord_id").unwrap_or(""),
+                match_id = match_id
+            ))
         }
     }
-    Ok(find_round_from_config(&config))
 }
 
 pub async fn remove_registration(ctx: &Context<'_>, player: &Document) -> Result<(), Error> {

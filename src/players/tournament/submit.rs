@@ -8,7 +8,7 @@ use crate::database::find::{
 };
 use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::prompt;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use mongodb::bson::{doc, Document};
@@ -72,16 +72,17 @@ pub async fn submit_result(
 
     let mode = config.get_str("mode").unwrap();
     let map = config.get_str("map").unwrap_or("Any");
-    let current_round: Collection<Document> =
-        database.collection(find_round_from_config(&config).as_str());
+    let round_name = find_round_from_config(&config);
+    let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get("round").unwrap().as_i32().unwrap();
     let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
-    let enemy = find_enemy_by_match_id_and_self_tag(ctx, &region, &round, &match_id, caller_tag)
-        .await
-        .unwrap();
+    let enemy =
+        find_enemy_by_match_id_and_self_tag(ctx, &region, &round_name, &match_id, caller_tag)
+            .await
+            .unwrap();
     if is_mannequin(&enemy) {
         let next_round = database.collection(format!("Round {}", round + 1).as_str());
         next_round

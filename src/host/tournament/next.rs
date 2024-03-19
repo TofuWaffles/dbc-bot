@@ -56,11 +56,7 @@ pub async fn display_next_round(
     Ok(())
 }
 
-
-pub async fn display_false_battles(
-    ctx: &Context<'_>,
-    region: &Region,
-) -> Vec<String> {
+pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<String> {
     let mut players = vec![];
     let mut result = find_all_false_battles(ctx, region).await;
     while let Some(player) = result.next().await {
@@ -91,10 +87,18 @@ pub async fn display_false_battles(
                 let name2 = player2.get_str("name").unwrap_or("").to_string();
                 let tag2 = player2.get_str("tag").unwrap_or("").to_string();
                 return format!(
-r#"**Some battles are not finished!**
+                    r#"**Some battles are not finished!**
 # Match {} 
 <@{}> - <@{}>
-{}({}) - {}({})"#, player1.get_i32("match_id").unwrap(), dis1, dis2, name1, tag1, name2, tag2);
+{}({}) - {}({})"#,
+                    player1.get_i32("match_id").unwrap(),
+                    dis1,
+                    dis2,
+                    name1,
+                    tag1,
+                    name2,
+                    tag2
+                );
             } else {
                 unreachable!("There should be 2 players in each match!");
             }
@@ -117,7 +121,7 @@ pub async fn paginate(
 
     // Send the embed with the first page as content
     let mut current_page = 0;
-    msg.edit(*ctx,|b| {
+    msg.edit(*ctx, |b| {
         b.embed(|b| b.description(pages[current_page].clone()))
             .components(|b| {
                 b.create_action_row(|b| {
@@ -154,7 +158,9 @@ pub async fn paginate(
         press
             .create_interaction_response(ctx, |b| {
                 b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
-                    .interaction_response_data(|b| b.embed(|b| b.description(pages[current_page].clone())))
+                    .interaction_response_data(|b| {
+                        b.embed(|b| b.description(pages[current_page].clone()))
+                    })
             })
             .await?;
     }
