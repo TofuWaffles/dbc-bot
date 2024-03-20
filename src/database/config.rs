@@ -24,6 +24,7 @@ pub fn make_config() -> Document {
       "channel": Null,
       "bracket_channel": Null,
       "bracket_message_id": Null,
+      "log_channel": Null,
     };
     config
 }

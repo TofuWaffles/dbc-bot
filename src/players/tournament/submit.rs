@@ -6,23 +6,20 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
+use crate::database::update::update_result;
 use crate::discord::prompt::prompt;
+use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
-use mongodb::bson::{doc, Document};
+use mongodb::bson::Document;
 use mongodb::Collection;
-use poise::serenity_prelude::ChannelId;
+use poise::serenity_prelude::{ChannelId, UserId};
 use poise::ReplyHandle;
-use tracing::info;
+use tracing::error;
 
 const HAMSTER_VIOLIN_MEME: &str =
     "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
-
-/// If you are a participant, run this command once you have finished your match round.
-///
-/// Automatically grabs the user's match result from the game and updates the bracket.
 
 pub async fn submit_result(
     ctx: &Context<'_>,
@@ -84,7 +81,7 @@ pub async fn submit_result(
     let round_name = find_round_from_config(&config);
     let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
+    let caller = match battle_happened(ctx, caller_tag, &current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
@@ -127,7 +124,7 @@ pub async fn submit_result(
             })
             .await?;
 
-        update_battle(database, round, match_id).await?;
+        update_result(&current_round, &caller, &enemy).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
@@ -137,22 +134,32 @@ pub async fn submit_result(
     // let server_id = ctx.guild_id().unwrap().0;
 
     match get_result(mode, map, caller, enemy).await {
-        Some(winner) => {
+        Some(players) => {
+            let (winner, defeated) = players;
             if round < config.get("total").unwrap().as_i32().unwrap() {
                 let next_round: Collection<Document> =
                     database.collection(format!("Round {}", round + 1).as_str());
                 next_round
                     .insert_one(update_match_id(winner.clone()), None)
                     .await?;
-                update_battle(database, round, match_id).await?;
+                update_result(&current_round, &winner, &defeated).await?;
+                let defeated_user = UserId(
+                    defeated
+                        .get_str("discord_id")
+                        .unwrap_or("0")
+                        .parse::<u64>()?,
+                )
+                .to_user(ctx.http())
+                .await?;
+                if let Err(e) = remove_role(ctx, &defeated_user, &region).await {
+                    error!("{e}");
+                }
                 // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
                             .description(format!(
-                                r#"{}({}) has won this round!
-
-"#,
+                                r#"{}({}) has won this round!"#,
                                 winner.get_str("name").unwrap(),
                                 winner.get_str("tag").unwrap(),
                                 // guild = server_id,
@@ -188,15 +195,7 @@ pub async fn submit_result(
                     })
                     .await?;
             } else {
-                database
-                    .collection::<Collection<Document>>(format!("Round {}", round).as_str())
-                    .update_one(
-                        doc! { "_id": winner.get_object_id("_id")? },
-                        doc! { "$set": { "winner": true } },
-                        None,
-                    )
-                    .await?;
-                update_battle(database, round, match_id).await?;
+                update_result(&current_round, &winner, &defeated).await?;
                 // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
@@ -243,7 +242,12 @@ pub async fn submit_result(
     Ok(())
 }
 
-async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) -> Option<Document> {
+async fn get_result(
+    mode: &str,
+    map: &str,
+    caller: Document,
+    enemy: Document,
+) -> Option<(Document, Document)> {
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let logs = match api::request("battle_log", caller_tag).await {
@@ -290,8 +294,8 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
             }
         }
         match is_victory {
-            Some(true) => Some(caller),
-            Some(false) => Some(enemy),
+            Some(true) => Some((caller, enemy)),
+            Some(false) => Some((enemy, caller)),
             None => None,
         }
     } else {

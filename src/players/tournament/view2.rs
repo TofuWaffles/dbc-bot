@@ -4,7 +4,7 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::prompt;
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
@@ -61,17 +61,22 @@ pub async fn view_opponent(
     let round_name = find_round_from_config(&config);
     let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get_i32("round").unwrap();
-    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
+    let caller = match battle_happened(ctx, caller_tag, &current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
-    let enemy =
-        match find_enemy_by_match_id_and_self_tag(ctx, region, &round_name, &match_id, caller_tag)
-            .await
-        {
-            Some(enemy) => {
-                if is_mannequin(&enemy) {
-                    msg.edit(*ctx, |s| {
+    let enemy = match find_enemy_by_match_id_and_self_tag(
+        ctx,
+        region,
+        &round_name,
+        &match_id,
+        caller_tag,
+    )
+    .await
+    {
+        Some(enemy) => {
+            if is_mannequin(&enemy) {
+                msg.edit(*ctx, |s| {
                         s.embed(|e| {
                             e.title("Congratulations! You are the bye player for this round!")
                                 .description("Please run the bot again to submit the result!")
@@ -79,22 +84,22 @@ pub async fn view_opponent(
                         })
                     })
                     .await?;
-                    return Ok(());
-                } else {
-                    enemy
-                }
-            }
-            None => {
-                msg.edit(*ctx, |s| {
-                    s.embed(|e| {
-                        e.title("An error occurred!")
-                            .description("Please run this command later.")
-                    })
-                })
-                .await?;
                 return Ok(());
+            } else {
+                enemy
             }
-        };
+        }
+        None => {
+            msg.edit(*ctx, |s| {
+                s.embed(|e| {
+                    e.title("An error occurred!")
+                        .description("Please run this command later.")
+                })
+            })
+            .await?;
+            return Ok(());
+        }
+    };
 
     let prebattle = match get_image(&caller, &enemy, &config).await {
         Ok(prebattle) => prebattle,
@@ -157,20 +162,20 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
             })
     })
     .await?;
-let resp = msg.clone().into_message().await?;
+    let resp = msg.clone().into_message().await?;
 
-let mut cic = resp
-    .await_component_interactions(&ctx.serenity_context().shard)
-    .timeout(std::time::Duration::from_secs(TIMEOUT))
-    .build();
-while let Some(mci) = &cic.next().await {
-    match mci.data.custom_id.as_str(){
-        "copy" => {
-            mci.defer(&ctx.http()).await?;
-            msg.edit(*ctx,|s| {
+    let mut cic = resp
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT))
+        .build();
+    while let Some(mci) = &cic.next().await {
+        match mci.data.custom_id.as_str() {
+            "copy" => {
+                mci.defer(&ctx.http()).await?;
+                msg.edit(*ctx,|s| {
                 s.content("Copy the content below.\n📱On mobile devices, you can hold press the content below to copy it easily.\n💻 On computers, you have the mouse cursor to select and copy 🤷‍♂️.")
             }).await?;
-            return prompt(
+                return prompt(
                 ctx,
                 msg,
                 "Sample message to copy",
@@ -182,17 +187,15 @@ while let Some(mci) = &cic.next().await {
                 None,
                 None,
             ).await;
-        }
-        _ => {
-            continue;
+            }
+            _ => {
+                continue;
+            }
         }
     }
+
+    Ok(())
 }
-
-Ok(())
-}
-
-
 
 ///View list of roles as manager of the tournament
 pub async fn view_managers(ctx: &Context<'_>) -> Result<(), Error> {

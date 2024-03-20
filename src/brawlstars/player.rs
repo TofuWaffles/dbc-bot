@@ -70,6 +70,24 @@ pub async fn stat(
                         ),
                         true,
                     ),
+                    (
+                        "Status",
+                        detail.map_or_else(
+                            || "Not in match".to_string(),
+                            |d| {
+                                if let Ok(status) = d.get_bool("defeated") {
+                                    if status {
+                                        "Eliminated".to_string()
+                                    } else {
+                                        "Advanced".to_string()
+                                    }
+                                } else {
+                                    "Not in the game".to_string()
+                                }
+                            },
+                        ),
+                        true,
+                    ),
                 ])
                 .timestamp(ctx.created_at())
                 .color(0x0000FF)

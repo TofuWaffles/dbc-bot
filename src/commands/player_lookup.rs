@@ -9,15 +9,15 @@ use crate::{
     Context, Error,
 };
 use mongodb::bson::{doc, Document};
-use poise::serenity_prelude::User;
+use poise::serenity_prelude::{User, UserId};
 use poise::ReplyHandle;
 use tracing::{error, span, Level};
 /// Lookup player by tag or user
 #[poise::command(slash_command, guild_only, check = "is_host")]
 pub async fn lookup_player(
     ctx: Context<'_>,
-    player_tag: Option<String>,
-    user: Option<User>,
+    #[description = "Player tag"] player_tag: Option<String>,
+    #[description = "User id"] user_id: Option<String>,
 ) -> Result<(), Error> {
     span!(Level::INFO, "lookup_player", player_tag);
     let msg = ctx
@@ -28,10 +28,10 @@ pub async fn lookup_player(
         })
         .await?;
     // We probably don't need this. I'll give it another look later. - Doof
-    match (player_tag, user) {
+    match (player_tag, user_id) {
         (Some(tag), None) => {
             if let Some(player) = find_tag(&ctx, &tag).await {
-                return view_info(&ctx, &msg, player).await;
+                view_info(&ctx, &msg, player).await
             } else {
                 return prompt(
                     &ctx,
@@ -44,11 +44,43 @@ pub async fn lookup_player(
                 .await;
             }
         }
-        (None, Some(user)) => match find_by_player_discord_id(&ctx, &msg, user).await {
-            Ok(player) => {
-                if let Some(player) = player {
-                    return view_info(&ctx, &msg, player).await;
-                } else {
+        (None, Some(user_id)) => {
+            let user = match UserId(user_id.parse().unwrap_or(0))
+                .to_user(ctx.http())
+                .await
+            {
+                Ok(u) => u,
+                Err(_) => {
+                    prompt(
+                        &ctx,
+                        &msg,
+                        "Cannot find user",
+                        "Make sure you have the correct user id and try again",
+                        None,
+                        Some(0xFF0000),
+                    )
+                    .await?;
+                    return Err("Cannot find user".into());
+                }
+            };
+            match analyze_id_and_find_player(&ctx, &msg, user).await {
+                Ok(player) => {
+                    if let Some(player) = player {
+                        return view_info(&ctx, &msg, player).await;
+                    } else {
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Cannot find player with this discord id",
+                            "Unable to find this discord id from any regions!",
+                            None,
+                            Some(0xFF0000),
+                        )
+                        .await;
+                    }
+                }
+                Err(e) => {
+                    error!("{e}");
                     return prompt(
                         &ctx,
                         &msg,
@@ -60,19 +92,7 @@ pub async fn lookup_player(
                     .await;
                 }
             }
-            Err(e) => {
-                error!("{e}");
-                return prompt(
-                    &ctx,
-                    &msg,
-                    "Cannot find player with this discord id",
-                    "Unable to find this discord id from any regions!",
-                    None,
-                    Some(0xFF0000),
-                )
-                .await;
-            }
-        },
+        }
         (None, None) => {
             return prompt(
                 &ctx,
@@ -98,7 +118,7 @@ pub async fn lookup_player(
     }
 }
 
-async fn find_by_player_discord_id(
+async fn analyze_id_and_find_player(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     user: User,
@@ -117,5 +137,5 @@ async fn find_by_player_discord_id(
             return Err("Failed to get user region".into());
         }
     };
-    find_player_by_discord_id(ctx, &region, user_id, "Players".to_string()).await
+    find_player_by_discord_id(ctx, &region, user_id, "Players").await
 }

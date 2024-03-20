@@ -9,12 +9,12 @@ def generate_bracket_image(region, total_rounds, args):
 
     current_dir =  os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     region_background_mapping = {
-        'Europe': 'bracket_preset_eu.jpg',
-        'North America & South America': 'bracket_preset_nasa.jpg',
-        'Asia & Oceania': 'bracket_preset_apac.jpg',
+        'Europe': 'bracket_preset_eu.png',
+        'North America & South America': 'bracket_preset_nasa.png',
+        'Asia & Oceania': 'bracket_preset_apac.png',
     }
     # root = os.path.dirname(os.path.dirname(current_dir))
-    background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.jpg'))
+    background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.png'))
     font_path = os.path.join(current_dir, "assets/fonts","LilitaOne-Regular.ttf")
     background_image = cv2.imread(background_image_path)
 

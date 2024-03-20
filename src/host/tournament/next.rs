@@ -4,9 +4,11 @@ use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
-use poise::{serenity_prelude as sereniy, ReplyHandle};
+use poise::ReplyHandle;
 use std::collections::HashMap;
 use tracing::{error, info};
+
+use super::download::{compact, get_downloadable_ids};
 const TIMEOUT: u64 = 300;
 pub async fn display_next_round(
     ctx: &Context<'_>,
@@ -31,7 +33,7 @@ pub async fn display_next_round(
         .await?;
     } else {
         error!("Some matches are not finished! Cannot continue to next round!");
-        return paginate(ctx, msg, battles).await;
+        return paginate(ctx, msg, region, battles).await;
     }
     let resp = msg.clone().into_message().await?;
     let cib = resp
@@ -100,7 +102,8 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
                     tag2
                 );
             } else {
-                unreachable!("There should be 2 players in each match!");
+                error!("{:#?}", group[0]);
+                format!("Error reading match {:#?}", group[0])
             }
         })
         .collect::<Vec<String>>();
@@ -112,12 +115,15 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
 pub async fn paginate(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
+    region: &Region,
     pages: Vec<String>,
 ) -> Result<(), Error> {
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
     let prev_button_id = format!("{}prev", ctx_id);
     let next_button_id = format!("{}next", ctx_id);
+    let download_button_id = format!("{}download", ctx_id);
+    let compact_id = format!("{}compact", ctx_id);
 
     // Send the embed with the first page as content
     let mut current_page = 0;
@@ -130,6 +136,17 @@ pub async fn paginate(
             b.create_action_row(|b| {
                 b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
                     .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
+                    .create_button(|b| {
+                        b.custom_id(&download_button_id)
+                            .label("Download")
+                            .emoji('📥')
+                            .disabled(true)
+                    })
+                    .create_button(|b| {
+                        b.custom_id(&download_button_id)
+                            .label("Compact")
+                            .emoji('💿')
+                    })
             })
         })
     })
@@ -152,6 +169,10 @@ pub async fn paginate(
             }
         } else if press.data.custom_id == prev_button_id {
             current_page = current_page.checked_sub(1).unwrap_or(pages.len() - 1);
+        } else if press.data.custom_id == download_button_id {
+            return get_downloadable_ids(ctx, msg, region).await;
+        } else if press.data.custom_id == compact_id {
+            return compact(ctx, msg, region).await
         } else {
             // This is an unrelated button interaction
             continue;

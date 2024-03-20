@@ -1,28 +1,34 @@
 use crate::database::config::get_config;
 use crate::database::find::{find_player_by_discord_id, find_round_from_config};
 use crate::database::remove::remove_player;
+use crate::discord::log::{Log, LogType};
 use crate::discord::prompt::prompt;
-use crate::discord::role::get_region_role_id;
+use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
 use mongodb::bson::Document;
+use poise::serenity_prelude::UserId;
 use poise::ReplyHandle;
 use std::sync::Arc;
 use tracing::error;
 const TIMEOUT: u64 = 120;
-
-struct PlayerDisqualification {
-    user_id: Option<String>,
-    region: Region,
-}
-
 #[derive(Debug, poise::Modal)]
 #[name = "Disqualify Modal"]
 struct DisqualifyModal {
-    #[name = "Disqualify Player whose ID is:"]
+    #[name = "User Id to be disqualified:"]
     #[placeholder = "Make sure the user ID is provided, not the username"]
     user_id: String,
+
+    #[name = "Reason"]
+    #[placeholder = "Custom reason or leave blank for default reason"]
+    reason: String,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Form {
+    pub user_id: String,
+    pub reason: String,
 }
 
 pub async fn disqualify_players(
@@ -42,10 +48,10 @@ pub async fn disqualify_players(
         })
     })
     .await?;
-    let mut disqualification = PlayerDisqualification {
-        user_id: None,
-        region: region.clone(),
-    };
+    let mut form = Form::default();
+    let mut player = Document::new();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+
     disqualify_id(ctx, msg).await?;
     let resp = msg.clone().into_message().await?;
     let cib = resp
@@ -55,119 +61,47 @@ pub async fn disqualify_players(
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "open_modal" => {
-                disqualification.user_id = Some(create_disqualify_modal(ctx, mci.clone()).await?);
+                form.user_id = create_disqualify_modal(ctx, mci.clone()).await?.user_id;
+                form.reason = create_disqualify_modal(ctx, mci.clone()).await?.reason;
                 match find_player_by_discord_id(
                     ctx,
-                    &(disqualification.region.clone()),
-                    disqualification
-                        .user_id
-                        .clone()
-                        .unwrap()
-                        .parse::<u64>()
-                        .unwrap(),
-                    find_round_from_config(&get_config(ctx, region).await),
+                    region,
+                    form.user_id.parse::<u64>().unwrap_or(0),
+                    &round,
                 )
                 .await
                 {
-                    Ok(Some(player)) => display_confirmation(ctx, msg, &player).await?,
+                    Ok(Some(p)) => {
+                        player = p;
+                        display_confirmation(ctx, msg, &player).await?
+                    }
                     Ok(None) => {
-                        msg.edit(*ctx, |s| {
-                            s.reply(true)
-                                .embed(|e| {
-                                    e.title("No player found")
-                                        .description("No player is found for this ID")
-                                })
-                                .components(|c| c)
-                        })
-                        .await?;
-                        return Ok(());
+                        return prompt(
+                            ctx,
+                            msg,
+                            "Not found",
+                            "No player found with the given user ID",
+                            None,
+                            Some(0xFF0000),
+                        )
+                        .await;
                     }
-                    Err(_) => {}
-                }
-            }
-            "confirm" => {
-                match find_player_by_discord_id(
-                    ctx,
-                    &disqualification.region.clone(),
-                    disqualification
-                        .user_id
-                        .clone()
-                        .unwrap()
-                        .parse::<u64>()
-                        .unwrap(),
-                    find_round_from_config(&get_config(ctx, region).await),
-                )
-                .await
-                {
-                    Ok(Some(player)) => {
-                        if let Ok(round) = remove_player(ctx, &player, region).await {
-                            msg.edit(*ctx,|s| {
-                            s.reply(true)
-                                .embed(|e| {
-                                    e.description(format!(
-                                        "Successfully disqualified player: {}({}) with respective Discord <@{}> at round {round}",
-                                        player.get_str("name").unwrap(),
-                                        player.get_str("tag").unwrap(),
-                                        &disqualification.user_id.clone().unwrap(),
-                                    ))
-                                })
-                        })
-                        .await?;
-                            match ctx
-                                .guild()
-                                .unwrap()
-                                .member(
-                                    ctx.http(),
-                                    disqualification
-                                        .user_id
-                                        .clone()
-                                        .unwrap()
-                                        .parse::<u64>()
-                                        .unwrap(),
-                                )
-                                .await
-                            {
-                                Ok(mut member) => {
-                                    match member
-                                        .remove_role(
-                                            ctx.http(),
-                                            get_region_role_id(ctx, region).await.unwrap(),
-                                        )
-                                        .await
-                                    {
-                                        Ok(_) => {
-                                            msg.edit(*ctx, |s| {
-                                        s.embed(|e| {
-                                            e.description("Successfully removed the role from the user")
-                                        })
-                                    }).await?;
-                                        }
-                                        Err(e) => {
-                                            error!("{e}");
-                                            msg.edit(*ctx, |s| {
-                                                s.embed(|e| {
-                                                    e.description(
-                                                        "Failed to remove the role from the user",
-                                                    )
-                                                })
-                                            })
-                                            .await?;
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    error!("{e}");
-                                    return Ok(());
-                                }
-                            };
-                        }
-                    }
-                    Ok(None) => {}
                     Err(e) => {
                         error!("{e}");
+                        return prompt(
+                            ctx,
+                            msg,
+                            "ERROR",
+                            "Unable to find the player",
+                            None,
+                            Some(0xFF0000),
+                        )
+                        .await;
                     }
                 }
             }
+            "confirm" => return post_confirm(ctx, msg, &player, region, &mut form, &round).await,
+
             "cancel" => {
                 mci.defer(&ctx.http()).await?;
                 prompt(
@@ -253,10 +187,10 @@ async fn display_confirmation(
     Ok(())
 }
 
-pub async fn create_disqualify_modal(
+async fn create_disqualify_modal(
     ctx: &Context<'_>,
     mci: Arc<poise::serenity_prelude::MessageComponentInteraction>,
-) -> Result<String, Error> {
+) -> Result<DisqualifyModal, Error> {
     loop {
         let result = poise::execute_modal_on_component_interaction::<DisqualifyModal>(
             ctx,
@@ -267,9 +201,57 @@ pub async fn create_disqualify_modal(
         .await?;
         match result {
             Some(data) => {
-                return Ok(data.user_id);
+                return Ok(data);
             }
             None => continue,
         }
     }
+}
+
+async fn post_confirm(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    player: &Document,
+    region: &Region,
+    form: &mut Form,
+    round: &str,
+) -> Result<(), Error> {
+    match remove_player(ctx, player, region).await {
+        Ok(_) => {
+            let log = Log::new(ctx, region, LogType::Disqualify).await?;
+            let log_msg = log.send_disqualify_log(form, &round).await?;
+            prompt(
+                ctx,
+                msg,
+                "Successfully remove player!",
+                format!("The log has been recorded at [here]({})", log_msg.link()),
+                None,
+                Some(0x50C87800),
+            )
+            .await?;
+            let user = UserId(form.user_id.parse::<u64>().unwrap())
+                .to_user(ctx.http())
+                .await?;
+            match remove_role(ctx, &user, region).await {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("{e}");
+                    return prompt(ctx, msg, "Failed to remove the role", "The user is removed from the tournament, but it is unable to remove the role from this player!", None, Some(0xFF0000)).await;
+                }
+            }
+        }
+        Err(e) => {
+            error!("{e}");
+            return prompt(
+                ctx,
+                msg,
+                "ERROR",
+                "Unable to remove the player!",
+                None,
+                Some(0xFF0000),
+            )
+            .await;
+        }
+    };
+    Ok(())
 }

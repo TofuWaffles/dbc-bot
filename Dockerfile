@@ -27,5 +27,4 @@ COPY assets/ /assets
 COPY scripts/ /scripts
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-CMD ["python3", "--version"]
-ENTRYPOINT ["/dbc-bot"]
+ENTRYPOINT ["strace /dbc-bot"]

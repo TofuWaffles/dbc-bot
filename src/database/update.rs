@@ -1,7 +1,7 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, Document},
+    bson::{self, doc, Bson, Document},
     options::AggregateOptions,
     Collection, Database,
 };
@@ -66,19 +66,32 @@ pub fn update_match_id(mut player: Document) -> Document {
     player
 }
 
-pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Result<(), Error> {
-    let current_round: Collection<Document> =
-        database.collection(format!("Round {}", round).as_str());
-    let filter = doc! {
-        "match_id": match_id
-    };
-    let update = doc! {
-        "$set": {
-           "battle": true
+pub async fn update_result(
+    round_coll: &Collection<Document>,
+    winner: &Document,
+    loser: &Document,
+) -> Result<(), Error> {
+    let filter = |player: &Document| {
+        doc! {
+            "discord_id": player.get("discord_id").unwrap_or(&Bson::Null)
         }
     };
-    current_round.update_many(filter, update, None).await?;
-    println!("Battle is updated!");
+
+    let update = |defeated: bool| {
+        doc! {
+            "$set": {
+                "battle": true,
+                "defeated": defeated
+            }
+        }
+    };
+
+    round_coll
+        .update_one(filter(winner), update(false), None)
+        .await?;
+    round_coll
+        .update_one(filter(loser), update(true), None)
+        .await?;
 
     Ok(())
 }

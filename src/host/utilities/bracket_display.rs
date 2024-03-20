@@ -1,4 +1,6 @@
-use crate::{bracket_tournament::bracket_update::update_bracket, Context, Error};
+use crate::{
+    bracket_tournament::bracket_update::update_bracket, discord::prompt::prompt, Context, Error,
+};
 use dbc_bot::Region;
 use poise::ReplyHandle;
 
@@ -16,7 +18,6 @@ pub async fn bracket_display(
     })
     .await?;
     update_bracket(ctx, Some(&region)).await?;
-    msg.edit(*ctx, |m| m.embed(|e| e.title("Bracket updated")))
-        .await?;
+    prompt(ctx, msg, "Bracket", "Bracket has been updated", None, None).await?;
     Ok(())
 }

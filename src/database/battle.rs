@@ -1,11 +1,14 @@
 use crate::{discord::prompt::prompt, Context, Error};
-use mongodb::bson::doc;
+use mongodb::{
+    bson::{doc, Document},
+    Collection,
+};
 use poise::ReplyHandle;
 
 pub async fn battle_happened(
     ctx: &Context<'_>,
     tag: &str,
-    round: mongodb::Collection<mongodb::bson::Document>,
+    round: &Collection<Document>,
     msg: &ReplyHandle<'_>,
 ) -> Result<Option<mongodb::bson::Document>, Error> {
     let player = round.find_one(doc! {"tag": tag}, None).await?;

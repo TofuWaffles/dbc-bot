@@ -73,7 +73,12 @@ pub async fn configurate(
             "bracket_channel" => {
                 bracket_channel_option(ctx, msg, mci.clone(), &collection).await?;
             }
-            _ => {}
+            "log_channel" => {
+                log_channel_option(ctx, msg, mci.clone(), &collection).await?;
+            }
+            _ => {
+                continue;
+            }
         };
 
         display_config(ctx, msg, region).await?;
@@ -122,7 +127,10 @@ async fn display_config(
         Ok(bracket_channel) => format!("<#{}>", bracket_channel),
         Err(_) => "Not yet set".to_string(),
     };
-
+    let log_channel = match config.get_str("log_channel") {
+        Ok(log_channel) => format!("<#{}>", log_channel),
+        Err(_) => "Not yet set".to_string(),
+    };
     let description = format!(
         r#"
         **Registration status:** {}
@@ -132,8 +140,16 @@ async fn display_config(
         **Role assigned to players:** {}
         **Channel to publish results of matches:** {}
         **Channel to publish the tournament bracket:** {}
+        **Channel to store logs:** {}
         "#,
-        registration_status, tournament_status, mode, map, role, channel, bracket_channel,
+        registration_status,
+        tournament_status,
+        mode,
+        map,
+        role,
+        channel,
+        bracket_channel,
+        log_channel
     );
 
     msg.edit(*ctx, |s| {
@@ -170,6 +186,11 @@ async fn display_config(
                                         .description(
                                             "Set the channel to send the tournament bracket",
                                         )
+                                })
+                                .create_option(|o| {
+                                    o.label("Log Channel")
+                                        .value("log_channel")
+                                        .description("Set the channel to send all the logs")
                                 })
                             })
                     })
@@ -381,6 +402,51 @@ async fn bracket_channel_option(
                 s.components(|c| c).embed(|e| {
                     e.title("The channel has been set!").description(format!(
                         "Channel **<#{}>** has been set to update the bracket!
+                        Directing back to configuration menu...",
+                        channel.channel_id
+                    ))
+                })
+            })
+            .await?;
+        }
+        Ok(None) | Err(_) => {
+            prompt(
+                ctx,
+                msg,
+                "Fail to set channel has been set!",
+                "No channel has been selected! Please try again!",
+                None,
+                Some(0xFF0000),
+            )
+            .await?;
+            collection
+                .update_one(doc! {}, set_config("bracket_channel", None), None)
+                .await?;
+        }
+    };
+    std::thread::sleep(std::time::Duration::from_secs(3)); //Delay to prevent discord from rate limiting
+    Ok(())
+}
+
+async fn log_channel_option(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    mci: Arc<MessageComponentInteraction>,
+    collection: &Collection<Document>,
+) -> Result<(), Error> {
+    match poise::execute_modal_on_component_interaction::<Channel>(ctx, mci, None, None).await {
+        Ok(Some(channel)) => {
+            collection
+                .update_one(
+                    doc! {},
+                    set_config("log_channel", Some(channel.channel_id.as_str())),
+                    None,
+                )
+                .await?;
+            msg.edit(*ctx, |s| {
+                s.components(|c| c).embed(|e| {
+                    e.title("The channel has been set!").description(format!(
+                        "Channel **<#{}>** has been set to store logs!
                         Directing back to configuration menu...",
                         channel.channel_id
                     ))

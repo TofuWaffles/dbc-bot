@@ -36,10 +36,10 @@ pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
     user_id: u64,
-    round: String,
+    round: &str,
 ) -> Result<Option<Document>, Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
-    let collection: Collection<Document> = database.collection(round.as_str());
+    let collection: Collection<Document> = database.collection(round);
     let filter = doc! {"discord_id": user_id.to_string()};
     match collection.find_one(filter, None).await {
         Ok(result) => match result {
