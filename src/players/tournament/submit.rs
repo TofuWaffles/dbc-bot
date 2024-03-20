@@ -1,4 +1,3 @@
-
 use crate::brawlstars::api::{self, APIResult};
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;

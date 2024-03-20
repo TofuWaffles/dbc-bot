@@ -142,11 +142,7 @@ pub async fn paginate(
                             .emoji('📥')
                             .disabled(true)
                     })
-                    .create_button(|b| {
-                        b.custom_id(&compact_id)
-                            .label("Compact")
-                            .emoji('💿')
-                    })
+                    .create_button(|b| b.custom_id(&compact_id).label("Compact").emoji('💿'))
             })
         })
     })
@@ -173,7 +169,7 @@ pub async fn paginate(
             press.defer(ctx.http()).await?;
             return get_downloadable_ids(ctx, msg, region).await;
         } else if press.data.custom_id == compact_id {
-            return compact(ctx, msg, region).await
+            return compact(ctx, msg, region).await;
         } else {
             // This is an unrelated button interaction
             continue;

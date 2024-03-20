@@ -1,5 +1,7 @@
 use crate::database::config::get_config;
-use crate::database::find::{find_player_by_discord_id, find_round_from_config};
+use crate::database::find::{
+    find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config,
+};
 use crate::database::remove::remove_player;
 use crate::discord::log::{Log, LogType};
 use crate::discord::prompt::prompt;
@@ -222,13 +224,46 @@ async fn post_confirm(
         Ok(_) => {
             let log = Log::new(ctx, region, LogType::Disqualify).await?;
             let log_msg = log.send_disqualify_log(form, round).await?;
+            let enemy = find_enemy_by_match_id_and_self_tag(
+                ctx,
+                region,
+                round,
+                &player.get_i32("match_id").unwrap_or(0),
+                player.get_str("tag").unwrap_or(""),
+            )
+            .await;
             prompt(
                 ctx,
                 msg,
                 "Successfully remove player!",
-                format!(r#"The log has been recorded at [here]({}).
-Please remind this player's opponent                
-"#, log_msg.link()),
+                format!(
+                    r#"The log has been recorded at [here]({link}).
+Please remind this player's opponent!
+Round: {round}
+Match: {match_id}   
+Opponent: 
+- In-game name: {enemy_name}
+- In-game tag: {enemy_tag}
+- Discord name: {enemy_discord}
+- Discord id: {enemy_discord_id}             
+"#,
+                    link = log_msg.link(),
+                    match_id = player.get_i32("match_id").unwrap_or(0),
+                    round = round,
+                    enemy_name = enemy
+                        .as_ref()
+                        .map_or_else(|| "Not found", |e| e.get_str("name").unwrap_or("")),
+                    enemy_tag = enemy
+                        .as_ref()
+                        .map_or_else(|| "Not found", |e| e.get_str("tag").unwrap_or("")),
+                    enemy_discord = enemy
+                        .as_ref()
+                        .map_or_else(|| "Not found", |e| e.get_str("discord_name").unwrap_or("")),
+                    enemy_discord_id = enemy.as_ref().map_or_else(
+                        || "Not found",
+                        |e| e.get_str("discord_id").unwrap_or("Not found")
+                    )
+                ),
                 None,
                 Some(0x50C878),
             )

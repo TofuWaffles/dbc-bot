@@ -33,6 +33,7 @@ def generate_bracket_image(region, total_rounds, args):
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13
+
     game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
     _size = total_rounds
@@ -40,6 +41,7 @@ def generate_bracket_image(region, total_rounds, args):
     _column_width = image_width / _columns
     _game_box_width = _column_width - horizontal_padding
     _game_box_height = _game_box_width / game_box_width_height_ratio
+    
 
     resized_background_image = cv2.resize(background_image, (image_width, image_height))
 

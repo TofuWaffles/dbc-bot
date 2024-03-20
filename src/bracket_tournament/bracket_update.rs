@@ -123,7 +123,6 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         true => format!("1{sep}1{sep} {sep} {sep} {sep} "),
         false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| {
                 let a = format!("{round}{sep}{match_id}{sep}{player1_tag}{sep}{player2_tag}{sep}{is_winner1}{sep}{is_winner2}");
-                info!("{a}");
                 a
         }).collect::<Vec<String>>().join(",")
     };
@@ -180,11 +179,8 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                         })
                         .await
                     {
-                        Ok(_) => {
-                            info!(
-                                "Bracket message is edited at {}",
-                                bracket_message_id.unwrap()
-                            );
+                        Ok(message) => {
+                            info!("Bracket message is edited at {}", message.link());
                         }
                         Err(err) => {
                             error! {"{err}"};

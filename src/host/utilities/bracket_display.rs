@@ -16,7 +16,8 @@ pub async fn bracket_display(
         "<a:loading:1187839622680690689> Please wait while the image is being generated",
         None,
         None,
-    ).await?;
+    )
+    .await?;
     update_bracket(ctx, Some(region)).await?;
     prompt(ctx, msg, "Bracket", "Bracket has been updated", None, None).await?;
     Ok(())

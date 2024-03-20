@@ -1,7 +1,7 @@
 use crate::discord::prompt::prompt;
 use crate::{database::find::find_all_false_battles, Context, Error};
 use dbc_bot::Region;
-use futures::{StreamExt};
+use futures::StreamExt;
 use poise::serenity_prelude::AttachmentType;
 use poise::ReplyHandle;
 use tokio::fs::OpenOptions;
@@ -130,12 +130,15 @@ pub async fn compact(
     }
     let pages = chunk::<String>(&ids, 20);
     let mut index = 0;
-    
-    let content = pages[index].iter().map(|id| format!("{id}\n")).collect::<String>();
+
+    let content = pages[index]
+        .iter()
+        .map(|id| format!("{id}\n"))
+        .collect::<String>();
     msg.edit(*ctx, |b| {
         b.embed(|b| {
             b.title(format!("Players' Ids in {}", region.full()))
-            .description(format!("```{content}```"))
+                .description(format!("```{content}```"))
                 .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
         })
         .components(|b| {
@@ -144,45 +147,58 @@ pub async fn compact(
                     .create_button(|b| b.custom_id("next").emoji('▶'))
             })
         })
-    }).await?;
-    
+    })
+    .await?;
+
     while let Some(press) = poise::serenity_prelude::CollectComponentInteraction::new(ctx)
-    .timeout(std::time::Duration::from_secs(3600 * 24))
-    .await{
+        .timeout(std::time::Duration::from_secs(3600 * 24))
+        .await
+    {
         match press.data.custom_id.as_str() {
             "prev" => {
-                index = if index == 0 { pages.len() - 1 } else { index - 1 };
+                index = if index == 0 {
+                    pages.len() - 1
+                } else {
+                    index - 1
+                };
             }
             "next" => {
-                index = if index == pages.len() - 1 { 0 } else { index + 1 };
+                index = if index == pages.len() - 1 {
+                    0
+                } else {
+                    index + 1
+                };
             }
             _ => {
                 continue;
             }
-    }
-    let content = pages[index].iter().map(|id| format!("<@{id}>\n")).collect::<String>();
-    press.create_interaction_response(ctx, |b| {
-        b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
-            .interaction_response_data(|b| {
-                b.embed(|b| {
-                    b.title(format!("Players' Ids in {}", region.full()))
-                    .description(format!("```{content}```"))
-                        .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
-                })
-                .components(|b| {
-                    b.create_action_row(|b| {
-                        b.create_button(|b| b.custom_id("prev").emoji('◀'))
-                            .create_button(|b| b.custom_id("next").emoji('▶'))
+        }
+        let content = pages[index]
+            .iter()
+            .map(|id| format!("<@{id}>\n"))
+            .collect::<String>();
+        press
+            .create_interaction_response(ctx, |b| {
+                b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
+                    .interaction_response_data(|b| {
+                        b.embed(|b| {
+                            b.title(format!("Players' Ids in {}", region.full()))
+                                .description(format!("```{content}```"))
+                                .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
+                        })
+                        .components(|b| {
+                            b.create_action_row(|b| {
+                                b.create_button(|b| b.custom_id("prev").emoji('◀'))
+                                    .create_button(|b| b.custom_id("next").emoji('▶'))
+                            })
+                        })
                     })
-                })
             })
-    }).await?;
-}
+            .await?;
+    }
     Ok(())
 }
 
 fn chunk<T>(slice: &[T], chunk_size: usize) -> Vec<&[T]> {
-    slice
-        .chunks(chunk_size)
-        .collect()
+    slice.chunks(chunk_size).collect()
 }
