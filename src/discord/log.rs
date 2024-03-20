@@ -1,7 +1,9 @@
 use crate::{database::config::get_config, host::tournament::disqualify::Form, Context, Error};
 use dbc_bot::Region;
-use poise::serenity_prelude::{ChannelId, GuildChannel, Message, User};
-
+use poise::serenity_prelude::{
+    Attachment, AttachmentType, ChannelId, GuildChannel, Message, MessageId, User,
+};
+use reqwest::Url;
 #[derive(Debug)]
 pub enum LogType {
     Info,
@@ -55,25 +57,38 @@ impl<'a> Log<'a> {
         if form.reason.is_empty() {
             form.reason = Self::DEFAULT_DISQUALIFY.to_string();
         }
-        let msg = self.channel
+        let msg = self
+            .channel
             .send_message(self.ctx.http(), |s| {
                 s.embed(|e| {
                     e.title("DISQUALIFY")
                         .description(format!(
                             r#"
-<@{user_id}>(`{user_id}`) has been disqualified from the tournament region {region} at round {round}.
-Reason: {reason}
-Disqualified by: <@{host_id}>(`{host_id}`).        
+<@{user_id}>(`{user_id}`) has been disqualified from the tournament region {region} at {round}.
+**Reason**: {reason}
+**Disqualified by**: <@{host_id}>(`{host_id}`).        
           "#,
                             user_id = form.user_id,
                             region = self.region,
                             reason = form.reason,
                             host_id = self.host.id.0
-
                         ))
                         .color(0xFF0000)
                 })
             })
+            .await?;
+        Ok(msg)
+    }
+
+    pub async fn update_proof(
+        ctx: &Context<'_>,
+        channel_id: ChannelId,
+        message_id: MessageId,
+        img: Url,
+    ) -> Result<Message, Error> {
+        let attachment = AttachmentType::Image(img);
+        let msg = channel_id
+            .edit_message(ctx.http(), message_id, |m| m.attachment(attachment))
             .await?;
         Ok(msg)
     }

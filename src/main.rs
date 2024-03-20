@@ -60,6 +60,7 @@ async fn run() -> Result<(), Error> {
         commands::user::info(),
         commands::context_menu::get_individual_player_data(),
         commands::context_menu::view_battle(),
+        commands::update_proof::update_proof(),
         commands::setup::setup(),
         commands::player_lookup::lookup_player(),
     ];
