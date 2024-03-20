@@ -136,7 +136,6 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         .stdout(Stdio::piped())
         .current_dir(current_dir)
         .spawn()?;
-    info!("Bracket generated.");
 
     let mut stdout = output
         .stdout
@@ -155,6 +154,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
             return Err(e.into());
         }
     };
+    info!("Bracket generated.");
     let attachment = poise::serenity_prelude::AttachmentType::Bytes {
         data: image_bytes.into(),
         filename: format!("Tournament_bracket_{}.png", current_region.short()),

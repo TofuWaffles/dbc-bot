@@ -134,7 +134,8 @@ pub async fn compact(
     let content = pages[index].iter().map(|id| format!("{id}\n")).collect::<String>();
     msg.edit(*ctx, |b| {
         b.embed(|b| {
-            b.description(content.to_string())
+            b.title(format!("Players' Ids in {}", region.full()))
+            .description(format!("```{content}```"))
                 .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
         })
         .components(|b| {
@@ -159,18 +160,22 @@ pub async fn compact(
                 continue;
             }
     }
-    let content = pages[index].iter().map(|id| format!("{id}\n")).collect::<String>();
-    msg.edit(*ctx, |b| {
-        b.embed(|b| {
-            b.description(content.to_string())
-                .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
-        })
-        .components(|b| {
-            b.create_action_row(|b| {
-                b.create_button(|b| b.custom_id("prev").emoji('◀'))
-                    .create_button(|b| b.custom_id("next").emoji('▶'))
+    let content = pages[index].iter().map(|id| format!("<@{id}>\n")).collect::<String>();
+    press.create_interaction_response(ctx, |b| {
+        b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
+            .interaction_response_data(|b| {
+                b.embed(|b| {
+                    b.title(format!("Players' Ids in {}", region.full()))
+                    .description(format!("```{content}```"))
+                        .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
+                })
+                .components(|b| {
+                    b.create_action_row(|b| {
+                        b.create_button(|b| b.custom_id("prev").emoji('◀'))
+                            .create_button(|b| b.custom_id("next").emoji('▶'))
+                    })
+                })
             })
-        })
     }).await?;
 }
     Ok(())

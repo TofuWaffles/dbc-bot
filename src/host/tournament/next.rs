@@ -143,7 +143,7 @@ pub async fn paginate(
                             .disabled(true)
                     })
                     .create_button(|b| {
-                        b.custom_id(&download_button_id)
+                        b.custom_id(&compact_id)
                             .label("Compact")
                             .emoji('💿')
                     })
@@ -170,6 +170,7 @@ pub async fn paginate(
         } else if press.data.custom_id == prev_button_id {
             current_page = current_page.checked_sub(1).unwrap_or(pages.len() - 1);
         } else if press.data.custom_id == download_button_id {
+            press.defer(ctx.http()).await?;
             return get_downloadable_ids(ctx, msg, region).await;
         } else if press.data.custom_id == compact_id {
             return compact(ctx, msg, region).await

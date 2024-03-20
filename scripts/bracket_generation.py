@@ -28,8 +28,8 @@ def generate_bracket_image(region, total_rounds, args):
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split(sep)
         results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         
-    image_width = 2000
-    image_height = 1000
+    image_width = 10000
+    image_height = 5000
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13

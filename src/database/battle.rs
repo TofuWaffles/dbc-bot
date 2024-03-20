@@ -19,7 +19,6 @@ pub async fn battle_happened(
                 .and_then(|b| b.as_bool())
                 .unwrap_or(false)
             {
-                msg.edit(*ctx, |s| s.content("You have already submitted the result! Please wait until the next round begins!")).await?;
                 prompt(
                     ctx,
                     msg,

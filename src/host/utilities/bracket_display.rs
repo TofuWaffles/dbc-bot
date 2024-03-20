@@ -9,14 +9,14 @@ pub async fn bracket_display(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    msg.edit(*ctx, |m| {
-        m.embed(|e| {
-            e.title("Image is generating").description(
-                "<a:loading:1187839622680690689> Please wait while the image is being generated",
-            )
-        })
-    })
-    .await?;
+    prompt(
+        ctx,
+        msg,
+        "Generating bracket image",
+        "<a:loading:1187839622680690689> Please wait while the image is being generated",
+        None,
+        None,
+    ).await?;
     update_bracket(ctx, Some(region)).await?;
     prompt(ctx, msg, "Bracket", "Bracket has been updated", None, None).await?;
     Ok(())

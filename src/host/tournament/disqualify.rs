@@ -61,8 +61,7 @@ pub async fn disqualify_players(
     while let Some(mci) = &cic.next().await {
         match mci.data.custom_id.as_str() {
             "open_modal" => {
-                form.user_id = create_disqualify_modal(ctx, mci.clone()).await?.user_id;
-                form.reason = create_disqualify_modal(ctx, mci.clone()).await?.reason;
+                form = create_disqualify_modal(ctx, mci.clone()).await?;
                 match find_player_by_discord_id(
                     ctx,
                     region,
@@ -190,7 +189,7 @@ async fn display_confirmation(
 async fn create_disqualify_modal(
     ctx: &Context<'_>,
     mci: Arc<poise::serenity_prelude::MessageComponentInteraction>,
-) -> Result<DisqualifyModal, Error> {
+) -> Result<Form, Error> {
     loop {
         let result = poise::execute_modal_on_component_interaction::<DisqualifyModal>(
             ctx,
@@ -201,7 +200,10 @@ async fn create_disqualify_modal(
         .await?;
         match result {
             Some(data) => {
-                return Ok(data);
+                return Ok(Form {
+                    user_id: data.user_id,
+                    reason: data.reason,
+                });
             }
             None => continue,
         }
@@ -224,9 +226,11 @@ async fn post_confirm(
                 ctx,
                 msg,
                 "Successfully remove player!",
-                format!("The log has been recorded at [here]({})", log_msg.link()),
+                format!(r#"The log has been recorded at [here]({}).
+Please remind this player's opponent                
+"#, log_msg.link()),
                 None,
-                Some(0x50C87800),
+                Some(0x50C878),
             )
             .await?;
             let user = UserId(form.user_id.parse::<u64>().unwrap())
