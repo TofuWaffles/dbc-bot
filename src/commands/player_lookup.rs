@@ -33,7 +33,7 @@ pub async fn lookup_player(
             if let Some(player) = find_tag(&ctx, &tag).await {
                 view_info(&ctx, &msg, player).await
             } else {
-                return prompt(
+                prompt(
                     &ctx,
                     &msg,
                     "Cannot find player with this tag",
@@ -41,7 +41,7 @@ pub async fn lookup_player(
                     None,
                     Some(0xFF0000),
                 )
-                .await;
+                .await
             }
         }
         (None, Some(user_id)) => {
@@ -66,9 +66,9 @@ pub async fn lookup_player(
             match analyze_id_and_find_player(&ctx, &msg, user).await {
                 Ok(player) => {
                     if let Some(player) = player {
-                        return view_info(&ctx, &msg, player).await;
+                        view_info(&ctx, &msg, player).await
                     } else {
-                        return prompt(
+                        prompt(
                             &ctx,
                             &msg,
                             "Cannot find player with this discord id",
@@ -76,12 +76,12 @@ pub async fn lookup_player(
                             None,
                             Some(0xFF0000),
                         )
-                        .await;
+                        .await
                     }
                 }
                 Err(e) => {
                     error!("{e}");
-                    return prompt(
+                    prompt(
                         &ctx,
                         &msg,
                         "Cannot find player with this discord id",
@@ -89,12 +89,12 @@ pub async fn lookup_player(
                         None,
                         Some(0xFF0000),
                     )
-                    .await;
+                    .await
                 }
             }
         }
         (None, None) => {
-            return prompt(
+            prompt(
                 &ctx,
                 &msg,
                 "Cannot search for player",
@@ -102,10 +102,10 @@ pub async fn lookup_player(
                 None,
                 Some(0xFF0000),
             )
-            .await;
+            .await
         }
         (Some(_), Some(_)) => {
-            return prompt(
+            prompt(
                 &ctx,
                 &msg,
                 "The developers are lazy to handle this case",
@@ -113,7 +113,7 @@ pub async fn lookup_player(
                 None,
                 Some(0xFF0000),
             )
-            .await;
+            .await
         }
     }
 }
@@ -124,8 +124,8 @@ async fn analyze_id_and_find_player(
     user: User,
 ) -> Result<Option<Document>, Error> {
     let user_id = user.id.0;
-    let roles = get_roles_from_user(&ctx, Some(&user)).await?;
-    let region = match get_region_from_role(&ctx, roles).await {
+    let roles = get_roles_from_user(ctx, Some(&user)).await?;
+    let region = match get_region_from_role(ctx, roles).await {
         Some(region) => region,
         None => {
             msg.edit(*ctx, |s| {

@@ -17,7 +17,7 @@ pub async fn bracket_display(
         })
     })
     .await?;
-    update_bracket(ctx, Some(&region)).await?;
+    update_bracket(ctx, Some(region)).await?;
     prompt(ctx, msg, "Bracket", "Bracket has been updated", None, None).await?;
     Ok(())
 }

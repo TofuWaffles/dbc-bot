@@ -53,7 +53,7 @@ Display name in this server: **{name}**,
 Joined at: <t:{timestamp}:R> (<t:{timestamp}:F>)
 Roles: {roles}
 Permissions: `{permissions}`"#,
-                name = m.display_name().into_owned(),
+                name = m.display_name(),
                 timestamp = m.joined_at.unwrap().unix_timestamp(),
                 roles = roles
                     .iter()

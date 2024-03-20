@@ -34,7 +34,7 @@ pub async fn view_opponent_wrapper(
             return Ok(());
         }
     };
-    return view_opponent(ctx, msg, region, caller).await;
+    view_opponent(ctx, msg, region, caller).await
 }
 /// View your opponent
 pub async fn view_opponent(

@@ -1,7 +1,7 @@
 use crate::discord::prompt::prompt;
 use crate::{database::find::find_all_false_battles, Context, Error};
 use dbc_bot::Region;
-use futures::{StreamExt, TryStreamExt};
+use futures::{StreamExt};
 use poise::serenity_prelude::AttachmentType;
 use poise::ReplyHandle;
 use tokio::fs::OpenOptions;
@@ -131,10 +131,10 @@ pub async fn compact(
     let pages = chunk::<String>(&ids, 20);
     let mut index = 0;
     
-    let content = pages[index].into_iter().map(|id| format!("{id}\n")).collect::<String>();
+    let content = pages[index].iter().map(|id| format!("{id}\n")).collect::<String>();
     msg.edit(*ctx, |b| {
         b.embed(|b| {
-            b.description(format!("{}",content))
+            b.description(content.to_string())
                 .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
         })
         .components(|b| {
@@ -159,10 +159,10 @@ pub async fn compact(
                 continue;
             }
     }
-    let content = pages[index].into_iter().map(|id| format!("{id}\n")).collect::<String>();
+    let content = pages[index].iter().map(|id| format!("{id}\n")).collect::<String>();
     msg.edit(*ctx, |b| {
         b.embed(|b| {
-            b.description(format!("{}",content))
+            b.description(content.to_string())
                 .footer(|f| f.text(format!("Page {}/{}", index + 1, pages.len())))
         })
         .components(|b| {
@@ -179,6 +179,5 @@ pub async fn compact(
 fn chunk<T>(slice: &[T], chunk_size: usize) -> Vec<&[T]> {
     slice
         .chunks(chunk_size)
-        .map(|chunk| chunk)
         .collect()
 }

@@ -88,7 +88,7 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
                 let dis2 = player2.get_str("discord_id").unwrap_or("").to_string();
                 let name2 = player2.get_str("name").unwrap_or("").to_string();
                 let tag2 = player2.get_str("tag").unwrap_or("").to_string();
-                return format!(
+                format!(
                     r#"**Some battles are not finished!**
 # Match {} 
 <@{}> - <@{}>
@@ -100,7 +100,7 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
                     tag1,
                     name2,
                     tag2
-                );
+                )
             } else {
                 error!("{:#?}", group[0]);
                 format!("Error reading match {:#?}", group[0])

@@ -219,7 +219,7 @@ async fn post_confirm(
     match remove_player(ctx, player, region).await {
         Ok(_) => {
             let log = Log::new(ctx, region, LogType::Disqualify).await?;
-            let log_msg = log.send_disqualify_log(form, &round).await?;
+            let log_msg = log.send_disqualify_log(form, round).await?;
             prompt(
                 ctx,
                 msg,

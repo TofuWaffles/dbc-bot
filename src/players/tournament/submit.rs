@@ -1,4 +1,4 @@
-use crate::bracket_tournament::bracket_update::update_bracket;
+
 use crate::brawlstars::api::{self, APIResult};
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
@@ -260,7 +260,7 @@ async fn get_result(
     let mut results: Vec<String> = vec![];
 
     for log in logs.unwrap().iter().rev() {
-        if !log_check(&log, mode, map) {
+        if !log_check(log, mode, map) {
             continue;
         }
 

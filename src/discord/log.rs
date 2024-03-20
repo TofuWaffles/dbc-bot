@@ -24,7 +24,7 @@ impl<'a> Log<'a> {
     pub async fn new(ctx: &Context<'a>, region: &Region, log_type: LogType) -> Result<Self, Error> {
         let channel = Self::get_channel(ctx, region).await?;
         Ok(Self {
-            channel: channel,
+            channel,
             log_type,
             ctx: *ctx,
             region: region.clone(),
@@ -84,7 +84,7 @@ Disqualified by: <@{host_id}>(`{host_id}`).
             .send_message(self.ctx.http(), |s| {
                 s.embed(|e| {
                     e.title("TEST")
-                        .description(format!(r#"Successfully sent a log here"#))
+                        .description(r#"Successfully sent a log here"#.to_string())
                 })
             })
             .await?;
