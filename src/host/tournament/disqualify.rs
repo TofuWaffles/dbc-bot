@@ -3,7 +3,7 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config,
 };
 use crate::database::remove::remove_player;
-use crate::database::update::{update_match_id, update_result};
+use crate::database::update::{set_ready, update_match_id, update_result};
 use crate::discord::log::{Log, LogType};
 use crate::discord::prompt::{prompt};
 use crate::discord::role::remove_role;
@@ -271,6 +271,7 @@ Opponent:
                 Some(0x50C878),
             )
             .await?;
+            set_ready(ctx, region, round, enemy.unwrap().get_str("discord_id").unwrap_or("0")).await?;
             let user = UserId(form.user_id.parse::<u64>().unwrap())
                 .to_user(ctx.http())
                 .await?;

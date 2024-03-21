@@ -74,6 +74,7 @@ Permissions: `{permissions}`"#,
                     user_info = user_info,
                     member_info = member_info
                 ))
+                .color(0xFF0000)
         })
     })
     .await?;
