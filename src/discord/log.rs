@@ -148,7 +148,7 @@ impl<'a> Log<'a> {
     }
 
     pub async fn disqualify_inactive_logs(&self, players: Vec<String>) -> Result<Message, Error>{
-        let embeds: Vec<CreateEmbed> = vec![]; let mut embeds: Vec<CreateEmbed> = vec![];
+        let _embeds: Vec<CreateEmbed> = vec![]; let mut embeds: Vec<CreateEmbed> = vec![];
         let default_embed = CreateEmbed::default()
             .title("DISQUALIFY INACTIVE")
             .description(format!(r#"Due to inactivity, the following players have been disqualified from the tournament region {region}. Disqualifed by <@{host}>(`{host}`)"#, region = self.region, host = self.host.id.0))

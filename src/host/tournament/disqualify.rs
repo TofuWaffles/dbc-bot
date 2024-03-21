@@ -5,7 +5,7 @@ use crate::database::find::{
 use crate::database::remove::remove_player;
 use crate::database::update::{update_match_id, update_result};
 use crate::discord::log::{Log, LogType};
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::{prompt};
 use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::Region;
@@ -325,7 +325,7 @@ pub async fn mass_disqualify_wrapper(
         }
     }
     let m = log.disqualify_inactive_logs(players).await?;
-    return prompt(
+    prompt(
         ctx,
         msg,
         "Mass disqualification",
@@ -334,7 +334,7 @@ pub async fn mass_disqualify_wrapper(
         ),
         None,
         Some(0x50C878),
-    ).await;
+    ).await
 }
 
 async fn disqualify_unready(
@@ -370,10 +370,10 @@ async fn disqualify_unready(
             let defeated_user = UserId(player.get_str("discord_id").unwrap_or("0").parse::<u64>()?)
                 .to_user(ctx.http())
                 .await?;
-            if let Err(e) = remove_role(ctx, &defeated_user, &region).await {
+            if let Err(e) = remove_role(ctx, &defeated_user, region).await {
                 error!("{e}");
             }
-            update_result(&round_coll, &enemy, &player).await?;
+            update_result(&round_coll, &enemy, player).await?;
         }
     }
     Ok(())

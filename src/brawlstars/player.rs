@@ -88,6 +88,24 @@ pub async fn stat(
                         ),
                         true,
                     ),
+                    (
+                        "Ready",
+                        detail.map_or_else(
+                            || "Not in match".to_string(),
+                            |d| {
+                                if let Ok(status) = d.get_bool("ready") {
+                                    if status {
+                                        "Ready".to_string()
+                                    } else {
+                                        "Not ready".to_string()
+                                    }
+                                } else {
+                                    "Not yet ready".to_string()
+                                }
+                            },
+                        ),
+                        true,
+                    ),
                 ])
                 .timestamp(ctx.created_at())
                 .color(0x0000FF)

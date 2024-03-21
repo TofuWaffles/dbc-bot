@@ -1,7 +1,7 @@
 use crate::{
     database::{
         config::get_config,
-        find::{find_round_from_config, find_self_by_discord_id},
+        find::{find_round_from_config},
         update::set_ready,
     },
     discord::prompt::prompt,
@@ -21,7 +21,7 @@ pub async fn ready(
     let round = find_round_from_config(&get_config(ctx, region).await);
     let discord_id = player.get_str("discord_id").unwrap();
     set_ready(ctx, region, &round, discord_id).await?;
-    return prompt(
+    prompt(
         ctx,
         msg,
         "Ready",
@@ -29,5 +29,5 @@ pub async fn ready(
         None,
         Some(0x00FF00),
     )
-    .await;
+    .await
 }

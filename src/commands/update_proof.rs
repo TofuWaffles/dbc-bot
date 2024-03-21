@@ -66,7 +66,7 @@ pub async fn update_proof(
 }
 
 async fn analyse_link(link: &str) -> Result<(u64, u64), Error> {
-    let components = link.split("/").collect::<Vec<&str>>();
+    let components = link.split('/').collect::<Vec<&str>>();
     let (channel_id, message_id) = (
         components[components.len() - 2].parse::<u64>()?,
         components[components.len() - 1].parse::<u64>()?,
