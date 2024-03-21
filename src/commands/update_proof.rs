@@ -3,12 +3,13 @@ use crate::{
     Context, Error,
 };
 use poise::serenity_prelude::{Attachment, ChannelId, MessageId};
-use reqwest::Url;
-#[poise::command(slash_command, check = "is_host")]
+use tracing::log::error;
+/// Update the proof of a log. This command can be used multiple times to add more images to the log.
+#[poise::command(slash_command, check = "is_host", rename = "log-update")]
 pub async fn update_proof(
     ctx: Context<'_>,
     #[description = "Message link of the log"] link: String,
-    #[description = "The image of the"] file: Attachment,
+    #[description = "The images of the proof"] files: Vec<Attachment>,
 ) -> Result<(), Error> {
     let msg = ctx
         .send(|s| {
@@ -32,8 +33,26 @@ pub async fn update_proof(
             .await
         }
     };
-    let url = Url::parse(&file.proxy_url)?;
-    let message = Log::update_proof(&ctx, channel_id, message_id, url).await?;
+
+    let urls = files
+        .iter()
+        .map(|file| file.proxy_url.clone())
+        .collect::<Vec<String>>();
+    let message = match Log::update_proof(&ctx, channel_id, message_id, urls).await {
+        Ok(msg) => msg,
+        Err(e) => {
+            error!("Error updating proof: {}", e);
+            return prompt(
+                &ctx,
+                &msg,
+                "Error updating proof",
+                "An error occurred while updating the proof. Please try again later.",
+                None,
+                Some(0xFF0000),
+            )
+            .await;
+        }
+    };
     msg.edit(ctx, |m| {
         m.embed(|e| {
             e.title("Evidence uploaded").description(format!(

@@ -1,13 +1,16 @@
-use crate::database::find::find_all_false_battles;
+use crate::database::config::get_config;
+use crate::database::find::{find_all_false_battles, find_round_from_config};
 use crate::database::update::update_round_config;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
+use mongodb::Cursor;
 use poise::ReplyHandle;
 use std::collections::HashMap;
 use tracing::{error, info};
 
+use super::disqualify;
 use super::download::{compact, get_downloadable_ids};
 const TIMEOUT: u64 = 300;
 pub async fn display_next_round(
@@ -16,8 +19,8 @@ pub async fn display_next_round(
     region: &Region,
 ) -> Result<(), Error> {
     info!("Next round is triggered by {}", ctx.author().name);
-    let battles = display_false_battles(ctx, region).await;
-    if battles.is_empty() {
+    let mut false_battles = find_all_false_battles(ctx, region).await;
+    if false_battles.next().await.is_none() {
         info!("All matches are finished!");
         msg.edit(*ctx, |m| {
             m.embed(|e| {
@@ -32,8 +35,9 @@ pub async fn display_next_round(
         })
         .await?;
     } else {
+        
         error!("Some matches are not finished! Cannot continue to next round!");
-        return paginate(ctx, msg, region, battles).await;
+        return paginate(ctx, msg, region, &mut false_battles).await;
     }
     let resp = msg.clone().into_message().await?;
     let cib = resp
@@ -58,9 +62,9 @@ pub async fn display_next_round(
     Ok(())
 }
 
-pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<String> {
+pub async fn display_false_battles(result: &mut Cursor<Document>) -> Vec<String> {
     let mut players = vec![];
-    let mut result = find_all_false_battles(ctx, region).await;
+
     while let Some(player) = result.next().await {
         match player {
             Ok(p) => players.push(p),
@@ -116,14 +120,16 @@ pub async fn paginate(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
-    pages: Vec<String>,
+    false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
+    let pages = display_false_battles( false_battles).await;
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
     let prev_button_id = format!("{}prev", ctx_id);
     let next_button_id = format!("{}next", ctx_id);
     let download_button_id = format!("{}download", ctx_id);
     let compact_id = format!("{}compact", ctx_id);
+    let disqualify_all_id = format!("{}disqualify_all", ctx_id);
 
     // Send the embed with the first page as content
     let mut current_page = 0;
@@ -143,6 +149,11 @@ pub async fn paginate(
                             .disabled(true)
                     })
                     .create_button(|b| b.custom_id(&compact_id).label("Compact").emoji('💿'))
+                    .create_button(|b| {
+                        b.custom_id(&disqualify_all_id)
+                            .label("Disqualify All")
+                            .emoji('❌')
+                    })
             })
         })
     })
@@ -169,7 +180,12 @@ pub async fn paginate(
             press.defer(ctx.http()).await?;
             return get_downloadable_ids(ctx, msg, region).await;
         } else if press.data.custom_id == compact_id {
+            press.defer(ctx.http()).await?;
             return compact(ctx, msg, region).await;
+        } else if press.data.custom_id == disqualify_all_id {
+            press.defer(ctx.http()).await?;
+            let round = find_round_from_config(&get_config(ctx, region).await);
+            return disqualify::mass_disqualify_wrapper(ctx, msg, region,&round,false_battles).await;
         } else {
             // This is an unrelated button interaction
             continue;

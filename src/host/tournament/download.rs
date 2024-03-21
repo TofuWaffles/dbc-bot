@@ -1,6 +1,6 @@
 use crate::discord::prompt::prompt;
 use crate::{database::find::find_all_false_battles, Context, Error};
-use dbc_bot::Region;
+use dbc_bot::{chunk, Region};
 use futures::StreamExt;
 use poise::serenity_prelude::AttachmentType;
 use poise::ReplyHandle;
@@ -199,6 +199,3 @@ pub async fn compact(
     Ok(())
 }
 
-fn chunk<T>(slice: &[T], chunk_size: usize) -> Vec<&[T]> {
-    slice.chunks(chunk_size).collect()
-}

@@ -1,13 +1,17 @@
 use crate::{database::config::get_config, host::tournament::disqualify::Form, Context, Error};
-use dbc_bot::Region;
-use poise::serenity_prelude::{
-    Attachment, AttachmentType, ChannelId, GuildChannel, Message, MessageId, User,
+use dbc_bot::{chunk, Region};
+use poise::
+    serenity_prelude::{
+     ChannelId, CreateEmbed, Embed, GuildChannel, Message, MessageId, User
+    ,
+    
 };
-use reqwest::Url;
+
 #[derive(Debug)]
 pub enum LogType {
     Info,
     Disqualify,
+    DisqualifyInactives,
     Test,
 }
 
@@ -84,13 +88,50 @@ impl<'a> Log<'a> {
         ctx: &Context<'_>,
         channel_id: ChannelId,
         message_id: MessageId,
-        img: Url,
+        imgs: Vec<String>,
     ) -> Result<Message, Error> {
-        let attachment = AttachmentType::Image(img);
+        let mut embeds: Vec<CreateEmbed> = vec![];
+        let current_embeds = channel_id.message(ctx.http(), message_id).await?.embeds;
+        embeds.push(Self::recreate_default_log_embed(
+            current_embeds[0].to_owned(),
+        ));
+        embeds.extend(
+            imgs.iter()
+                .map(|img| Self::create_new_log_embed(img.to_owned()))
+                .collect::<Vec<_>>(),
+        );
+        current_embeds[1..]
+            .to_owned()
+            .iter()
+            .map(|embed| Self::recreate_img_log_embed(embed.to_owned()))
+            .for_each(|embed| {
+                if let Some(embed) = embed {
+                    embeds.push(embed);
+                }
+            });
         let msg = channel_id
-            .edit_message(ctx.http(), message_id, |m| m.attachment(attachment))
+            .edit_message(ctx.http(), message_id, |m| m.add_embeds(embeds))
             .await?;
         Ok(msg)
+    }
+
+    fn create_new_log_embed(url: String) -> CreateEmbed {
+        CreateEmbed::default().image(url).to_owned()
+    }
+
+    fn recreate_img_log_embed(embed: Embed) -> Option<CreateEmbed> {
+        match embed.image {
+            Some(img) => Some(Self::create_new_log_embed(img.url)),
+            None => None,
+        }
+    }
+
+    fn recreate_default_log_embed(embed: Embed) -> CreateEmbed {
+        CreateEmbed::default()
+            .title(embed.title.unwrap_or_default())
+            .description(embed.description.unwrap_or_default())
+            .color(embed.colour.unwrap_or_default())
+            .to_owned()
     }
 
     pub async fn test_log(&self) -> Result<Message, Error> {
@@ -101,6 +142,28 @@ impl<'a> Log<'a> {
                     e.title("TEST")
                         .description(r#"Successfully sent a log here"#.to_string())
                 })
+            })
+            .await?;
+        Ok(msg)
+    }
+
+    pub async fn disqualify_inactive_logs(&self, players: Vec<String>) -> Result<Message, Error>{
+        let embeds: Vec<CreateEmbed> = vec![]; let mut embeds: Vec<CreateEmbed> = vec![];
+        let default_embed = CreateEmbed::default()
+            .title("DISQUALIFY INACTIVE")
+            .description(format!(r#"Due to inactivity, the following players have been disqualified from the tournament region {region}. Disqualifed by <@{host}>(`{host}`)"#, region = self.region, host = self.host.id.0))
+            .color(0xFF0000)
+            .timestamp(self.ctx.created_at())
+            .to_owned();
+        embeds.push(default_embed);
+        let chunk_player = chunk::<String>(&players, 50);
+        chunk_player.iter().for_each(|chunk| {
+            embeds.push(CreateEmbed::default().description(chunk.join(", ")).to_owned());
+        });
+        let msg = self
+            .channel
+            .send_message(self.ctx.http(), |s| {
+                s.add_embeds(embeds)
             })
             .await?;
         Ok(msg)

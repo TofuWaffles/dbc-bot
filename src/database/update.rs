@@ -62,6 +62,7 @@ pub fn update_match_id(mut player: Document) -> Document {
     let old_match_id = player.get_i32("match_id").unwrap();
     let new_match_id = (old_match_id + 1) / 2;
     player.insert("match_id", new_match_id);
+    player.insert("ready", false);
     println!("Match id is updated!");
     player
 }
@@ -161,5 +162,23 @@ pub async fn resetting_tournament_config(
     config
         .insert_one(backup.unwrap_or(reset_config()), None)
         .await?;
+    Ok(())
+}
+
+pub async fn set_ready(
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
+    discord_id: &str,
+) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round_coll = database.collection::<Document>(round);
+    round_coll
+        .update_one(
+            doc! {"discord_id": discord_id},
+            doc! { "$set": { "ready" : true } },
+            None,
+        )
+        .await?; // Set total rounds, tournament_started to true and registration to false
     Ok(())
 }

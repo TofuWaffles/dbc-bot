@@ -207,3 +207,7 @@ impl Time {
         format!("{}h {}m {}s ago", hours, minutes, seconds)
     }
 }
+
+pub fn chunk<T>(slice: &[T], chunk_size: usize) -> Vec<&[T]> {
+    slice.chunks(chunk_size).collect()
+}

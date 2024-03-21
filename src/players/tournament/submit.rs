@@ -250,15 +250,13 @@ async fn get_result(
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let logs = match api::request("battle_log", caller_tag).await {
-        Ok(APIResult::Successful(battle_log)) => {
-            Some(battle_log["items"].as_array().unwrap().clone())
-        }
-        Ok(APIResult::APIError(_)) => None,
-        Ok(APIResult::NotFound(_)) | Err(_) => None,
+        Ok(APIResult::Successful(battle_log)) => battle_log["items"].as_array().unwrap().clone(),
+        Ok(APIResult::APIError(_)) => return None,
+        Ok(APIResult::NotFound(_)) | Err(_) => return None,
     };
     let mut results: Vec<String> = vec![];
 
-    for log in logs.unwrap().iter().rev() {
+    for log in logs.iter().rev() {
         if !log_check(log, mode, map) {
             continue;
         }

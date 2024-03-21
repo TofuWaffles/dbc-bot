@@ -3,16 +3,19 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config,
 };
 use crate::database::remove::remove_player;
+use crate::database::update::{update_match_id, update_result};
 use crate::discord::log::{Log, LogType};
-use crate::discord::prompt::prompt;
+use crate::discord::prompt::{self, prompt};
 use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
 use mongodb::bson::Document;
+use mongodb::{Collection, Cursor};
 use poise::serenity_prelude::UserId;
 use poise::ReplyHandle;
 use std::sync::Arc;
+use std::vec;
 use tracing::error;
 const TIMEOUT: u64 = 120;
 #[derive(Debug, poise::Modal)]
@@ -292,5 +295,86 @@ Opponent:
             .await;
         }
     };
+    Ok(())
+}
+
+pub async fn mass_disqualify_wrapper(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    round: &str,
+    false_battles: &mut Cursor<Document>,
+) -> Result<(), Error> {
+    let log = Log::new(ctx, region, LogType::DisqualifyInactives).await?;
+    let mut players = vec![];
+    while let Some(player) = false_battles.next().await {
+        match player {
+            Ok(player) => match player.get_bool("ready") {
+                Ok(false) => {
+                    if disqualify_unready(ctx, region, round, &player).await.is_ok(){
+                        players.push(format!("<@{}>", player.get_str("discord_id").unwrap_or("0")));    
+                    }
+                }
+                _ => {
+                    continue;
+                }
+            },
+            Err(_) => {
+                continue;
+            }
+        }
+    }
+    let m = log.disqualify_inactive_logs(players).await?;
+    return prompt(
+        ctx,
+        msg,
+        "Mass disqualification",
+        format!(
+            "Successfully disqualified all inactive players. Check [log]({link}) for more details.", link=m.link()
+        ),
+        None,
+        Some(0x50C878),
+    ).await;
+}
+
+async fn disqualify_unready(
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
+    player: &Document,
+) -> Result<(), Error> {
+    let match_id = player.get_i32("match_id").unwrap_or(0);
+    let player_tag = player.get_str("tag").unwrap_or("");
+    if let Some(enemy) =
+        find_enemy_by_match_id_and_self_tag(ctx, region, round, &match_id, player_tag).await
+    {
+        if enemy.get_bool("ready").unwrap_or(false) {
+            let database = ctx.data().database.regional_databases.get(region).unwrap();
+            let round_coll = database.collection(round);
+            let next_round: Collection<Document> = database.collection(
+                format!(
+                    "Round {}",
+                    round
+                        .split_whitespace()
+                        .nth(1)
+                        .unwrap()
+                        .parse::<i32>()
+                        .unwrap()
+                        + 1
+                )
+                .as_str(),
+            );
+            next_round
+                .insert_one(update_match_id(enemy.clone()), None)
+                .await?;
+            let defeated_user = UserId(player.get_str("discord_id").unwrap_or("0").parse::<u64>()?)
+                .to_user(ctx.http())
+                .await?;
+            if let Err(e) = remove_role(ctx, &defeated_user, &region).await {
+                error!("{e}");
+            }
+            update_result(&round_coll, &enemy, &player).await?;
+        }
+    }
     Ok(())
 }

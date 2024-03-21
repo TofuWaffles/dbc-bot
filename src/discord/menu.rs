@@ -4,6 +4,7 @@ use crate::host::tournament::index::tournament_mod_panel;
 use crate::host::utilities::index::utilities_mod_panel;
 use crate::players::registration::deregister::deregister_menu;
 use crate::players::registration::register::register_menu;
+use crate::players::tournament::ready;
 use crate::players::tournament::submit::submit_result;
 use crate::players::tournament::view2::{view_managers, view_opponent_wrapper};
 use crate::players::view::view_info;
@@ -131,10 +132,20 @@ pub async fn tournament_menu(
                         .emoji(ReactionType::Unicode("⚔️".to_string()))
                 })
                 .create_button(|b| {
+                    b.custom_id("ready")
+                        .style(ButtonStyle::Success)
+                        .emoji(ReactionType::Unicode("💪".to_string()))
+                })
+                .create_button(|b| {
                     b.custom_id("submit")
                         .disabled(!submit)
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("📥".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("ready")
+                        .style(ButtonStyle::Success)
+                        .emoji(ReactionType::Unicode("💪".to_string()))
                 })
                 .create_button(|b| {
                     b.custom_id("help")
@@ -157,7 +168,9 @@ pub async fn tournament_menu(
                 .description(
                     r#"Below are the available options!
 ⚔️: Find out who your opponent is for the current round!
+💪: Mark your activity!
 📥: Submit your result!
+👤: View Personal Information
 ❓: Help.
 "#,
                 )
@@ -180,22 +193,18 @@ pub async fn tournament_menu(
                 mci.defer(&ctx.http()).await?;
                 return view_managers(ctx).await;
             }
+            "ready" => {
+                mci.defer(&ctx.http()).await?;
+                return ready::ready(ctx, msg, &region, player).await;
+            }
             "submit" => {
                 mci.defer(&ctx.http()).await?;
                 return submit_result(ctx, msg, &region).await;
             }
+
             "view" => {
                 mci.defer(&ctx.http()).await?;
-                return prompt(
-                    ctx,
-                    msg,
-                    "This is still under development!",
-                    "This feature is still under development, please be patient!",
-                    None,
-                    None,
-                )
-                .await;
-                // return stat(ctx, msg, ).await;
+                return view_info(ctx, msg, player).await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;
