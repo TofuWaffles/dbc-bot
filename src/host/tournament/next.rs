@@ -1,6 +1,7 @@
 use crate::database::config::get_config;
 use crate::database::find::{find_all_false_battles, find_round_from_config};
 use crate::database::update::update_round_config;
+use crate::discord::checks::is_mod;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
@@ -122,6 +123,7 @@ pub async fn paginate(
     region: &Region,
     false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
+    let moderator = is_mod(*ctx).await?;
     let pages = display_false_battles( false_battles).await;
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
@@ -153,6 +155,7 @@ pub async fn paginate(
                         b.custom_id(&disqualify_all_id)
                             .label("Disqualify All")
                             .emoji('❌')
+                            .disabled(!moderator)
                     })
             })
         })

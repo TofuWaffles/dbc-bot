@@ -132,11 +132,6 @@ pub async fn tournament_menu(
                         .emoji(ReactionType::Unicode("⚔️".to_string()))
                 })
                 .create_button(|b| {
-                    b.custom_id("ready")
-                        .style(ButtonStyle::Success)
-                        .emoji(ReactionType::Unicode("💪".to_string()))
-                })
-                .create_button(|b| {
                     b.custom_id("submit")
                         .disabled(!submit)
                         .style(ButtonStyle::Success)
