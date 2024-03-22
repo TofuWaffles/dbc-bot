@@ -154,7 +154,7 @@ pub async fn paginate(
                         b.custom_id(&disqualify_all_id)
                             .label("Disqualify All")
                             .emoji('❌')
-                            .disabled(false)
+                            .disabled(!moderator)
                     })
             })
         })

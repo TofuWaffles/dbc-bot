@@ -143,11 +143,18 @@ pub async fn tournament_menu(
                         .emoji(ReactionType::Unicode("💪".to_string()))
                 })
                 .create_button(|b| {
+                    b.custom_id("personal")
+                        .disabled(!help)
+                        .style(ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("👤".to_string()))
+                })
+                .create_button(|b| {
                     b.custom_id("help")
                         .disabled(!help)
                         .style(ButtonStyle::Secondary)
                         .emoji(ReactionType::Unicode("❓".to_string()))
                 })
+                
             })
             // .create_action_row(|r| {
             //     r.create_button(|b| {
@@ -197,7 +204,7 @@ pub async fn tournament_menu(
                 return submit_result(ctx, msg, &region).await;
             }
 
-            "view" => {
+            "personal" => {
                 mci.defer(&ctx.http()).await?;
                 return view_info(ctx, msg, player).await;
             }
