@@ -328,7 +328,7 @@ pub async fn mass_disqualify_wrapper(
         .regional_databases
         .get(region)
         .unwrap()
-        .collection(&round);
+        .collection(round);
     let mut battles_handle = collection
         .find(doc! {"battle": false, "ready": false}, None)
         .await?;

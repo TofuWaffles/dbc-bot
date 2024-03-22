@@ -29,7 +29,7 @@ impl Count {
         count.player_counts = count.get_player_counts().await?;
         count.round_i32 = count
             .round_name
-            .split(" ")
+            .split(' ')
             .nth(1)
             .unwrap_or("0")
             .parse::<i32>()?;

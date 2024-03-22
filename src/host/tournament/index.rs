@@ -8,7 +8,7 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
-use tracing::info;
+
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;

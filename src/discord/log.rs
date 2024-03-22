@@ -1,7 +1,7 @@
 use crate::{database::config::get_config, host::tournament::disqualify::Form, Context, Error};
 use dbc_bot::{chunk, Region};
 use poise::serenity_prelude::{
-    ChannelId, CreateEmbed, Embed, EmbedImage, GuildChannel, Message, MessageId, User,
+    ChannelId, CreateEmbed, Embed, GuildChannel, Message, MessageId, User,
 };
 
 #[derive(Debug)]
