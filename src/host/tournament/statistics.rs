@@ -25,6 +25,7 @@ pub async fn statistics_information(
     let byes = count.get_counts_of_byes_in_current_round().await?;
     let win = count.get_counts_of_advanced().await?;
     let lose = count.get_counts_of_eliminated().await?;
+    let happen = count.get_counts_of_matches_happened().await?;
     let unhappen = count.get_counts_of_matches_unhappened().await?;
     let inactive = count.get_counts_of_inactive().await?;
     prompt(
@@ -42,6 +43,7 @@ pub async fn statistics_information(
 **👋 Byes:**: {byes} (Note: disqualifed player will be replaced by bye)
 **🏆 Advanced to next round**: {win}
 **❌ Eliminated**: {lose}
+**🚩 Matches taken place**: {happen}
 **🏁 Matches not yet happened**: {unhappen}
 **💀 Inactive players**: {inactive}
 "#,

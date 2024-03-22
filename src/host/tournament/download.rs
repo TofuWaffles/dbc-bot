@@ -2,6 +2,7 @@ use crate::discord::prompt::prompt;
 use crate::{database::find::find_all_false_battles, Context, Error};
 use dbc_bot::{chunk, Region};
 use futures::StreamExt;
+use std::fmt::Write;
 use poise::serenity_prelude::AttachmentType;
 use poise::ReplyHandle;
 use tokio::fs::OpenOptions;
@@ -174,9 +175,11 @@ pub async fn compact(
             }
         }
         let content = pages[index]
-            .iter()
-            .map(|id| format!("<@{id}>\n"))
-            .collect::<String>();
+        .iter()
+        .fold(String::new(), |mut acc, id| {
+            write!(acc, "<@{id}>\n").unwrap();
+            acc
+        });
         press
             .create_interaction_response(ctx, |b| {
                 b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
