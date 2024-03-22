@@ -136,11 +136,6 @@ pub async fn submit_result(
         Some(players) => {
             let (winner, defeated) = players;
             if round < config.get("total").unwrap().as_i32().unwrap() {
-                let next_round: Collection<Document> =
-                    database.collection(format!("Round {}", round + 1).as_str());
-                next_round
-                    .insert_one(update_match_id(winner.clone()), None)
-                    .await?;
                 update_result(ctx, &region, &round_name, &winner, &defeated).await?;
                 let defeated_user = UserId(
                     defeated

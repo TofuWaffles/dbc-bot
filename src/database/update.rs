@@ -77,7 +77,7 @@ pub async fn update_result(
     let round_coll: Collection<Document> = database.collection(round);
     let filter = |player: &Document| {
         doc! {
-            "discord_id": player.get("discord_id").unwrap_or(&Bson::Null)
+            "_id": player.get_object_id("_id").unwrap()
         }
     };
 
@@ -92,9 +92,12 @@ pub async fn update_result(
 
     let next_coll = format! {"Round {}",round.split(" ").nth(1).unwrap().parse::<i32>()?+1};
     let next_round: Collection<Document> = database.collection(&next_coll);
-    next_round
+    if winner.get_str("discord_id").is_ok(){
+        next_round
         .insert_one(update_match_id(winner.clone()), None)
         .await?;
+    }
+    
 
     round_coll
         .update_one(filter(winner), update(false), None)
