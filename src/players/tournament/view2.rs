@@ -131,17 +131,17 @@ r#"# Round {round} - Match {match_id}
 **🗣️ Before you start:**
 Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
 **⚙️ During the battle:**
-- Set up a friendly mode.
-- Mode: {}.
-- Map: {}.
-- Turn off all bots.
+- 🧑‍🤝‍🧑 Set up a friendly room.
+## ⚔️ Mode: {}.
+- 🗺️ Map: {}.
+## 🤖 Turn OFF all bots.
 **🗒️ After the battle:**
 - Wait for 30s. 
 - Run this bot again to submit the result.
 **⚠️ Note:**
-- Only the EARLIEST determinable number of matches with the opponent is considered once you submit your results.
+- Only the MOST RECENT determinable number of matches with the opponent is considered once you submit your results.
 - Due to limitations, only up to 25 battles are viewable, so please submit the result as soon as possible!
-# Good luck!"#, 
+# Remember this is FIRST TO 2 WINS tournament!"#, 
                         caller.get_str("discord_id").unwrap(),
                         enemy.get_str("discord_id").unwrap(),
                         config.get_str("mode").unwrap(),

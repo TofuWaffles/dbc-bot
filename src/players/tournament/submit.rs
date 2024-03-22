@@ -227,7 +227,13 @@ pub async fn submit_result(
                 ctx,
                 msg,
                 "There are not enough results yet!",
-                "As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!",
+                format!(r#"As the result is recorded nearly in real-time, please try again later.
+It may take up to 30 seconds for a new battle to appear in the battle log!
+In the meantime, please make sure that all of the recent battles satisfy these conditions: 
+- ⚔️ Mode: {mode}
+- 🗺️ Map: {map}
+- 🧑‍🤝‍🧑 Friendly room
+- 🤖 Turn OFF all bots"#, mode=config.get_str("mode").unwrap_or("Any"), map=config.get_str("map").unwrap_or("Any")),
                 None,
                 Some(0xFFFF00),
             ).await?;
@@ -251,7 +257,7 @@ async fn get_result(
     };
     let mut results: Vec<String> = vec![];
 
-    for log in logs.iter().rev() {
+    for log in logs.iter() {
         if !log_check(log, mode, map) {
             continue;
         }
