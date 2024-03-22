@@ -123,7 +123,7 @@ pub async fn submit_result(
             })
             .await?;
 
-        update_result(&current_round, &caller, &enemy).await?;
+        update_result(ctx, &region, &round_name, &caller, &enemy).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
@@ -141,7 +141,7 @@ pub async fn submit_result(
                 next_round
                     .insert_one(update_match_id(winner.clone()), None)
                     .await?;
-                update_result(&current_round, &winner, &defeated).await?;
+                update_result(ctx, &region, &round_name, &winner, &defeated).await?;
                 let defeated_user = UserId(
                     defeated
                         .get_str("discord_id")
@@ -194,7 +194,7 @@ pub async fn submit_result(
                     })
                     .await?;
             } else {
-                update_result(&current_round, &winner, &defeated).await?;
+                update_result(ctx, &region, &round_name, &winner, &defeated).await?;
                 // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {

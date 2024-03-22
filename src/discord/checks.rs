@@ -32,7 +32,6 @@ pub async fn is_host(ctx: Context<'_>) -> Result<bool, Error> {
                 }
             }
             Ok(false) => {
-                info!("{} doesn't have the role {}", ctx.author().name, role.name);
                 continue;
             }
             Err(e) => {

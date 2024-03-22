@@ -6,4 +6,5 @@ pub mod mannequin;
 pub mod open;
 pub mod remove;
 pub mod stat;
+pub mod statistics;
 pub mod update;

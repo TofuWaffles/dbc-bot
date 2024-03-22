@@ -36,7 +36,6 @@ pub async fn display_next_round(
         })
         .await?;
     } else {
-        
         error!("Some matches are not finished! Cannot continue to next round!");
         return paginate(ctx, msg, region, &mut false_battles).await;
     }
@@ -124,7 +123,7 @@ pub async fn paginate(
     false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
     let moderator = is_mod(*ctx).await?;
-    let pages = display_false_battles( false_battles).await;
+    let pages = display_false_battles(false_battles).await;
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
     let prev_button_id = format!("{}prev", ctx_id);
@@ -155,7 +154,7 @@ pub async fn paginate(
                         b.custom_id(&disqualify_all_id)
                             .label("Disqualify All")
                             .emoji('❌')
-                            .disabled(!moderator)
+                            .disabled(false)
                     })
             })
         })
@@ -188,7 +187,8 @@ pub async fn paginate(
         } else if press.data.custom_id == disqualify_all_id {
             press.defer(ctx.http()).await?;
             let round = find_round_from_config(&get_config(ctx, region).await);
-            return disqualify::mass_disqualify_wrapper(ctx, msg, region,&round,false_battles).await;
+            return disqualify::mass_disqualify_wrapper(ctx, msg, region, &round, false_battles)
+                .await;
         } else {
             // This is an unrelated button interaction
             continue;

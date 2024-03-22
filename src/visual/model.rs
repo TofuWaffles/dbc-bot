@@ -190,7 +190,6 @@ impl Text {
         }
     }
     fn generate_text_img(&self) -> Result<DynamicImage, Error> {
-        info!("Generating text image on the string: {}", self.text);
         let (stroke, stroke_color) = self
             .outline
             .as_ref()

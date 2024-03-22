@@ -1,22 +1,24 @@
+use crate::database::battle::force_lose;
 use crate::database::config::get_config;
 use crate::database::find::{
-    find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config,
+    find_enemy_by_match_id_and_self_tag, find_enemy_of_mannequin, find_player_by_discord_id,
+    find_round_from_config,
 };
 use crate::database::remove::remove_player;
-use crate::database::update::{set_ready, update_match_id, update_result};
+use crate::database::update::{set_ready, update_result};
 use crate::discord::log::{Log, LogType};
-use crate::discord::prompt::{prompt};
+use crate::discord::prompt::prompt;
 use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
-use mongodb::bson::Document;
+use mongodb::bson::{doc, Document};
 use mongodb::{Collection, Cursor};
 use poise::serenity_prelude::UserId;
 use poise::ReplyHandle;
 use std::sync::Arc;
 use std::vec;
-use tracing::error;
+use tracing::{error, info};
 const TIMEOUT: u64 = 120;
 #[derive(Debug, poise::Modal)]
 #[name = "Disqualify Modal"]
@@ -28,12 +30,17 @@ struct DisqualifyModal {
     #[name = "Reason"]
     #[placeholder = "Custom reason or leave blank for default reason"]
     reason: String,
+
+    #[name = "Proof (URLs - separated by space)"]
+    #[placeholder = "Images as links. If the attachments are screenshot, leave blank and use /log-update after."]
+    proof: String,
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct Form {
     pub user_id: String,
     pub reason: String,
+    pub proof: String,
 }
 
 pub async fn disqualify_players(
@@ -130,7 +137,10 @@ async fn disqualify_id(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), E
     msg.edit(*ctx, |b|{
         b.embed(|e|{
             e.title("🔨 Disqualify Players - Step 1: Enter the user ID")
-            .description("Please enter the user ID of the player you want to disqualify. See [this guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for more information.")
+            .description(r#"Please enter the user ID of the player you want to disqualify.
+See [this guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for more information.
+If you have URLs of the evidence image, you can paste it in Proof field.
+"#)
         })
         .components(|c|{
             c.create_action_row(|a|{
@@ -208,6 +218,7 @@ async fn create_disqualify_modal(
                 return Ok(Form {
                     user_id: data.user_id,
                     reason: data.reason,
+                    proof: data.proof,
                 });
             }
             None => continue,
@@ -235,12 +246,8 @@ async fn post_confirm(
                 player.get_str("tag").unwrap_or(""),
             )
             .await;
-            prompt(
-                ctx,
-                msg,
-                "Successfully remove player!",
-                format!(
-                    r#"The log has been recorded at [here]({link}).
+            let info = format!(
+                r#"The log has been recorded at [here]({link}).
 Please remind this player's opponent!
 Round: {round}
 Match: {match_id}   
@@ -250,38 +257,47 @@ Opponent:
 - Discord name: {enemy_discord}
 - Discord id: {enemy_discord_id}             
 "#,
-                    link = log_msg.link(),
-                    match_id = player.get_i32("match_id").unwrap_or(0),
-                    round = round,
-                    enemy_name = enemy
-                        .as_ref()
-                        .map_or_else(|| "Not found", |e| e.get_str("name").unwrap_or("")),
-                    enemy_tag = enemy
-                        .as_ref()
-                        .map_or_else(|| "Not found", |e| e.get_str("tag").unwrap_or("")),
-                    enemy_discord = enemy
-                        .as_ref()
-                        .map_or_else(|| "Not found", |e| e.get_str("discord_name").unwrap_or("")),
-                    enemy_discord_id = enemy.as_ref().map_or_else(
-                        || "Not found",
-                        |e| e.get_str("discord_id").unwrap_or("Not found")
-                    )
-                ),
+                link = log_msg.link(),
+                match_id = player.get_i32("match_id").unwrap_or(0),
+                round = round,
+                enemy_name = enemy
+                    .as_ref()
+                    .map_or_else(|| "Not found", |e| e.get_str("name").unwrap_or("")),
+                enemy_tag = enemy
+                    .as_ref()
+                    .map_or_else(|| "Not found", |e| e.get_str("tag").unwrap_or("")),
+                enemy_discord = enemy
+                    .as_ref()
+                    .map_or_else(|| "Not found", |e| e.get_str("discord_name").unwrap_or("")),
+                enemy_discord_id = enemy.as_ref().map_or_else(
+                    || "Not found",
+                    |e| e.get_str("discord_id").unwrap_or("Not found")
+                )
+            );
+            let user = UserId(form.user_id.parse::<u64>().unwrap())
+                .to_user(ctx.http())
+                .await?;
+            let more_info = if remove_role(ctx, &user, region).await.is_err() {
+                "⚠️ The user is removed from the tournament, but it is unable to remove the role from this player! The player may not be present in the server."
+            } else {
+                "<:tick:1187839626338111600> Removed the player successfully!"
+            };
+            prompt(
+                ctx,
+                msg,
+                "Successfully remove player!",
+                format!("{}\n{}", info, more_info),
                 None,
                 Some(0x50C878),
             )
             .await?;
-            set_ready(ctx, region, round, enemy.unwrap().get_str("discord_id").unwrap_or("0")).await?;
-            let user = UserId(form.user_id.parse::<u64>().unwrap())
-                .to_user(ctx.http())
-                .await?;
-            match remove_role(ctx, &user, region).await {
-                Ok(_) => {}
-                Err(e) => {
-                    error!("{e}");
-                    return prompt(ctx, msg, "Failed to remove the role", "The user is removed from the tournament, but it is unable to remove the role from this player!", None, Some(0xFF0000)).await;
-                }
-            }
+            set_ready(
+                ctx,
+                region,
+                round,
+                enemy.unwrap().get_str("discord_id").unwrap_or("0"),
+            )
+            .await?;
         }
         Err(e) => {
             error!("{e}");
@@ -304,26 +320,99 @@ pub async fn mass_disqualify_wrapper(
     msg: &ReplyHandle<'_>,
     region: &Region,
     round: &str,
-    false_battles: &mut Cursor<Document>,
+    _false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
+    let collection: Collection<Document> = ctx
+        .data()
+        .database
+        .regional_databases
+        .get(region)
+        .unwrap()
+        .collection(&round);
+    let mut battles_handle = collection
+        .find(doc! {"battle": false, "ready": false}, None)
+        .await?;
+    let counts = collection
+        .count_documents(doc! {"battle": false, "ready": false}, None)
+        .await? as usize;
+    info!("Counts: {}", counts);
+    prompt(
+        ctx,
+        msg,
+        "Mass disqualification",
+        format!(
+            r#"There are {} players that are determined to be inactive.
+<a:loading:1187839622680690689>  Disqualifying inactive players...
+            "#,
+            counts
+        ),
+        None,
+        Some(0x50C878),
+    )
+    .await?;
     let log = Log::new(ctx, region, LogType::DisqualifyInactives).await?;
     let mut players = vec![];
-    while let Some(player) = false_battles.next().await {
+    let perc = counts / 10;
+    let mut index = 0;
+    while let Some(player) = battles_handle.next().await {
         match player {
-            Ok(player) => match player.get_bool("ready") {
-                Ok(false) => {
-                    if disqualify_unready(ctx, region, round, &player).await.is_ok(){
-                        players.push(format!("<@{}>", player.get_str("discord_id").unwrap_or("0")));    
+            Ok(player) => match player.get_str("discord_id") {
+                Ok(id) => {
+                    match player.get_bool("ready") {
+                        Ok(false) => {
+                            if force_lose(ctx, region, &player).await.is_ok() {
+                                players.push(format!("<@{id}>"));
+                            }
+                        }
+
+                        _ => {
+                            continue; //Manually handled
+                        }
                     }
                 }
-                _ => {
-                    continue;
+                Err(_) => {
+                    // Mannequins
+                    let match_id = player.get_i32("match_id")?;
+                    if let Some(opponent) =
+                        find_enemy_of_mannequin(ctx, region, round, &match_id).await
+                    {
+                        match update_result(ctx, region, round, &opponent, &player).await {
+                            Err(e) => {
+                                error!("{e}");
+                            }
+                            Ok(_) => {}
+                        };
+                    }
                 }
             },
             Err(_) => {
                 continue;
             }
         }
+        if index % perc == 0 {
+            let progress = index / perc;
+            prompt(
+                ctx,
+                msg,
+                "Mass disqualification",
+                format!(
+                    r#"Disqualifying inactive players...
+<a:loading:1187839622680690689> {}% completed...
+Progress bar: {} 
+                    "#,
+                    progress * 10,
+                    format!(
+                        "{done}{yet}",
+                        done = "█".repeat(progress),
+                        yet = "░".repeat(10 - progress)
+                    ),
+                ),
+                None,
+                Some(0x50C878),
+            )
+            .await?;
+        }
+        index += 1;
     }
     let m = log.disqualify_inactive_logs(players).await?;
     prompt(
@@ -331,51 +420,11 @@ pub async fn mass_disqualify_wrapper(
         msg,
         "Mass disqualification",
         format!(
-            "Successfully disqualified all inactive players. Check [log]({link}) for more details.", link=m.link()
+            "<:tick:1187839626338111600> Successfully disqualified all inactive players. Check [log]({link}) for more details.",
+            link = m.link()
         ),
         None,
         Some(0x50C878),
-    ).await
-}
-
-async fn disqualify_unready(
-    ctx: &Context<'_>,
-    region: &Region,
-    round: &str,
-    player: &Document,
-) -> Result<(), Error> {
-    let match_id = player.get_i32("match_id").unwrap_or(0);
-    let player_tag = player.get_str("tag").unwrap_or("");
-    if let Some(enemy) =
-        find_enemy_by_match_id_and_self_tag(ctx, region, round, &match_id, player_tag).await
-    {
-        if enemy.get_bool("ready").unwrap_or(false) {
-            let database = ctx.data().database.regional_databases.get(region).unwrap();
-            let round_coll = database.collection(round);
-            let next_round: Collection<Document> = database.collection(
-                format!(
-                    "Round {}",
-                    round
-                        .split_whitespace()
-                        .nth(1)
-                        .unwrap()
-                        .parse::<i32>()
-                        .unwrap()
-                        + 1
-                )
-                .as_str(),
-            );
-            next_round
-                .insert_one(update_match_id(enemy.clone()), None)
-                .await?;
-            let defeated_user = UserId(player.get_str("discord_id").unwrap_or("0").parse::<u64>()?)
-                .to_user(ctx.http())
-                .await?;
-            if let Err(e) = remove_role(ctx, &defeated_user, region).await {
-                error!("{e}");
-            }
-            update_result(&round_coll, &enemy, player).await?;
-        }
-    }
-    Ok(())
+    )
+    .await
 }

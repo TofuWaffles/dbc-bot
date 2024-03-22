@@ -14,7 +14,10 @@ pub async fn get_individual_player_data(
     ctx: Context<'_>,
     user: serenity::User,
 ) -> Result<(), Error> {
-    info!("Getting participant data");
+    info!(
+        "RUNNING context-menu 'Player information' on {}({})",
+        user.name, user.id.0
+    );
     ctx.defer_ephemeral().await?;
     let msg = ctx
         .send(|s| s.content("Getting player info...").reply(true))

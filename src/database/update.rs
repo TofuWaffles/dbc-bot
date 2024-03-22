@@ -63,15 +63,18 @@ pub fn update_match_id(mut player: Document) -> Document {
     let new_match_id = (old_match_id + 1) / 2;
     player.insert("match_id", new_match_id);
     player.insert("ready", false);
-    println!("Match id is updated!");
     player
 }
 
 pub async fn update_result(
-    round_coll: &Collection<Document>,
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
     winner: &Document,
     loser: &Document,
 ) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round_coll: Collection<Document> = database.collection(round);
     let filter = |player: &Document| {
         doc! {
             "discord_id": player.get("discord_id").unwrap_or(&Bson::Null)
@@ -87,9 +90,16 @@ pub async fn update_result(
         }
     };
 
+    let next_coll = format! {"Round {}",round.split(" ").nth(1).unwrap().parse::<i32>()?+1};
+    let next_round: Collection<Document> = database.collection(&next_coll);
+    next_round
+        .insert_one(update_match_id(winner.clone()), None)
+        .await?;
+
     round_coll
         .update_one(filter(winner), update(false), None)
         .await?;
+
     round_coll
         .update_one(filter(loser), update(true), None)
         .await?;

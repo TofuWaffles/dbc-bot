@@ -1,9 +1,5 @@
 use crate::{
-    database::{
-        config::get_config,
-        find::{find_round_from_config},
-        update::set_ready,
-    },
+    database::{config::get_config, find::find_round_from_config, update::set_ready},
     discord::prompt::prompt,
     Context, Error,
 };
