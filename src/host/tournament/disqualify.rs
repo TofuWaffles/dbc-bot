@@ -33,7 +33,7 @@ struct DisqualifyModal {
 
     #[name = "Proof (URLs - separated by space)"]
     #[placeholder = "Images as links. If the attachments are screenshot, leave blank and use /log-update after."]
-    proof: String,
+    proof: Option<String>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -218,7 +218,7 @@ async fn create_disqualify_modal(
                 return Ok(Form {
                     user_id: data.user_id,
                     reason: data.reason,
-                    proof: data.proof,
+                    proof: data.proof.unwrap_or("".to_string()),
                 });
             }
             None => continue,
