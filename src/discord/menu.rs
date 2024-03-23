@@ -116,6 +116,7 @@ pub async fn tournament_menu(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     schedule: bool,
+    ready: bool,
     _managers: bool,
     submit: bool,
     help: bool,
@@ -139,6 +140,7 @@ pub async fn tournament_menu(
                 })
                 .create_button(|b| {
                     b.custom_id("ready")
+                        .disabled(!ready)
                         .style(ButtonStyle::Success)
                         .emoji(ReactionType::Unicode("💪".to_string()))
                 })
@@ -154,7 +156,6 @@ pub async fn tournament_menu(
                         .style(ButtonStyle::Secondary)
                         .emoji(ReactionType::Unicode("❓".to_string()))
                 })
-                
             })
             // .create_action_row(|r| {
             //     r.create_button(|b| {
@@ -203,7 +204,6 @@ pub async fn tournament_menu(
                 mci.defer(&ctx.http()).await?;
                 return submit_result(ctx, msg, &region).await;
             }
-
             "personal" => {
                 mci.defer(&ctx.http()).await?;
                 return view_info(ctx, msg, player).await;

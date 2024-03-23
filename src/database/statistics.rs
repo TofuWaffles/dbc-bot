@@ -56,13 +56,18 @@ impl Count {
     }
 
     pub fn get_counts_of_matches_in_current_round(&self) -> u64 {
-        (1 << (self.player_counts.checked_ilog2().unwrap_or(0)+1))/ (1 << self.round_i32)
+        (1 << (self.player_counts.checked_ilog2().unwrap_or(0) + 1)) / (1 << self.round_i32)
     }
 
     pub async fn get_counts_of_players_in_current_round(&self) -> Result<u64, Error> {
         let filter = doc! {"discord_id": {"$ne": Bson::Null}};
         let count = self.round.count_documents(filter, None).await?;
         Ok(count)
+    }
+
+    pub async fn get_counts_of_players_in_next_round(&self) -> Result<u64, Error>{
+        let current = self.get_counts_of_players_in_current_round().await?;
+        Ok(current/2)
     }
 
     // pub async fn get_counts_of_next_round(&self) -> Result<u64, Error>{
@@ -82,6 +87,10 @@ impl Count {
         let filter = doc! {"battle": false};
         let count = self.round.count_documents(filter, None).await?;
         Ok(count / 2)
+    }
+
+    pub async fn get_counts_of_matches_next_round(&self) -> Result<u64, Error> {
+        Ok(self.get_counts_of_matches_in_current_round() / 2)
     }
 
     pub async fn get_counts_of_byes_in_current_round(&self) -> Result<u64, Error> {

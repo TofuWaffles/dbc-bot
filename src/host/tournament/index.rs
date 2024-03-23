@@ -9,7 +9,6 @@ use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
 
-
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
 use super::reset::reset_wrapper as reset;

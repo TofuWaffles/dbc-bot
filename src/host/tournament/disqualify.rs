@@ -41,7 +41,7 @@ struct DisqualifyModal {
 pub struct Form {
     pub user_id: String,
     pub reason: String,
-    pub proof: String,
+    pub proof: Option<String>,
 }
 
 pub async fn disqualify_players(
@@ -219,7 +219,7 @@ async fn create_disqualify_modal(
                 return Ok(Form {
                     user_id: data.user_id,
                     reason: data.reason,
-                    proof: data.proof.unwrap_or("".to_string()),
+                    proof: data.proof,
                 });
             }
             None => continue,
@@ -353,7 +353,7 @@ pub async fn mass_disqualify_wrapper(
     .await?;
     let log = Log::new(ctx, region, LogType::DisqualifyInactives).await?;
     let mut players = HashSet::new();
-    
+
     let perc = counts / 10;
     let mut index = 0;
     while let Some(player) = battles_handle.next().await {
@@ -419,7 +419,9 @@ Progress bar: {}
         }
         index += 1;
     }
-    let m = log.disqualify_inactive_logs(players.into_iter().collect()).await?;
+    let m = log
+        .disqualify_inactive_logs(players.into_iter().collect())
+        .await?;
     prompt(
         ctx,
         msg,

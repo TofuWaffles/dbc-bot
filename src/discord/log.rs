@@ -58,7 +58,10 @@ impl<'a> Log<'a> {
         if form.reason.is_empty() {
             form.reason = Self::DEFAULT_DISQUALIFY.to_string();
         }
-        let imgs = form.proof.split("").collect::<Vec<_>>();
+        let imgs: Vec<String> = match &form.proof {
+            Some(imgs) => imgs.split(",").map(String::from).to_owned().collect(),
+            None => Vec::new(),
+        };
         let msg = self
             .channel
             .send_message(self.ctx.http(), |s| {
@@ -75,20 +78,20 @@ impl<'a> Log<'a> {
                             reason = form.reason,
                             host_id = self.host.id.0
                         ))
-                        .image(imgs[0])
+                        // .image(imgs[0].clone())
                         .color(0xFF0000)
                 })
             })
             .await?;
-        if imgs.len() > 1 {
-            Self::update_proof(
-                &self.ctx,
-                self.channel.id,
-                msg.id,
-                imgs[1..].iter().map(|&s| s.to_string()).collect(),
-            )
-            .await?;
-        }
+        // if imgs.len() > 1 {
+        //     Self::update_proof(
+        //         &self.ctx,
+        //         self.channel.id,
+        //         msg.id,
+        //         imgs[1..].iter().map(|s| s.to_string()).collect(),
+        //     )
+        //     .await?;
+        // }
         Ok(msg)
     }
 

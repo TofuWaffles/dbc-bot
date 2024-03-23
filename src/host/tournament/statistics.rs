@@ -28,6 +28,12 @@ pub async fn statistics_information(
     let happen = count.get_counts_of_matches_happened().await?;
     let unhappen = count.get_counts_of_matches_unhappened().await?;
     let inactive = count.get_counts_of_inactive().await?;
+    let next = count.get_counts_of_players_in_next_round().await?;
+    let perc_win  = 100*win.checked_div(next).unwrap_or(0);
+    let perc_happen = 100*happen.checked_div(matches).unwrap_or(0);
+    let perc_unhappen = 100*unhappen.checked_div(matches).unwrap_or(0);
+    let perc_in = 100*inactive.checked_div(player_current).unwrap_or(0);
+
     prompt(
         ctx,
         msg,
@@ -41,11 +47,11 @@ pub async fn statistics_information(
 **⚔️ Matches**: {matches}
 **👥 Players:**: {player_current}
 **👋 Byes:**: {byes} (Note: disqualifed player will be replaced by bye)
-**🏆 Advanced to next round**: {win}
-**❌ Eliminated**: {lose}
-**🚩 Matches taken place**: {happen}
-**🏁 Matches not yet happened**: {unhappen}
-**💀 Inactive players**: {inactive}
+**🏆 Advanced to next round**: {win} `{perc_win}`
+**❌ Eliminated**: {lose} 
+**🚩 Matches taken place**: {happen} `{perc_happen}`%
+**🏁 Matches not yet happened**: {unhappen} `{perc_unhappen}`%
+**💀 Inactive players**: {inactive} `{perc_in}`%
 "#,
             r = region.full()
         ),

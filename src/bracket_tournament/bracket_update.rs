@@ -5,6 +5,7 @@ use base64::{engine::general_purpose, Engine as _};
 use dbc_bot::{CustomError, QuoteStripper, Region};
 use futures::TryStreamExt;
 use mongodb::bson::doc;
+use std::borrow::BorrowMut;
 use std::env;
 use std::process::Command;
 use std::{io::Read, process::Stdio};
@@ -127,7 +128,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         }).collect::<Vec<String>>().join(",")
     };
     info!("Generating bracket.");
-    let output = Command::new("python3")
+    let mut output = Command::new("python3")
         .arg("scripts/bracket_generation.py")
         .arg(current_region.to_string())
         .arg(config.get("total").unwrap().to_string())
@@ -135,7 +136,8 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         .stdout(Stdio::piped())
         .current_dir(current_dir)
         .spawn()?;
-
+    
+    let pid = output.id();
     let mut stdout = output
         .stdout
         .ok_or_else(|| Error::from("Failed to capture Python script output"))?;
@@ -144,6 +146,12 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     if buffer.len() < 100 {
         return Err("Failed to capture Python script output".into());
     }
+    
+    Command::new("kill")
+        .arg("-9")
+        .arg(format!("{}", pid))
+        .spawn()?
+        .kill()?;
 
     let image_bytes = match general_purpose::STANDARD.decode(buffer.trim_end()) {
         Ok(bytes) => bytes,
