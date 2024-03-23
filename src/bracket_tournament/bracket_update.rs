@@ -7,7 +7,7 @@ use futures::TryStreamExt;
 use mongodb::bson::doc;
 use std::env;
 use std::process::Command;
-use std::{io::Read, process::Stdio};
+use std::process::Stdio;
 use tracing::{error, info};
 
 pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
