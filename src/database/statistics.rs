@@ -56,7 +56,7 @@ impl Count {
     }
 
     pub fn get_counts_of_matches_in_current_round(&self) -> u64 {
-        (1 << (self.player_counts as f64).log2().ceil() as u64)/ (1 << self.round_i32)
+        (1 << (self.player_counts.checked_ilog2().unwrap_or(0)+1))/ (1 << self.round_i32)
     }
 
     pub async fn get_counts_of_players_in_current_round(&self) -> Result<u64, Error> {

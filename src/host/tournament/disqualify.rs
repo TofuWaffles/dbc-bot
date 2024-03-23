@@ -16,6 +16,7 @@ use mongodb::bson::{doc, Document};
 use mongodb::{Collection, Cursor};
 use poise::serenity_prelude::UserId;
 use poise::ReplyHandle;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 use tracing::{error, info};
@@ -351,17 +352,21 @@ pub async fn mass_disqualify_wrapper(
     )
     .await?;
     let log = Log::new(ctx, region, LogType::DisqualifyInactives).await?;
-    let mut players = vec![];
+    let mut players = HashSet::new();
+    
     let perc = counts / 10;
     let mut index = 0;
     while let Some(player) = battles_handle.next().await {
         match player {
             Ok(player) => match player.get_str("discord_id") {
                 Ok(id) => {
+                    if players.contains(&format!("<@{id}>")) {
+                        continue;
+                    }
                     match player.get_bool("ready") {
                         Ok(false) => {
                             if force_lose(ctx, region, &player).await.is_ok() {
-                                players.push(format!("<@{id}>"));
+                                players.insert(format!("<@{id}>"));
                             }
                         }
 
@@ -414,7 +419,7 @@ Progress bar: {}
         }
         index += 1;
     }
-    let m = log.disqualify_inactive_logs(players).await?;
+    let m = log.disqualify_inactive_logs(players.into_iter().collect()).await?;
     prompt(
         ctx,
         msg,
