@@ -65,9 +65,9 @@ impl Count {
         Ok(count)
     }
 
-    pub async fn get_counts_of_players_in_next_round(&self) -> Result<u64, Error>{
+    pub async fn get_counts_of_players_in_next_round(&self) -> Result<u64, Error> {
         let current = self.get_counts_of_players_in_current_round().await?;
-        Ok(current/2)
+        Ok(current / 2)
     }
 
     // pub async fn get_counts_of_next_round(&self) -> Result<u64, Error>{

@@ -29,10 +29,10 @@ pub async fn statistics_information(
     let unhappen = count.get_counts_of_matches_unhappened().await?;
     let inactive = count.get_counts_of_inactive().await?;
     let next = count.get_counts_of_players_in_next_round().await?;
-    let perc_win  = 100*win.checked_div(next).unwrap_or(0);
-    let perc_happen = 100*happen.checked_div(matches).unwrap_or(0);
-    let perc_unhappen = 100*unhappen.checked_div(matches).unwrap_or(0);
-    let perc_in = 100*inactive.checked_div(player_current).unwrap_or(0);
+    let perc_win = 100 * win.checked_div(next).unwrap_or(0);
+    let perc_happen = 100 * happen.checked_div(matches).unwrap_or(0);
+    let perc_unhappen = 100 * unhappen.checked_div(matches).unwrap_or(0);
+    let perc_in = 100 * inactive.checked_div(player_current).unwrap_or(0);
 
     prompt(
         ctx,

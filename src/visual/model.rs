@@ -220,13 +220,9 @@ impl Text {
             .current_dir(current_dir)
             .spawn()?;
 
-        let mut stdout = output
-            .stdout
-            .ok_or_else(|| Error::from("Failed to capture Python script output"))?;
-        let mut buffer = String::new();
-        stdout.read_to_string(&mut buffer)?;
+        let stdout = output.wait_with_output()?.stdout;
+        let buffer = std::str::from_utf8(&stdout)?;
         if buffer.len() < 100 {
-            info!("{buffer}");
             return Err("Failed to capture Python script output".into());
         }
         let image_bytes = match general_purpose::STANDARD.decode(buffer.trim_end()) {
