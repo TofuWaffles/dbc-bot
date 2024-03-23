@@ -41,7 +41,8 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
     let region = get_region_from_role(&ctx, roles).await;
     match region {
         Some(region) => {
-            let player = match find_self_by_discord_id(&ctx, "Players".to_string())
+            let round = find_round_from_config(&get_config(&ctx, &region).await);
+            let player = match find_self_by_discord_id(&ctx, round)
                 .await
                 .unwrap()
             {
