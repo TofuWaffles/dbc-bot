@@ -21,7 +21,7 @@ pub async fn ready(
         ctx,
         msg,
         "Ready",
-        "You have been marked as ready for the next round.",
+        "You have been marked as ready to play.\nNote: if your opponent is not ready, you will be qualified for the next round!",
         None,
         Some(0x00FF00),
     )

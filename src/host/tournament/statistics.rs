@@ -47,7 +47,7 @@ pub async fn statistics_information(
 **⚔️ Matches**: {matches}
 **👥 Players:**: {player_current}
 **👋 Byes:**: {byes} (Note: disqualifed player will be replaced by bye)
-**🏆 Advanced to next round**: {win} `{perc_win}`
+**🏆 Advanced to next round**: {win} `{perc_win}%`
 **❌ Eliminated**: {lose} 
 **🚩 Matches taken place**: {happen} `{perc_happen}`%
 **🏁 Matches not yet happened**: {unhappen} `{perc_unhappen}`%

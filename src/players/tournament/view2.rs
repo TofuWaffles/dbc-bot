@@ -4,7 +4,7 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_mannequin,
 };
-use crate::discord::prompt::prompt;
+use crate::discord::prompt::{self, prompt};
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
@@ -21,7 +21,7 @@ pub async fn view_opponent_wrapper(
     region: &Region,
 ) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
-    let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
+    let player = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
             msg.edit(*ctx, |s| {
@@ -34,37 +34,46 @@ pub async fn view_opponent_wrapper(
             return Ok(());
         }
     };
-    view_opponent(ctx, msg, region, caller).await
+    if !(player.get_bool("battle").unwrap_or(false)) {
+        view_opponent(ctx, msg, region, player).await
+    } else {
+        prompt(
+            ctx,
+            msg,
+            "You have already submitted the result!",
+            "Please check the result channel!
+Or run the command again and view your personal result!
+Please stay tuned for the announcement to know when next round starts!",
+            None,
+            Some(0xFFFF00),
+        )
+        .await
+    }
 }
 /// View your opponent
 pub async fn view_opponent(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
-    caller: Document,
+    player: Document,
 ) -> Result<(), Error> {
     prompt(
         ctx,
         msg,
-        "Getting your opponent...",
-        "<a:loading:1187839622680690689> Searching for your opponent...",
+        "Getting the opponent...",
+        "<a:loading:1187839622680690689> Searching for the opponent...",
         None,
         Some(0xFFFF00),
     )
     .await?;
 
-    let database = ctx.data().database.regional_databases.get(region).unwrap();
     let config = get_config(ctx, region).await;
     //Get player document via their discord_id
-    let match_id: i32 = caller.get_i32("match_id").unwrap();
-    let caller_tag = caller.get_str("tag").unwrap();
+    let match_id: i32 = player.get_i32("match_id").unwrap();
+    let caller_tag = player.get_str("tag").unwrap();
     let round_name = find_round_from_config(&config);
-    let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get_i32("round").unwrap();
-    let caller = match battle_happened(ctx, caller_tag, &current_round, msg).await? {
-        Some(caller) => caller, // Battle did not happen yet
-        None => return Ok(()),  // Battle already happened
-    };
+
     let enemy = match find_enemy_by_match_id_and_self_tag(
         ctx,
         region,
@@ -101,7 +110,7 @@ pub async fn view_opponent(
         }
     };
 
-    let prebattle = match get_image(&caller, &enemy, &config).await {
+    let prebattle = match get_image(&player, &enemy, &config).await {
         Ok(prebattle) => prebattle,
         Err(e) => {
             info!("{e}");
@@ -142,7 +151,7 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
 - Only the MOST RECENT determinable number of matches with the opponent is considered once you submit your results.
 - Due to limitations, only up to 25 battles are viewable, so please submit the result as soon as possible!
 # Remember this is FIRST TO 2 WINS tournament!"#, 
-                        caller.get_str("discord_id").unwrap(),
+                        player.get_str("discord_id").unwrap(),
                         enemy.get_str("discord_id").unwrap(),
                         config.get_str("mode").unwrap(),
                         config.get_str("map").unwrap_or("Any")

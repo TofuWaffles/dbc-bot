@@ -15,7 +15,8 @@ pub async fn stat(
         .unwrap_or("No Club")
         .to_string();
     msg.edit(*ctx, |s| {
-        s.embed(|e| {
+        s.components(|c|c)
+        .embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
                 .title(format!(
                     "**{} ({})**",
