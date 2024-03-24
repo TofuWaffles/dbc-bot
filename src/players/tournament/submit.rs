@@ -89,10 +89,6 @@ pub async fn submit_result(
             .await
             .unwrap();
     if is_mannequin(&enemy) {
-        let next_round = database.collection(format!("Round {}", round + 1).as_str());
-        next_round
-            .insert_one(update_match_id(caller.clone()), None)
-            .await?;
         msg.edit(*ctx, |s|{
             s.embed(|e|{
                 e.title("Bye... See you next round")
