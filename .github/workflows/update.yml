@@ -106,6 +106,7 @@ jobs:
         script: |
           cd ~
           docker-compose down
+          docker system prune -f
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker-compose pull
           docker-compose up -d
