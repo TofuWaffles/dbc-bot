@@ -3,7 +3,7 @@ name: Build, Test and Deploy to Prod
 on:
   push:
     branches:
-      - main
+      - localhost
 
 env:
   BRAWL_STARS_TOKEN: ${{ secrets.BRAWL_STARS_TOKEN }}
