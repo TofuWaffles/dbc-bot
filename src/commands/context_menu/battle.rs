@@ -126,6 +126,6 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
         }
     };
     let config = get_config(&ctx, &region).await;
-    view_opponent(&ctx, &msg, &region, player, enemy, config).await?;
+    view_opponent(&ctx, &msg, player, enemy, config).await?;
     Ok(())
 }

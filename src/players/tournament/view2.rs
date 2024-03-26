@@ -1,11 +1,9 @@
-use std::f64::consts::E;
-
-use crate::database::config::{self, get_config};
+use crate::database::config::get_config;
 use crate::database::find::{
-    find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
+    find_enemy_by_match_id_and_self_tag, find_round_from_config,
     is_disqualified, is_mannequin,
 };
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::prompt;
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
@@ -19,23 +17,11 @@ pub async fn view_opponent_wrapper(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
+    player: Document,
 ) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
-    let round = find_round_from_config(&config);
-    let player = match find_self_by_discord_id(ctx, round).await.unwrap() {
-        Some(caller) => caller,
-        None => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("You are not in the tournament!")
-                        .description("Sorry, you are not in the tournament to use this command!")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
-    };
-    if !(player.get_bool("battle").unwrap()) {
+    info!("{:?}", player);
+    if player.get_bool("battle").unwrap_or(false) {
         return prompt(
             ctx,
             msg,
@@ -51,7 +37,7 @@ Please stay tuned for the announcement to know when next round starts!",
     let match_id: i32 = player.get_i32("match_id").unwrap();
     let caller_tag = player.get_str("tag").unwrap();
     let round_name = find_round_from_config(&config);
-    let enemy = match find_enemy_by_match_id_and_self_tag(
+    match find_enemy_by_match_id_and_self_tag(
         ctx,
         region,
         &round_name,
@@ -61,7 +47,9 @@ Please stay tuned for the announcement to know when next round starts!",
     .await
     {
         Some(enemy) => {
-            if is_mannequin(&enemy) || is_disqualified(&enemy) {
+            if is_mannequin(&enemy) 
+            || is_disqualified(&enemy) 
+            {
                 msg.edit(*ctx, |s| {
                             s.embed(|e| {
                                 e.title("Congratulations! You earn a free win!")
@@ -72,7 +60,7 @@ Please stay tuned for the announcement to know when next round starts!",
                         .await?;
                 return Ok(());
             } else {
-                enemy
+                return view_opponent(ctx, msg, player, enemy, config).await
             }
         }
         None => {
@@ -86,14 +74,13 @@ Please stay tuned for the announcement to know when next round starts!",
             return Ok(());
         }
     };
-    view_opponent(ctx, msg, region, player, enemy, config).await
+    
 }
 
 /// View your opponent
 pub async fn view_opponent(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    region: &Region,
     player: Document,
     enemy: Document,
     config: Document,

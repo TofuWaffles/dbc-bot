@@ -5,7 +5,6 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_disqualified, is_mannequin,
 };
-use crate::database::update::update_match_id;
 use crate::database::update::update_result;
 use crate::discord::prompt::prompt;
 use crate::discord::role::remove_role;

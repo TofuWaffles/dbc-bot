@@ -190,7 +190,7 @@ pub async fn tournament_menu(
         match mci.data.custom_id.as_str() {
             "enemy" => {
                 mci.defer(&ctx.http()).await?;
-                return view_opponent_wrapper(ctx, msg, &region).await;
+                return view_opponent_wrapper(ctx, msg, &region, player).await;
             }
             "managers" => {
                 mci.defer(&ctx.http()).await?;
