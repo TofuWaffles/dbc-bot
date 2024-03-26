@@ -3,7 +3,7 @@ use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
 use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
-    is_mannequin,
+    is_disqualified, is_mannequin,
 };
 use crate::database::update::update_match_id;
 use crate::database::update::update_result;
@@ -88,16 +88,9 @@ pub async fn submit_result(
         find_enemy_by_match_id_and_self_tag(ctx, &region, &round_name, &match_id, caller_tag)
             .await
             .unwrap();
-    if is_mannequin(&enemy) {
-        msg.edit(*ctx, |s|{
-            s.embed(|e|{
-                e.title("Bye... See you next round")
-                .description("Congratulation, you pass this round!")
-                .color(0xFFFF00)
-                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
-            })
-        }).await?;
-        channel_to_announce
+    if is_mannequin(&enemy) || is_disqualified(&enemy) {
+        update_result(ctx, &region, &round_name, &caller, &enemy, None).await?;
+        let m = channel_to_announce
             .send_message(ctx, |m| {
                 m.embed(|e| {
                     e.title("Result is here!")
@@ -118,8 +111,15 @@ pub async fn submit_result(
                 })
             })
             .await?;
+        msg.edit(*ctx, |s|{
+            s.embed(|e|{
+                e.title("Bye... See you next round")
+                .description(format!("Congratulation, you advance to next round!\nCheck out your result at [here]({})", m.link()))
+                .color(0xFFFF00)
+                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
+            })
+        }).await?;
 
-        update_result(ctx, &region, &round_name, &caller, &enemy).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
@@ -132,7 +132,7 @@ pub async fn submit_result(
         Some(players) => {
             let (winner, defeated) = players;
             if round < config.get("total").unwrap().as_i32().unwrap() {
-                update_result(ctx, &region, &round_name, &winner, &defeated).await?;
+                update_result(ctx, &region, &round_name, &winner, &defeated, None).await?;
                 let defeated_user = UserId(
                     defeated
                         .get_str("discord_id")
@@ -145,23 +145,7 @@ pub async fn submit_result(
                     error!("{e}");
                 }
                 // update_bracket(ctx, None).await?;
-                msg.edit(*ctx, |s| {
-                    s.embed(|e| {
-                        e.title("Result is here!")
-                            .description(format!(
-                                r#"{}({}) has won this round!"#,
-                                winner.get_str("name").unwrap(),
-                                winner.get_str("tag").unwrap(),
-                                // guild = server_id,
-                                // chn = bracket_chn_id,
-                                // msg_id = bracket_msg_id
-                            ))
-                            .color(0xFFFF00)
-                    })
-                    .components(|c| c)
-                })
-                .await?;
-                channel_to_announce
+                let m = channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!")
@@ -184,28 +168,24 @@ pub async fn submit_result(
                         })
                     })
                     .await?;
-            } else {
-                update_result(ctx, &region, &round_name, &winner, &defeated).await?;
-                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
-                            .thumbnail(format!(
-                                "https://cdn-old.brawlify.com/profile/{}.png",
-                                winner.get_i64("icon").unwrap_or(28000000)
-                            ))
                             .description(format!(
-                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
-                                winner.get_str("discord_id").unwrap(),
-                                winner.get_str("name").unwrap(),
-                                winner.get_str("tag").unwrap()
+                                r#"Result is submitted [here]({})"#,
+                                m.link() // guild = server_id,
+                                         // chn = bracket_chn_id,
+                                         // msg_id = bracket_msg_id
                             ))
                             .color(0xFFFF00)
                     })
                     .components(|c| c)
                 })
                 .await?;
-                channel_to_announce
+            } else {
+                update_result(ctx, &region, &round_name, &winner, &defeated, None).await?;
+                // update_bracket(ctx, None).await?;
+                let m = channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
@@ -216,6 +196,26 @@ pub async fn submit_result(
                         })
                     })
                     .await?;
+                msg.edit(*ctx, |s| {
+                    s.embed(|e| {
+                        e.title("Result is here!")
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile/{}.png",
+                                winner.get_i64("icon").unwrap_or(28000000)
+                            ))
+                            .description(format!(
+                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!\n
+Your result is shown here [here]({})!",
+                                winner.get_str("discord_id").unwrap(),
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap(),
+                                m.link()
+                            ))
+                            .color(0xFFFF00)
+                    })
+                    .components(|c| c)
+                })
+                .await?;
             }
         }
         None => {

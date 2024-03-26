@@ -4,7 +4,6 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_enemy_of_mannequin, find_player_by_discord_id,
     find_round_from_config,
 };
-use crate::database::remove::remove_player;
 use crate::database::update::{set_ready, update_result};
 use crate::discord::log::{Log, LogType};
 use crate::discord::prompt::prompt;
@@ -235,7 +234,7 @@ async fn post_confirm(
     form: &mut Form,
     round: &str,
 ) -> Result<(), Error> {
-    match remove_player(ctx, player, region).await {
+    match force_lose(ctx, region, player, &form.reason).await {
         Ok(_) => {
             let log = Log::new(ctx, region, LogType::Disqualify).await?;
             let log_msg = log.send_disqualify_log(form, round).await?;
@@ -365,7 +364,7 @@ pub async fn mass_disqualify_wrapper(
                     }
                     match player.get_bool("ready") {
                         Ok(false) => {
-                            if force_lose(ctx, region, &player).await.is_ok() {
+                            if force_lose(ctx, region, &player, "Inactive").await.is_ok() {
                                 players.insert(format!("<@{id}>"));
                             }
                         }
@@ -381,7 +380,9 @@ pub async fn mass_disqualify_wrapper(
                     if let Some(opponent) =
                         find_enemy_of_mannequin(ctx, region, round, &match_id).await
                     {
-                        match update_result(ctx, region, round, &opponent, &player).await {
+                        match update_result(ctx, region, round, &opponent, &player, "Inactive")
+                            .await
+                        {
                             Err(e) => {
                                 error!("{e}");
                             }

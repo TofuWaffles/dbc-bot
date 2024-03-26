@@ -1,8 +1,9 @@
-use crate::database::battle::battle_happened;
-use crate::database::config::get_config;
+use std::f64::consts::E;
+
+use crate::database::config::{self, get_config};
 use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
-    is_mannequin,
+    is_disqualified, is_mannequin,
 };
 use crate::discord::prompt::{self, prompt};
 use crate::visual::pre_battle::get_image;
@@ -10,7 +11,6 @@ use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
 use futures::{StreamExt, TryStreamExt};
 use mongodb::bson::{doc, Document};
-use mongodb::Collection;
 use poise::serenity_prelude::ButtonStyle;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
@@ -20,7 +20,8 @@ pub async fn view_opponent_wrapper(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    let round = find_round_from_config(&get_config(ctx, region).await);
+    let config = get_config(ctx, region).await;
+    let round = find_round_from_config(&config);
     let player = match find_self_by_discord_id(ctx, round).await.unwrap() {
         Some(caller) => caller,
         None => {
@@ -34,10 +35,8 @@ pub async fn view_opponent_wrapper(
             return Ok(());
         }
     };
-    if !(player.get_bool("battle").unwrap_or(false)) {
-        view_opponent(ctx, msg, region, player).await
-    } else {
-        prompt(
+    if !(player.get_bool("battle").unwrap()) {
+        return prompt(
             ctx,
             msg,
             "You have already submitted the result!",
@@ -47,33 +46,11 @@ Please stay tuned for the announcement to know when next round starts!",
             None,
             Some(0xFFFF00),
         )
-        .await
+        .await;
     }
-}
-/// View your opponent
-pub async fn view_opponent(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>,
-    region: &Region,
-    player: Document,
-) -> Result<(), Error> {
-    prompt(
-        ctx,
-        msg,
-        "Getting the opponent...",
-        "<a:loading:1187839622680690689> Searching for the opponent...",
-        None,
-        Some(0xFFFF00),
-    )
-    .await?;
-
-    let config = get_config(ctx, region).await;
-    //Get player document via their discord_id
     let match_id: i32 = player.get_i32("match_id").unwrap();
     let caller_tag = player.get_str("tag").unwrap();
     let round_name = find_round_from_config(&config);
-    let round = config.get_i32("round").unwrap();
-
     let enemy = match find_enemy_by_match_id_and_self_tag(
         ctx,
         region,
@@ -84,15 +61,15 @@ pub async fn view_opponent(
     .await
     {
         Some(enemy) => {
-            if is_mannequin(&enemy) {
+            if is_mannequin(&enemy) || is_disqualified(&enemy) {
                 msg.edit(*ctx, |s| {
-                        s.embed(|e| {
-                            e.title("Congratulations! You are the bye player for this round!")
-                                .description("Please run the bot again to submit the result!")
-                                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
+                            s.embed(|e| {
+                                e.title("Congratulations! You earn a free win!")
+                                    .description("Either you get a free win due to being lucky (a.k.a getting bye), or your opponent is disqualified\nPlease run the bot again to submit the result!")
+                                    .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
+                            })
                         })
-                    })
-                    .await?;
+                        .await?;
                 return Ok(());
             } else {
                 enemy
@@ -109,7 +86,29 @@ pub async fn view_opponent(
             return Ok(());
         }
     };
+    view_opponent(ctx, msg, region, player, enemy, config).await
+}
 
+/// View your opponent
+pub async fn view_opponent(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    player: Document,
+    enemy: Document,
+    config: Document,
+) -> Result<(), Error> {
+    prompt(
+        ctx,
+        msg,
+        "Getting the opponent...",
+        "<a:loading:1187839622680690689> Searching for the opponent...",
+        None,
+        Some(0xFFFF00),
+    )
+    .await?;
+    let round = config.get_i32("round")?;
+    let match_id = player.get_i32("match_id")?;
     let prebattle = match get_image(&player, &enemy, &config).await {
         Ok(prebattle) => prebattle,
         Err(e) => {
@@ -191,7 +190,7 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
                 format!("Hi <@{enemy_id}>({enemy_name}), I am your opponent in {round}. Let me know when you are available to play. Thanks!", 
                 enemy_id = enemy.get_str("discord_id").unwrap_or("0"),
                 enemy_name = enemy.get_str("name").unwrap_or("Unknown"),
-                round = round_name
+                round = round
             ),
                 None,
                 None,

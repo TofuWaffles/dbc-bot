@@ -72,6 +72,7 @@ pub async fn update_result(
     round: &str,
     winner: &Document,
     loser: &Document,
+    reason: impl Into<Option<&str>>,
 ) -> Result<(), Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
     let round_coll: Collection<Document> = database.collection(round);
@@ -105,6 +106,11 @@ pub async fn update_result(
     round_coll
         .update_one(filter(loser), update(true), None)
         .await?;
+    if let Some(r) = reason.into() {
+        round_coll
+            .update_one(filter(loser), doc! {"$set": {"reason": r}}, None)
+            .await?;
+    }
 
     Ok(())
 }

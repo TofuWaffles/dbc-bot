@@ -1,5 +1,5 @@
 use crate::database::config::get_config;
-use crate::database::find::{find_player_by_discord_id, find_round_from_config};
+use crate::database::find::{find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config};
 use crate::database::open::tournament;
 use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
@@ -77,7 +77,7 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
     }
 
     let round = find_round_from_config(&get_config(&ctx, &region).await);
-    let user_doc = match find_player_by_discord_id(&ctx, &region, user.id.into(), &round).await {
+    let player = match find_player_by_discord_id(&ctx, &region, user.id.into(), &round).await {
         Ok(user) => match user {
             Some(u) => u,
             None => {
@@ -104,6 +104,28 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
             .await;
         }
     };
-    view_opponent(&ctx, &msg, &region, user_doc).await?;
+    let enemy = match find_enemy_by_match_id_and_self_tag(
+        &ctx,
+        &region,
+        &round,
+        &player.get_i32("match_id")?,
+        &player.get_str("tag")?,
+    )
+    .await{
+        Some(e) => e,
+        None => {
+            return prompt(
+                &ctx,
+                &msg,
+                "Not found",
+                "Enemy not found in the database",
+                None,
+                None,
+            )
+            .await;
+        }
+    };
+    let config = get_config(&ctx, &region).await;
+    view_opponent(&ctx, &msg, &region, player, enemy, config).await?;
     Ok(())
 }

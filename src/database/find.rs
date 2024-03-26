@@ -159,7 +159,11 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
 }
 
 pub fn is_mannequin(enemy: &Document) -> bool {
-    enemy.get("tag").unwrap() == &Bson::Null
+    enemy.get("tag").is_none()
+}
+
+pub fn is_disqualified(enemy: &Document) -> bool {
+    enemy.get("reason").is_some()
 }
 
 pub async fn find_all_false_battles(ctx: &Context<'_>, region: &Region) -> Cursor<Document> {

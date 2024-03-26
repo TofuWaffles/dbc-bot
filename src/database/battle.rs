@@ -69,6 +69,7 @@ pub async fn force_lose(
     ctx: &Context<'_>,
     region: &Region,
     player: &Document,
+    reason: &str,
 ) -> Result<(), Error> {
     let round = find_round_from_config(&get_config(ctx, region).await);
     let match_id = player.get_i32("match_id")?;
@@ -81,5 +82,5 @@ pub async fn force_lose(
                 return Err("No opponent found!".into());
             }
         };
-    update_result(ctx, region, &round, &opponent, player).await
+    update_result(ctx, region, &round, &opponent, player, reason).await
 }

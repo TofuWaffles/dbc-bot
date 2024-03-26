@@ -30,23 +30,26 @@ pub async fn get_individual_player_data(
                     .color(0x00FF00)
             })
             .reply(true)
-        }).await?;
-    
+        })
+        .await?;
+
     let (mut region, mut round) = (None, None);
     let roles = get_roles_from_user(&ctx, Some(&user)).await?;
     match get_region_from_role(&ctx, roles).await {
         Some(r) => region = Some(r),
         None => {
             let (r, rnd) = get_data(&ctx, &msg, &user).await?;
-            match rnd.as_str(){
+            match rnd.as_str() {
                 "" => round = Some(find_round_from_config(&get_config(&ctx, &r).await)),
-                _ => round = Some(rnd)
+                _ => round = Some(rnd),
             }
             region = Some(r);
         }
     }
-    if round.is_none(){
-        round = Some(find_round_from_config(&get_config(&ctx, region.as_ref().unwrap()).await));
+    if round.is_none() {
+        round = Some(find_round_from_config(
+            &get_config(&ctx, region.as_ref().unwrap()).await,
+        ));
     }
     let id: u64 = user.id.into();
 
@@ -114,7 +117,11 @@ pub async fn get_individual_player_data(
     }
 }
 
-async fn get_data(ctx: &Context<'_>, msg: &ReplyHandle<'_>, user: &serenity::User) -> Result<(Region, String), Error> {
+async fn get_data(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    user: &serenity::User,
+) -> Result<(Region, String), Error> {
     let mut region: Option<Region> = None;
     let mut round: Option<String> = None;
 
@@ -156,14 +163,19 @@ async fn get_data(ctx: &Context<'_>, msg: &ReplyHandle<'_>, user: &serenity::Use
                 mci.defer(ctx.http()).await?;
                 return Err("User cancelled the operation".into());
             }
-            "menu"=> {
+            "menu" => {
                 mci.defer(ctx.http()).await?;
                 round = Some(mci.data.values[0].clone());
-                confirm(ctx, msg, &user, &round.as_ref().unwrap(), &region.as_ref().unwrap()).await?;                
+                confirm(
+                    ctx,
+                    msg,
+                    &user,
+                    &round.as_ref().unwrap(),
+                    &region.as_ref().unwrap(),
+                )
+                .await?;
             }
-            _ => {
-
-            }
+            _ => {}
         }
     }
     match (region, round) {
@@ -175,10 +187,13 @@ async fn get_data(ctx: &Context<'_>, msg: &ReplyHandle<'_>, user: &serenity::Use
             return Err("Please select a region and round".into());
         }
     }
-        
 }
 
-async fn round_getter(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region) -> Result<(), Error> {
+async fn round_getter(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+) -> Result<(), Error> {
     let total: i32 = find_round_from_config(&get_config(&ctx, region).await)
         .split(" ")
         .nth(1)
@@ -214,24 +229,37 @@ async fn round_getter(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region)
     Ok(())
 }
 
-async fn confirm(ctx: &Context<'_>, msg: &ReplyHandle<'_>, user: &serenity::User, round: &str, region: &Region) -> Result<(), Error>{
-    msg.edit(*ctx, |m|{
-        m.embed(|e|{
+async fn confirm(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    user: &serenity::User,
+    round: &str,
+    region: &Region,
+) -> Result<(), Error> {
+    msg.edit(*ctx, |m| {
+        m.embed(|e| {
             e.title("Confirm what you are looking for")
-                .description(format!(r#"
+                .description(format!(
+                    r#"
 **👤 Player:** {}`{}`.
 **🌐 Region:** {}.    
 **⚔️ Round:** {}.           
-"#, user.name, user.id.0, region.full(), round))
+"#,
+                    user.name,
+                    user.id.0,
+                    region.full(),
+                    round
+                ))
                 .color(0x00FF00)
         })
-        .components(|c|{
-            c.create_action_row(|a|{
+        .components(|c| {
+            c.create_action_row(|a| {
                 a.create_button(|b| b.custom_id("confirm").label("Confirm"));
                 a.create_button(|b| b.custom_id("cancel").label("Cancel"));
                 a
             })
         })
-    }).await?;
+    })
+    .await?;
     Ok(())
 }
