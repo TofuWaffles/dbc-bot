@@ -7,7 +7,7 @@ use image::{imageops, DynamicImage};
 use mongodb::bson::Document;
 use std::env;
 use std::io::Cursor;
-use tracing::{error, info};
+use tracing::error;
 const FONT_SIZE: u8 = 30;
 const ICON_SIZE: i64 = 200;
 async fn create_battle_image(

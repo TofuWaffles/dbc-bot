@@ -62,23 +62,55 @@ pub fn update_match_id(mut player: Document) -> Document {
     let old_match_id = player.get_i32("match_id").unwrap();
     let new_match_id = (old_match_id + 1) / 2;
     player.insert("match_id", new_match_id);
-    println!("Match id is updated!");
+    player.insert("ready", false);
     player
 }
 
-pub async fn update_battle(database: &Database, round: i32, match_id: i32) -> Result<(), Error> {
-    let current_round: Collection<Document> =
-        database.collection(format!("Round {}", round).as_str());
-    let filter = doc! {
-        "match_id": match_id
-    };
-    let update = doc! {
-        "$set": {
-           "battle": true
+pub async fn update_result(
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
+    winner: &Document,
+    loser: &Document,
+    reason: impl Into<Option<&str>>,
+) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round_coll: Collection<Document> = database.collection(round);
+    let filter = |player: &Document| {
+        doc! {
+            "_id": player.get_object_id("_id").unwrap()
         }
     };
-    current_round.update_many(filter, update, None).await?;
-    println!("Battle is updated!");
+
+    let update = |defeated: bool| {
+        doc! {
+            "$set": {
+                "battle": true,
+                "defeated": defeated
+            }
+        }
+    };
+
+    let next_coll = format! {"Round {}",round.split(' ').nth(1).unwrap().parse::<i32>()?+1};
+    let next_round: Collection<Document> = database.collection(&next_coll);
+    if winner.get_str("discord_id").is_ok() {
+        next_round
+            .insert_one(update_match_id(winner.clone()), None)
+            .await?;
+    }
+
+    round_coll
+        .update_one(filter(winner), update(false), None)
+        .await?;
+
+    round_coll
+        .update_one(filter(loser), update(true), None)
+        .await?;
+    if let Some(r) = reason.into() {
+        round_coll
+            .update_one(filter(loser), doc! {"$set": {"reason": r}}, None)
+            .await?;
+    }
 
     Ok(())
 }
@@ -148,5 +180,23 @@ pub async fn resetting_tournament_config(
     config
         .insert_one(backup.unwrap_or(reset_config()), None)
         .await?;
+    Ok(())
+}
+
+pub async fn set_ready(
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
+    discord_id: &str,
+) -> Result<(), Error> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round_coll = database.collection::<Document>(round);
+    round_coll
+        .update_one(
+            doc! {"discord_id": discord_id},
+            doc! { "$set": { "ready" : true } },
+            None,
+        )
+        .await?; // Set total rounds, tournament_started to true and registration to false
     Ok(())
 }

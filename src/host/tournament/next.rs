@@ -1,12 +1,18 @@
-use crate::database::find::find_all_false_battles;
+use crate::database::config::get_config;
+use crate::database::find::{find_all_false_battles, find_round_from_config};
 use crate::database::update::update_round_config;
+use crate::discord::checks::is_mod;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::stream::StreamExt;
 use mongodb::bson::{self, Document};
-use poise::{serenity_prelude as sereniy, ReplyHandle};
+use mongodb::Cursor;
+use poise::ReplyHandle;
 use std::collections::HashMap;
 use tracing::{error, info};
+
+use super::disqualify;
+use super::download::{compact, get_downloadable_ids};
 const TIMEOUT: u64 = 300;
 pub async fn display_next_round(
     ctx: &Context<'_>,
@@ -14,8 +20,8 @@ pub async fn display_next_round(
     region: &Region,
 ) -> Result<(), Error> {
     info!("Next round is triggered by {}", ctx.author().name);
-    let battles = display_false_battles(ctx, region).await;
-    if battles.is_empty() {
+    let mut false_battles = find_all_false_battles(ctx, region).await;
+    if false_battles.next().await.is_none() {
         info!("All matches are finished!");
         msg.edit(*ctx, |m| {
             m.embed(|e| {
@@ -31,7 +37,7 @@ pub async fn display_next_round(
         .await?;
     } else {
         error!("Some matches are not finished! Cannot continue to next round!");
-        return paginate(ctx, msg, battles).await;
+        return paginate(ctx, msg, region, &mut false_battles).await;
     }
     let resp = msg.clone().into_message().await?;
     let cib = resp
@@ -56,9 +62,9 @@ pub async fn display_next_round(
     Ok(())
 }
 
-pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<String> {
+pub async fn display_false_battles(result: &mut Cursor<Document>) -> Vec<String> {
     let mut players = vec![];
-    let mut result = find_all_false_battles(ctx, region).await;
+
     while let Some(player) = result.next().await {
         match player {
             Ok(p) => players.push(p),
@@ -86,7 +92,7 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
                 let dis2 = player2.get_str("discord_id").unwrap_or("").to_string();
                 let name2 = player2.get_str("name").unwrap_or("").to_string();
                 let tag2 = player2.get_str("tag").unwrap_or("").to_string();
-                return format!(
+                format!(
                     r#"**Some battles are not finished!**
 # Match {} 
 <@{}> - <@{}>
@@ -98,9 +104,10 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
                     tag1,
                     name2,
                     tag2
-                );
+                )
             } else {
-                unreachable!("There should be 2 players in each match!");
+                error!("{:#?}", group[0]);
+                format!("Error reading match {:#?}", group[0])
             }
         })
         .collect::<Vec<String>>();
@@ -112,23 +119,45 @@ pub async fn display_false_battles(ctx: &Context<'_>, region: &Region) -> Vec<St
 pub async fn paginate(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    pages: Vec<String>,
+    region: &Region,
+    false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
+    let moderator = is_mod(*ctx).await?;
+    let pages = display_false_battles(false_battles).await;
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
     let prev_button_id = format!("{}prev", ctx_id);
     let next_button_id = format!("{}next", ctx_id);
+    let download_button_id = format!("{}download", ctx_id);
+    let compact_id = format!("{}compact", ctx_id);
+    let disqualify_all_id = format!("{}disqualify_all", ctx_id);
 
     // Send the embed with the first page as content
     let mut current_page = 0;
     msg.edit(*ctx, |b| {
-        b.embed(|b| b.description(pages[current_page].clone()))
-            .components(|b| {
-                b.create_action_row(|b| {
-                    b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
-                        .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
-                })
+        b.embed(|b| {
+            b.description(pages[current_page].clone())
+                .footer(|f| f.text(format!("Page {}/{}", current_page + 1, pages.len())))
+        })
+        .components(|b| {
+            b.create_action_row(|b| {
+                b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
+                    .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
+                    .create_button(|b| {
+                        b.custom_id(&download_button_id)
+                            .label("Download")
+                            .emoji('📥')
+                            .disabled(true)
+                    })
+                    .create_button(|b| b.custom_id(&compact_id).label("Compact").emoji('💿'))
+                    .create_button(|b| {
+                        b.custom_id(&disqualify_all_id)
+                            .label("Disqualify All")
+                            .emoji('❌')
+                            .disabled(!moderator)
+                    })
             })
+        })
     })
     .await?;
 
@@ -149,6 +178,17 @@ pub async fn paginate(
             }
         } else if press.data.custom_id == prev_button_id {
             current_page = current_page.checked_sub(1).unwrap_or(pages.len() - 1);
+        } else if press.data.custom_id == download_button_id {
+            press.defer(ctx.http()).await?;
+            return get_downloadable_ids(ctx, msg, region).await;
+        } else if press.data.custom_id == compact_id {
+            press.defer(ctx.http()).await?;
+            return compact(ctx, msg, region).await;
+        } else if press.data.custom_id == disqualify_all_id {
+            press.defer(ctx.http()).await?;
+            let round = find_round_from_config(&get_config(ctx, region).await);
+            return disqualify::mass_disqualify_wrapper(ctx, msg, region, &round, false_battles)
+                .await;
         } else {
             // This is an unrelated button interaction
             continue;
@@ -159,7 +199,11 @@ pub async fn paginate(
             .create_interaction_response(ctx, |b| {
                 b.kind(poise::serenity_prelude::InteractionResponseType::UpdateMessage)
                     .interaction_response_data(|b| {
-                        b.embed(|b| b.description(pages[current_page].clone()))
+                        b.embed(|b| {
+                            b.description(pages[current_page].clone()).footer(|f| {
+                                f.text(format!("Page {}/{}", current_page + 1, pages.len()))
+                            })
+                        })
                     })
             })
             .await?;

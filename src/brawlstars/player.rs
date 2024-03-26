@@ -15,7 +15,7 @@ pub async fn stat(
         .unwrap_or("No Club")
         .to_string();
     msg.edit(*ctx, |s| {
-        s.embed(|e| {
+        s.components(|c| c).embed(|e| {
             e.author(|a| a.name(ctx.author().name.clone()))
                 .title(format!(
                     "**{} ({})**",
@@ -65,6 +65,42 @@ pub async fn stat(
                                     }
                                 } else {
                                     "Undefined".to_string()
+                                }
+                            },
+                        ),
+                        true,
+                    ),
+                    (
+                        "Status",
+                        detail.map_or_else(
+                            || "Not in match".to_string(),
+                            |d| {
+                                if let Ok(status) = d.get_bool("defeated") {
+                                    if status {
+                                        "Eliminated".to_string()
+                                    } else {
+                                        "Advanced".to_string()
+                                    }
+                                } else {
+                                    "Not in the game".to_string()
+                                }
+                            },
+                        ),
+                        true,
+                    ),
+                    (
+                        "Ready",
+                        detail.map_or_else(
+                            || "Not in match".to_string(),
+                            |d| {
+                                if let Ok(status) = d.get_bool("ready") {
+                                    if status {
+                                        "Ready".to_string()
+                                    } else {
+                                        "Not ready".to_string()
+                                    }
+                                } else {
+                                    "Not yet ready".to_string()
                                 }
                             },
                         ),

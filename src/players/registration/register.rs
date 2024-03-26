@@ -1,20 +1,20 @@
 use crate::brawlstars::api::{request, APIResult};
 use crate::brawlstars::player::stat;
 use crate::database::add::add_player;
-use crate::database::config::{get_config, make_player_doc};
+use crate::database::config::make_player_doc;
 use crate::database::find::find_tag;
 use crate::database::open::registration_region_open;
 use crate::discord::prompt::prompt;
+use crate::discord::role::assign_role;
 use crate::{Context, Error};
-use dbc_bot::{CustomError, Region};
+use dbc_bot::Region;
 use futures::StreamExt;
 use mongodb::bson::Document;
 use poise::serenity_prelude::{self as serenity};
 use poise::ReplyHandle;
-use std::ops::Deref;
 use std::sync::Arc;
 use strum::IntoEnumIterator;
-use tracing::{error, info};
+use tracing::info;
 
 const TIMEOUT: u64 = 120;
 struct PlayerRegistration {
@@ -235,7 +235,9 @@ async fn confirm(
         &register.region.clone().unwrap(),
     )
     .await?;
-    assign_role(ctx, msg, &register.region).await?;
+    if let Err(e) = assign_role(ctx, ctx.author(), &register.region).await {
+        return prompt(ctx, msg, "ERROR", format!("{e}"), None, Some(0xFF0000)).await;
+    }
     prompt(
         ctx,
         msg,
@@ -255,79 +257,6 @@ async fn cancel(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
         Some(0xFF0000),
     )
     .await
-}
-
-async fn assign_role(
-    ctx: &Context<'_>,
-    msg: &ReplyHandle<'_>,
-    region: &Option<Region>,
-) -> Result<(), Error> {
-    let config = get_config(ctx, &region.clone().unwrap()).await;
-    let role = match config.get_str("role") {
-        Ok(role) => Some(role),
-        Err(_) => {
-            prompt(
-                ctx,
-                msg,
-                "Failed! Unable to find role!",
-                "Please contact Host or Moderator for this issue",
-                None,
-                Some(0xFF0000),
-            )
-            .await?;
-            error!(
-                "Failed to get role for region {:?}",
-                region.clone().unwrap()
-            );
-            return Err(Box::new(CustomError(format!(
-                "Failed to get role for region {:?}",
-                region.clone().unwrap()
-            ))));
-        }
-    };
-    let mut member = match ctx.author_member().await {
-        Some(m) => m.deref().to_owned(),
-        None => {
-            let user = *ctx.author().id.as_u64();
-            prompt(
-                ctx,
-                msg,
-                "Failed! Unable to assign role!",
-                "Please contact Host or Moderator for this issue",
-                None,
-                Some(0xFF0000),
-            )
-            .await?;
-            info!("Failed to assign role for <@{}>", user);
-            return Err(Box::new(CustomError(format!(
-                "Failed to assign role for <@{}>",
-                user
-            ))));
-        }
-    };
-    match member
-        .add_role((*ctx).http(), role.unwrap().parse::<u64>().unwrap())
-        .await
-    {
-        Ok(_) => Ok(()),
-        Err(_) => {
-            let user = *ctx.author().id.as_u64();
-            prompt(
-                ctx,
-                msg,
-                "Failed! Unable to assign role!",
-                "Please contact Host or Moderator for this issue",
-                None,
-                Some(0xFF0000),
-            )
-            .await?;
-            info!("Failed to assign role for <@{}>", user);
-            Err(Box::new(CustomError(format!(
-                "Failed to assign role for <@{}>",
-                user
-            ))))
-        }
-    }
 }
 
 async fn already_used(

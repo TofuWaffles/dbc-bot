@@ -9,12 +9,12 @@ def generate_bracket_image(region, total_rounds, args):
 
     current_dir =  os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     region_background_mapping = {
-        'Europe': 'bracket_preset_eu.jpg',
-        'North America & South America': 'bracket_preset_nasa.jpg',
-        'Asia & Oceania': 'bracket_preset_apac.jpg',
+        'Europe': 'bracket_preset_eu.png',
+        'North America & South America': 'bracket_preset_nasa.png',
+        'Asia & Oceania': 'bracket_preset_apac.png',
     }
     # root = os.path.dirname(os.path.dirname(current_dir))
-    background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.jpg'))
+    background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.png'))
     font_path = os.path.join(current_dir, "assets/fonts","LilitaOne-Regular.ttf")
     background_image = cv2.imread(background_image_path)
 
@@ -28,11 +28,12 @@ def generate_bracket_image(region, total_rounds, args):
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split(sep)
         results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         
-    image_width = 2000
-    image_height = 1000
+    image_width = 10000
+    image_height = 5000
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13
+
     game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
     _size = total_rounds
@@ -40,6 +41,7 @@ def generate_bracket_image(region, total_rounds, args):
     _column_width = image_width / _columns
     _game_box_width = _column_width - horizontal_padding
     _game_box_height = _game_box_width / game_box_width_height_ratio
+    
 
     resized_background_image = cv2.resize(background_image, (image_width, image_height))
 

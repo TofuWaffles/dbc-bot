@@ -1,4 +1,3 @@
-use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::database::add::insert_mannequins;
 use crate::database::config::get_config;
 use crate::database::stat::count_registers;

@@ -36,10 +36,10 @@ pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
     user_id: u64,
-    round: String,
+    round: &str,
 ) -> Result<Option<Document>, Error> {
     let database = ctx.data().database.regional_databases.get(region).unwrap();
-    let collection: Collection<Document> = database.collection(round.as_str());
+    let collection: Collection<Document> = database.collection(round);
     let filter = doc! {"discord_id": user_id.to_string()};
     match collection.find_one(filter, None).await {
         Ok(result) => match result {
@@ -91,9 +91,7 @@ pub async fn find_enemy_by_match_id_and_self_tag(
     let collection: Collection<Document> = database.collection(round);
     let filter = doc! {
         "match_id": match_id,
-        "tag": {
-           "$ne": player_tag
-        }
+        "tag": {"$ne": player_tag}
     };
     match collection.find_one(filter, None).await {
         Ok(Some(enemy)) => Some(enemy),
@@ -101,7 +99,25 @@ pub async fn find_enemy_by_match_id_and_self_tag(
         Err(_err) => None,
     }
 }
-
+/// Asynchronously searches for a discord_id in the regional databases.
+pub async fn find_enemy_of_mannequin(
+    ctx: &Context<'_>,
+    region: &Region,
+    round: &str,
+    match_id: &i32,
+) -> Option<Document> {
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let collection: Collection<Document> = database.collection(round);
+    let filter = doc! {
+        "match_id": match_id,
+        "tag": {"$ne": Bson::Null},
+    };
+    match collection.find_one(filter, None).await {
+        Ok(Some(enemy)) => Some(enemy),
+        Ok(None) => None,
+        Err(_err) => None,
+    }
+}
 /// Asynchronously searches for a player's tag in the regional databases.
 ///
 /// # Arguments
@@ -143,7 +159,11 @@ pub async fn find_tag(ctx: &Context<'_>, tag: &str) -> Option<Document> {
 }
 
 pub fn is_mannequin(enemy: &Document) -> bool {
-    enemy.get("tag").unwrap() == &Bson::Null
+    enemy.get("tag").is_none()
+}
+
+pub fn is_disqualified(enemy: &Document) -> bool {
+    enemy.get("reason").is_some()
 }
 
 pub async fn find_all_false_battles(ctx: &Context<'_>, region: &Region) -> Cursor<Document> {

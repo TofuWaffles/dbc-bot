@@ -24,6 +24,7 @@ pub fn make_config() -> Document {
       "channel": Null,
       "bracket_channel": Null,
       "bracket_message_id": Null,
+      "log_channel": Null,
     };
     config
 }
@@ -47,7 +48,8 @@ pub fn make_player_doc(
         "discord_name": discord_name,
         "region": region.short(),
         "match_id": Null,
-        "battle": false
+        "battle": false,
+        "ready": false
     };
     player
 }

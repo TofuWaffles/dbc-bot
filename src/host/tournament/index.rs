@@ -8,12 +8,12 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::serenity_prelude::ReactionType;
 use poise::ReplyHandle;
-use tracing::info;
 
 use super::disqualify::disqualify_players;
 use super::next::display_next_round;
 use super::reset::reset_wrapper as reset;
 use super::setup::starter_wrapper;
+use super::statistics::statistics_information;
 const TIMEOUT: u64 = 300;
 
 pub async fn tournament_mod_panel(
@@ -34,9 +34,12 @@ pub async fn tournament_mod_panel(
                 return starter_wrapper(ctx, msg, region).await;
             }
             "next" => {
-                info!("Pressing next button");
                 mci.defer(&ctx.http()).await?;
                 return display_next_round(ctx, msg, region).await;
+            }
+            "stat" => {
+                mci.defer(&ctx.http()).await?;
+                return statistics_information(ctx, msg, region).await;
             }
             "disqualify" => {
                 mci.defer(&ctx.http()).await?;
@@ -66,7 +69,9 @@ async fn display_start_menu(
 - This will end registration phase immediately if successful.
 ➡️: Next round
 - Lets you move to the next round.
-- This will first check if any remaining players in the current round, if not, it will move to the next round.
+- If not all matches are completed, this will show details of unfinished matches.
+📊: Insight
+- Lets you see the statistics of the tournament.
 🔨: Disqualify
 - Lets you disqualify players from the tournament.
 - This will replace a disqualified player with a mannequin.
@@ -134,6 +139,12 @@ async fn display_start_buttons(
                         .emoji(ReactionType::Unicode("➡️".to_string()))
                         .style(poise::serenity_prelude::ButtonStyle::Primary)
                         .disabled(!next)
+                })
+                .create_button(|b| {
+                    b.custom_id("stat")
+                        .style(poise::serenity_prelude::ButtonStyle::Danger)
+                        .emoji(ReactionType::Unicode("📊".to_string()))
+                        .disabled(false)
                 })
                 .create_button(|b| {
                     b.custom_id("disqualify")

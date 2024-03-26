@@ -3,7 +3,9 @@ use dbc_bot::Region;
 use futures::StreamExt;
 use poise::{serenity_prelude::ReactionType, ReplyHandle};
 
-use super::{announcement::announcement, bracket_display::bracket_display, config::configurate};
+use super::{
+    announcement::announcement, bracket_display::bracket_display, config::configurate, test::test,
+};
 const TIMEOUT: u64 = 300;
 pub async fn utilities_mod_panel(
     ctx: &Context<'_>,
@@ -18,7 +20,12 @@ pub async fn utilities_mod_panel(
 📢: Announcement
 - Set an announcement for the tournament.
 🛠️: Configuration
-- Set the configuration for the tournament."#,
+- Set the configuration for the tournament.
+🎾: Bracket
+- Display the bracket for the tournament.
+-🧪: Test
+- Test sending to a channel.
+"#,
                 )
                 .color(0xFFFF00)
         })
@@ -38,6 +45,11 @@ pub async fn utilities_mod_panel(
                     b.custom_id("bracket")
                         .style(poise::serenity_prelude::ButtonStyle::Secondary)
                         .emoji(ReactionType::Unicode("🎾".to_string()))
+                })
+                .create_button(|b| {
+                    b.custom_id("test")
+                        .style(poise::serenity_prelude::ButtonStyle::Secondary)
+                        .emoji(ReactionType::Unicode("🧪".to_string()))
                 })
             })
         })
@@ -63,6 +75,10 @@ pub async fn utilities_mod_panel(
             "bracket" => {
                 mci.defer(&ctx.http()).await?;
                 return bracket_display(ctx, msg, region).await;
+            }
+            "test" => {
+                mci.defer(&ctx.http()).await?;
+                return test(ctx, msg, region).await;
             }
             _ => {}
         }

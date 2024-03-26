@@ -1,27 +1,24 @@
-use crate::bracket_tournament::bracket_update::update_bracket;
 use crate::brawlstars::api::{self, APIResult};
 use crate::database::battle::battle_happened;
 use crate::database::config::get_config;
 use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
-    is_mannequin,
+    is_disqualified, is_mannequin,
 };
-use crate::database::update::update_battle;
 use crate::database::update::update_match_id;
+use crate::database::update::update_result;
 use crate::discord::prompt::prompt;
+use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
-use mongodb::bson::{doc, Document};
+use mongodb::bson::Document;
 use mongodb::Collection;
-use poise::serenity_prelude::ChannelId;
+use poise::serenity_prelude::{ChannelId, UserId};
 use poise::ReplyHandle;
-use tracing::info;
+use tracing::error;
 
-const HAMSTER_VIOLIN_MEME: &str = "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
-
-/// If you are a participant, run this command once you have finished your match round.
-///
-/// Automatically grabs the user's match result from the game and updates the bracket.
+const HAMSTER_VIOLIN_MEME: &str =
+    "https://tenor.com/view/sad-hamster-meme-violin-gif-17930564980222230194";
 
 pub async fn submit_result(
     ctx: &Context<'_>,
@@ -35,7 +32,8 @@ pub async fn submit_result(
         "Please wait while we are submitting your result...",
         None,
         Some(0xFFFF00),
-    ).await?;
+    )
+    .await?;
     let round = find_round_from_config(&get_config(ctx, region).await);
     //Check if the user is in the tournament
     let caller = match find_self_by_discord_id(ctx, round).await.unwrap() {
@@ -82,7 +80,7 @@ pub async fn submit_result(
     let round_name = find_round_from_config(&config);
     let current_round: Collection<Document> = database.collection(&round_name);
     let round = config.get("round").unwrap().as_i32().unwrap();
-    let caller = match battle_happened(ctx, caller_tag, current_round, msg).await? {
+    let caller = match battle_happened(ctx, caller_tag, &current_round, msg).await? {
         Some(caller) => caller, // Battle did not happen yet
         None => return Ok(()),  // Battle already happened
     };
@@ -90,27 +88,16 @@ pub async fn submit_result(
         find_enemy_by_match_id_and_self_tag(ctx, &region, &round_name, &match_id, caller_tag)
             .await
             .unwrap();
-    if is_mannequin(&enemy) {
-        let next_round = database.collection(format!("Round {}", round + 1).as_str());
-        next_round
-            .insert_one(update_match_id(caller.clone()), None)
-            .await?;
-        msg.edit(*ctx, |s|{
-            s.embed(|e|{
-                e.title("Bye... See you next round")
-                .description("Congratulation, you pass this round!")
-                .color(0xFFFF00)
-                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
-            })
-        }).await?;
-        channel_to_announce
+    if is_mannequin(&enemy) || is_disqualified(&enemy) {
+        update_result(ctx, &region, &round_name, &caller, &enemy, None).await?;
+        let m = channel_to_announce
             .send_message(ctx, |m| {
                 m.embed(|e| {
                     e.title("Result is here!")
-                    .thumbnail(format!(
-                        "https://cdn-old.brawlify.com/profile/{}.png",
-                        caller.get_i64("icon").unwrap_or(28000000)
-                    ))
+                        .thumbnail(format!(
+                            "https://cdn-old.brawlify.com/profile/{}.png",
+                            caller.get_i64("icon").unwrap_or(28000000)
+                        ))
                         .description(format!(
                         "Congratulations! <@{}> ({}-{}) has won round {} and proceeds to round {}!",
                         caller.get_str("discord_id").unwrap(),
@@ -124,8 +111,15 @@ pub async fn submit_result(
                 })
             })
             .await?;
+        msg.edit(*ctx, |s|{
+            s.embed(|e|{
+                e.title("Bye... See you next round")
+                .description(format!("Congratulation, you advance to next round!\nCheck out your result at [here]({})", m.link()))
+                .color(0xFFFF00)
+                .footer(|f| f.text("According to Dictionary.com, in a tournament, a bye is the preferential status of a player or team not paired with a competitor in an early round and thus automatically advanced to play in the next round."))
+            })
+        }).await?;
 
-        update_battle(database, round, match_id).await?;
         // update_bracket(ctx, None).await?;
         return Ok(());
     }
@@ -135,34 +129,23 @@ pub async fn submit_result(
     // let server_id = ctx.guild_id().unwrap().0;
 
     match get_result(mode, map, caller, enemy).await {
-        Some(winner) => {
+        Some(players) => {
+            let (winner, defeated) = players;
             if round < config.get("total").unwrap().as_i32().unwrap() {
-                let next_round: Collection<Document> =
-                    database.collection(format!("Round {}", round + 1).as_str());
-                next_round
-                    .insert_one(update_match_id(winner.clone()), None)
-                    .await?;
-                update_battle(database, round, match_id).await?;
-                // update_bracket(ctx, None).await?;
-                msg.edit(*ctx, |s| {
-                    s.embed(|e| {
-                        e.title("Result is here!")
-                            .description(format!(
-                                r#"{}({}) has won this round!
-
-"#,
-                                winner.get_str("name").unwrap(),
-                                winner.get_str("tag").unwrap(),
-                                // guild = server_id,
-                                // chn = bracket_chn_id,
-                                // msg_id = bracket_msg_id
-                            ))
-                            .color(0xFFFF00)
-                    })
-                    .components(|c| c)
-                })
+                update_result(ctx, &region, &round_name, &winner, &defeated, None).await?;
+                let defeated_user = UserId(
+                    defeated
+                        .get_str("discord_id")
+                        .unwrap_or("0")
+                        .parse::<u64>()?,
+                )
+                .to_user(ctx.http())
                 .await?;
-                channel_to_announce
+                if let Err(e) = remove_role(ctx, &defeated_user, &region).await {
+                    error!("{e}");
+                }
+                // update_bracket(ctx, None).await?;
+                let m = channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!")
@@ -185,36 +168,24 @@ pub async fn submit_result(
                         })
                     })
                     .await?;
-            } else {
-                database
-                    .collection::<Collection<Document>>(format!("Round {}", round).as_str())
-                    .update_one(
-                        doc! { "_id": winner.get_object_id("_id")? },
-                        doc! { "$set": { "winner": true } },
-                        None,
-                    )
-                    .await?;
-                update_battle(database, round, match_id).await?;
-                // update_bracket(ctx, None).await?;
                 msg.edit(*ctx, |s| {
                     s.embed(|e| {
                         e.title("Result is here!")
-                        .thumbnail(format!(
-                            "https://cdn-old.brawlify.com/profile/{}.png",
-                            winner.get_i64("icon").unwrap_or(28000000)
-                        ))
                             .description(format!(
-                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!",
-                                winner.get_str("discord_id").unwrap(),
-                                winner.get_str("name").unwrap(),
-                                winner.get_str("tag").unwrap()
+                                r#"Result is submitted [here]({})"#,
+                                m.link() // guild = server_id,
+                                         // chn = bracket_chn_id,
+                                         // msg_id = bracket_msg_id
                             ))
                             .color(0xFFFF00)
                     })
                     .components(|c| c)
                 })
                 .await?;
-                channel_to_announce
+            } else {
+                update_result(ctx, &region, &round_name, &winner, &defeated, None).await?;
+                // update_bracket(ctx, None).await?;
+                let m = channel_to_announce
                     .send_message(ctx, |m| {
                         m.embed(|e| {
                             e.title("Result is here!").description(format!(
@@ -225,6 +196,26 @@ pub async fn submit_result(
                         })
                     })
                     .await?;
+                msg.edit(*ctx, |s| {
+                    s.embed(|e| {
+                        e.title("Result is here!")
+                            .thumbnail(format!(
+                                "https://cdn-old.brawlify.com/profile/{}.png",
+                                winner.get_i64("icon").unwrap_or(28000000)
+                            ))
+                            .description(format!(
+                                "CONGRATULATIONS! <@{}>({}-{}) IS THE TOURNAMENT CHAMPION!\n
+Your result is shown here [here]({})!",
+                                winner.get_str("discord_id").unwrap(),
+                                winner.get_str("name").unwrap(),
+                                winner.get_str("tag").unwrap(),
+                                m.link()
+                            ))
+                            .color(0xFFFF00)
+                    })
+                    .components(|c| c)
+                })
+                .await?;
             }
         }
         None => {
@@ -232,29 +223,43 @@ pub async fn submit_result(
                 ctx,
                 msg,
                 "There are not enough results yet!",
-                "As the result is recorded nearly in real-time, please try again later. It may take up to 30 seconds for a new battle to appear in the battle log!",
+                format!(
+                    r#"As the result is recorded nearly in real-time, please try again later.
+It may take up to 30 seconds for a new battle to appear in the battle log!
+In the meantime, please make sure that all of the recent battles satisfy these conditions: 
+- ⚔️ Mode: {mode}
+- 🗺️ Map: {map}
+- 🧑‍🤝‍🧑 Friendly room
+- 🤖 Turn OFF all bots"#,
+                    mode = config.get_str("mode").unwrap_or("Any"),
+                    map = config.get_str("map").unwrap_or("Any")
+                ),
                 None,
                 Some(0xFFFF00),
-            ).await?;
+            )
+            .await?;
         }
     }
     Ok(())
 }
 
-async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) -> Option<Document> {
+async fn get_result(
+    mode: &str,
+    map: &str,
+    caller: Document,
+    enemy: Document,
+) -> Option<(Document, Document)> {
     let caller_tag = caller.get("tag").unwrap().as_str().unwrap();
     let enemy_tag = enemy.get("tag").unwrap().as_str().unwrap();
     let logs = match api::request("battle_log", caller_tag).await {
-        Ok(APIResult::Successful(battle_log)) => {
-            Some(battle_log["items"].as_array().unwrap().clone())
-        }
-        Ok(APIResult::APIError(_)) => None,
-        Ok(APIResult::NotFound(_)) | Err(_) => None,
+        Ok(APIResult::Successful(battle_log)) => battle_log["items"].as_array().unwrap().clone(),
+        Ok(APIResult::APIError(_)) => return None,
+        Ok(APIResult::NotFound(_)) | Err(_) => return None,
     };
     let mut results: Vec<String> = vec![];
 
-    for log in logs.unwrap().iter().rev() {
-        if !log_check(&log, mode, map) {
+    for log in logs.iter() {
+        if !log_check(log, mode, map) {
             continue;
         }
 
@@ -288,8 +293,8 @@ async fn get_result(mode: &str, map: &str, caller: Document, enemy: Document) ->
             }
         }
         match is_victory {
-            Some(true) => Some(caller),
-            Some(false) => Some(enemy),
+            Some(true) => Some((caller, enemy)),
+            Some(false) => Some((enemy, caller)),
             None => None,
         }
     } else {

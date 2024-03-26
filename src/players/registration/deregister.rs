@@ -47,7 +47,10 @@ pub async fn deregister_menu(
             "deregister" => {
                 let region = Region::find_key(player.get_str("region").unwrap()).unwrap();
                 remove_registration(ctx, &player).await?;
-                remove_role(ctx, msg, &get_config(ctx, &region).await).await?;
+                if let Err(e) = remove_role(ctx, msg, &get_config(ctx, &region).await).await {
+                    return prompt(ctx, msg, "ERROR", format!("{e}"), None, Some(0xFF0000)).await;
+                }
+
                 msg.edit(*ctx, |b| {
                     b.components(|c| c)
                         .embed(|e| {
