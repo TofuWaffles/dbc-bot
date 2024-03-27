@@ -1,6 +1,6 @@
 use crate::{
-    database::find::find_player_by_discord_id,
-    discord::{checks::is_host, prompt::prompt},
+    database::find::{find_player_by_discord_id, find_player_by_discord_id_without_region},
+    discord::{checks::is_host, prompt::{self, prompt}},
     players::view::view_info,
 };
 use crate::{
@@ -45,7 +45,7 @@ pub async fn lookup_player(
             }
         }
         (None, Some(user_id)) => {
-            let user = match UserId(user_id.parse().unwrap_or(0))
+            let user = match UserId(user_id.parse::<u64>().unwrap_or(0))
                 .to_user(ctx.http())
                 .await
             {
@@ -124,7 +124,20 @@ async fn analyze_id_and_find_player(
     user: User,
 ) -> Result<Option<Document>, Error> {
     let user_id = user.id.0;
-    let roles = get_roles_from_user(ctx, Some(&user)).await?;
+    let roles = match get_roles_from_user(ctx, Some(&user)).await{
+        Ok(roles) => roles,
+        Err(_) => {
+            prompt(
+                ctx,
+                msg,
+                "Cannot get user roles",
+                "The user is not in the server! Trying to find the user in the database...",
+                None,
+                Some(0xFF0000),
+            ).await?;
+            return find_player_by_discord_id_without_region(ctx, user_id).await
+        }
+    };
     let region = match get_region_from_role(ctx, roles).await {
         Some(region) => region,
         None => {

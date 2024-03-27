@@ -20,7 +20,6 @@ pub async fn view_opponent_wrapper(
     player: Document,
 ) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
-    info!("{:?}", player);
     if player.get_bool("battle").unwrap_or(false) {
         return prompt(
             ctx,

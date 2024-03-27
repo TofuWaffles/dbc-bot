@@ -17,22 +17,31 @@ pub async fn get_individual_player_data(
     ctx: Context<'_>,
     user: serenity::User,
 ) -> Result<(), Error> {
-    info!(
-        "RUNNING context-menu 'Player information' on {}({})",
-        user.name, user.id.0
-    );
     ctx.defer_ephemeral().await?;
     let msg = ctx
         .send(|s| {
             s.embed(|s| {
                 s.title("Getting player data...")
-                    .description("Please wait a moment")
+                    .description("How would you like to view this player data? Choose\n - Current to view the player data for the current round.\n- Custom to view the player data for a specific round.")
                     .color(0x00FF00)
             })
             .reply(true)
+            .components(|c|{
+                c.create_action_row(|a| {
+                    a.create_button(|b| b.custom_id("current").label("Current"));
+                    a
+                })
+                
+            
+            })
         })
         .await?;
-
+    let mut cic = msg.clone()
+        .into_message()
+        .await?
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT))
+        .build();
     let (mut region, mut round) = (None, None);
     let roles = get_roles_from_user(&ctx, Some(&user)).await?;
     match get_region_from_role(&ctx, roles).await {

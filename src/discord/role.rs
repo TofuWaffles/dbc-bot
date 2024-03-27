@@ -36,8 +36,7 @@ pub async fn get_roles_from_user(
                 .guild_id()
                 .unwrap()
                 .member(ctx.http(), user.id)
-                .await
-                .unwrap();
+                .await?;
             Ok(member.roles)
         }
         None => match ctx.author_member().await {

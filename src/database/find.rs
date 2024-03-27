@@ -31,7 +31,29 @@ pub async fn find_self_by_discord_id(
     }
     Ok(None)
 }
-
+pub async fn find_player_by_discord_id_without_region(
+    ctx: &Context<'_>,
+    id: u64,
+) -> Result<Option<Document>, Error> {
+    for region in Region::iter() {
+        let database = ctx.data().database.regional_databases.get(&region).unwrap();
+        let round = find_round_from_config(&get_config(ctx, &region).await);
+        let collection: Collection<Document> = database.collection(&round);
+        let filter = doc! {"discord_id": id.to_string()};
+        match collection.find_one(filter, None).await {
+            Ok(result) => match result {
+                Some(p) => {
+                    return Ok(Some(p));
+                }
+                None => continue,
+            },
+            Err(_) => {
+                return Ok(None);
+            }
+        }
+    }
+    Ok(None)
+}
 pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
