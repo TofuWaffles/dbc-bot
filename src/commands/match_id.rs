@@ -5,7 +5,6 @@ use crate::discord::prompt::prompt;
 use crate::players::tournament::view2::view_opponent;
 use crate::Region;
 use crate::{Context, Error};
-use futures::StreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
 

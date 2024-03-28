@@ -380,14 +380,10 @@ pub async fn mass_disqualify_wrapper(
                     if let Some(opponent) =
                         find_enemy_of_mannequin(ctx, region, round, &match_id).await
                     {
-                        match update_result(ctx, region, round, &opponent, &player, "Inactive")
-                            .await
-                        {
-                            Err(e) => {
-                                error!("{e}");
-                            }
-                            Ok(_) => {}
-                        };
+                        if let Err(e) = update_result(ctx, region, round, &opponent, &player, "Inactive").await {
+                            error!("{e}");
+                        }
+                        
                     }
                 }
             },

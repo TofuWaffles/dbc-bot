@@ -1,7 +1,7 @@
 use crate::brawlstars::{api::request, api::APIResult, player::stat};
 use crate::database::config::get_config;
 use crate::database::find::{find_player_by_discord_id, find_round_from_config};
-use crate::discord::prompt::{prompt};
+use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use dbc_bot::Region;
