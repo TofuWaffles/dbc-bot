@@ -9,7 +9,7 @@ use mongodb::bson::{doc, Document};
 use mongodb::Collection;
 
 
-#[poise::command(slash_command, guild_only, check = "is_host")]
+#[poise::command(slash_command, guild_only, check = "is_host", rename = "find-match")]
 pub async fn find_match(
     ctx: Context<'_>,
     #[description = "Region"] region: Region,
@@ -29,7 +29,7 @@ pub async fn find_match(
     let database = ctx.data().database.regional_databases.get(&region).unwrap();
     let config = get_config(&ctx, &region).await;
     if round < 1 || round > config.get_i32("round")? {
-        ctx.send(|m| {
+        msg.edit(ctx,|m| {
             m.embed(|e| {
                 e.title("Error")
                     .description("Invalid round number")
