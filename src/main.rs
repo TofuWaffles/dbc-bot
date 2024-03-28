@@ -63,6 +63,7 @@ async fn run() -> Result<(), Error> {
         commands::update_proof::update_proof(),
         commands::setup::setup(),
         commands::player_lookup::lookup_player(),
+        commands::match_id::find_match(),
     ];
     info!("{} commands registered", commands.len());
     // match dotenv::dotenv() {
