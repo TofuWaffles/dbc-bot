@@ -59,7 +59,8 @@ Please stay tuned for the announcement to know when next round starts!",
                         .await?;
                 return Ok(());
             } else {
-                return view_opponent(ctx, msg, player, enemy, config).await
+                let round = config.get_i32("round")?;
+                return view_opponent(ctx, msg, player, enemy, round, config).await
             }
         }
         None => {
@@ -82,6 +83,7 @@ pub async fn view_opponent(
     msg: &ReplyHandle<'_>,
     player: Document,
     enemy: Document,
+    round: i32,
     config: Document,
 ) -> Result<(), Error> {
     prompt(
@@ -93,7 +95,6 @@ pub async fn view_opponent(
         Some(0xFFFF00),
     )
     .await?;
-    let round = config.get_i32("round")?;
     let match_id = player.get_i32("match_id")?;
     let prebattle = match get_image(&player, &enemy, &config).await {
         Ok(prebattle) => prebattle,

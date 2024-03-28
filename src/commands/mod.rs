@@ -5,3 +5,4 @@ pub mod player_lookup;
 pub mod setup;
 pub mod update_proof;
 pub mod user;
+pub mod match_id;

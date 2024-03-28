@@ -10,7 +10,7 @@ use std::process::Command;
 use std::process::Stdio;
 use tracing::{error, info};
 
-pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
+pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>, start_round: i32) -> Result<(), Error> {
     let current_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(e) => {
@@ -51,7 +51,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     let mut player_data: Vec<(i32, i32, String, String, bool, bool)> = Vec::new();
     let mut match_ids = Vec::new();
 
-    for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
+    for round_number in start_round..=config.get_i32("total")? {
         let round_name = format!("Round {}", round_number);
         let mut database: mongodb::Cursor<mongodb::bson::Document> = ctx
             .data()
@@ -238,6 +238,5 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
             )));
         }
     };
-
     Ok(())
 }

@@ -396,7 +396,7 @@ pub async fn mass_disqualify_wrapper(
             }
         }
         if index % perc == 0 {
-            let progress = index / perc;
+            let progress = index.checked_div(perc).unwrap_or(index);
             prompt(
                 ctx,
                 msg,
