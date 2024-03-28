@@ -57,6 +57,8 @@ pub async fn find_match(
         }
         Some(player) => {
             let tag = player.get_str("tag")?;
+            let name = player.get_str("name")?;
+            let id = player.get_str("discord_id")?;
             let enemy =
                 find_enemy_by_match_id_and_self_tag(&ctx, &region, &round_name, &match_id, tag)
                     .await;
@@ -65,11 +67,12 @@ pub async fn find_match(
                     view_opponent(&ctx, &msg, player, enemy, round, config).await
                 }
                 None => {
+                    let suggestion= format!("{} and {}", match_id*2, match_id*2-1);
                     prompt(
             &ctx,
             &msg,
             "Not found",
-            "This player has no opponent yet! Probably run this command again to check previous round with twice the value of match id.",
+            format!("Player {name}({tag}) -`{id}` has no opponent yet! Probably run this command again to check their potential opponent from previous round with match ids: {suggestion}"),
             None,
             Some(0xFF0000),
           ).await
