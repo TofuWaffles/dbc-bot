@@ -1,7 +1,6 @@
 use crate::database::config::get_config;
 use crate::database::find::{
-    find_enemy_by_match_id_and_self_tag, find_round_from_config,
-    is_disqualified, is_mannequin,
+    find_enemy_by_match_id_and_self_tag, find_round_from_config, is_disqualified, is_mannequin,
 };
 use crate::discord::prompt::prompt;
 use crate::visual::pre_battle::get_image;
@@ -36,19 +35,10 @@ Please stay tuned for the announcement to know when next round starts!",
     let match_id: i32 = player.get_i32("match_id").unwrap();
     let caller_tag = player.get_str("tag").unwrap();
     let round_name = find_round_from_config(&config);
-    match find_enemy_by_match_id_and_self_tag(
-        ctx,
-        region,
-        &round_name,
-        &match_id,
-        caller_tag,
-    )
-    .await
+    match find_enemy_by_match_id_and_self_tag(ctx, region, &round_name, &match_id, caller_tag).await
     {
         Some(enemy) => {
-            if is_mannequin(&enemy) 
-            || is_disqualified(&enemy) 
-            {
+            if is_mannequin(&enemy) || is_disqualified(&enemy) {
                 msg.edit(*ctx, |s| {
                             s.embed(|e| {
                                 e.title("Congratulations! You earn a free win!")
@@ -60,7 +50,7 @@ Please stay tuned for the announcement to know when next round starts!",
                 return Ok(());
             } else {
                 let round = config.get_i32("round")?;
-                return view_opponent(ctx, msg, player, enemy, round, config).await
+                return view_opponent(ctx, msg, player, enemy, round, config).await;
             }
         }
         None => {
@@ -74,7 +64,6 @@ Please stay tuned for the announcement to know when next round starts!",
             return Ok(());
         }
     };
-    
 }
 
 /// View your opponent

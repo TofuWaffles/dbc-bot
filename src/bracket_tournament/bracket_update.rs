@@ -10,7 +10,11 @@ use std::process::Command;
 use std::process::Stdio;
 use tracing::{error, info};
 
-pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>, start_round: i32) -> Result<(), Error> {
+pub async fn update_bracket(
+    ctx: &Context<'_>,
+    region: Option<&Region>,
+    start_round: i32,
+) -> Result<(), Error> {
     let current_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(e) => {

@@ -1,6 +1,8 @@
 use crate::commands::context_menu::player::get_data;
 use crate::database::config::get_config;
-use crate::database::find::{find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config};
+use crate::database::find::{
+    find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config,
+};
 use crate::database::open::tournament;
 use crate::discord::prompt::prompt;
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
@@ -28,18 +30,17 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
                     a.create_button(|b| b.custom_id("current").label("Current"))
                     .create_button(|b| b.custom_id("custom").label("Custom"))
                 })
-                
-            
             })
         })
         .await?;
-    let mut cic = msg.clone()
+    let mut cic = msg
+        .clone()
         .into_message()
         .await?
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(TIMEOUT))
         .build();
-    while let Some(mci) = cic.next().await {
+    if let Some(mci) = cic.next().await {
         let (region, round) = match mci.data.custom_id.as_str() {
             "current" => {
                 mci.defer(ctx.http()).await?;
@@ -50,28 +51,50 @@ pub async fn view_battle(ctx: Context<'_>, user: serenity::User) -> Result<(), E
                         (region, round)
                     }
                     None => {
-                        return prompt(&ctx, &msg, "Error", "This player has no region role to find. Please try again with Custom.", None, 0xFF0000).await;
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Error",
+                            "This player has no region role to find. Please try again with Custom.",
+                            None,
+                            0xFF0000,
+                        )
+                        .await;
                     }
                 }
-            },
+            }
             "custom" => {
                 mci.defer(ctx.http()).await?;
                 get_data(&ctx, &msg, &user).await?
             }
             _ => return Err("Invalid custom_id".into()),
-        }; 
+        };
         let player = find_player_by_discord_id(&ctx, &region, user.id.0, round.as_str()).await?;
-        match player{
+        match player {
             Some(player) => return view_battle_helper(&ctx, &msg, &region, &round, &player).await,
             None => {
-                return prompt(&ctx, &msg, "404 not found", "Player not found in the database", None, 0xFF0000).await;
+                return prompt(
+                    &ctx,
+                    &msg,
+                    "404 not found",
+                    "Player not found in the database",
+                    None,
+                    0xFF0000,
+                )
+                .await;
             }
         }
     }
     Ok(())
 }
 
-async fn view_battle_helper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &Region, round: &str, player: &Document) -> Result<(), Error>{
+async fn view_battle_helper(
+    ctx: &Context<'_>,
+    msg: &ReplyHandle<'_>,
+    region: &Region,
+    round: &str,
+    player: &Document,
+) -> Result<(), Error> {
     if !tournament(&ctx, &region).await {
         return prompt(
             &ctx,
@@ -90,7 +113,8 @@ async fn view_battle_helper(ctx: &Context<'_>, msg: &ReplyHandle<'_>, region: &R
         &player.get_i32("match_id")?,
         &player.get_str("tag")?,
     )
-    .await{
+    .await
+    {
         Some(e) => e,
         None => {
             return prompt(

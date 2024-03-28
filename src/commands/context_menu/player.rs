@@ -31,18 +31,17 @@ pub async fn get_individual_player_data(
                     a.create_button(|b| b.custom_id("current").label("Current"))
                     .create_button(|b| b.custom_id("custom").label("Custom"))
                 })
-                
-            
             })
         })
         .await?;
-    let mut cic = msg.clone()
+    let mut cic = msg
+        .clone()
         .into_message()
         .await?
         .await_component_interactions(&ctx.serenity_context().shard)
         .timeout(std::time::Duration::from_secs(TIMEOUT))
         .build();
-    while let Some(mci) = cic.next().await {
+    if let Some(mci) = cic.next().await {
         let (region, round) = match mci.data.custom_id.as_str() {
             "current" => {
                 mci.defer(ctx.http()).await?;
@@ -53,38 +52,78 @@ pub async fn get_individual_player_data(
                         (region, round)
                     }
                     None => {
-                        return prompt(&ctx, &msg, "Error", "This player has no region role to find. Please try again with Custom.", None, 0xFF0000).await;
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Error",
+                            "This player has no region role to find. Please try again with Custom.",
+                            None,
+                            0xFF0000,
+                        )
+                        .await;
                     }
                 }
-            },
+            }
             "custom" => {
                 mci.defer(ctx.http()).await?;
                 get_data(&ctx, &msg, &user).await?
             }
             _ => return Err("Invalid custom_id".into()),
-        };        
+        };
         let player = find_player_by_discord_id(&ctx, &region, user.id.0, round.as_str()).await?;
-        match player{
-           Some(player) => {
+        match player {
+            Some(player) => {
                 let tag = player.get_str("tag").unwrap_or("#AAAAA");
-                match request("player", tag).await{
+                match request("player", tag).await {
                     Ok(APIResult::Successful(p)) => {
                         return stat(&ctx, &msg, &p, &region, Some(&player)).await
                     }
                     Ok(APIResult::NotFound(_)) => {
-                        return prompt(&ctx, &msg, "Could not find player from API", "Please make sure the player tag is valid", None, 0xFF0000).await
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Could not find player from API",
+                            "Please make sure the player tag is valid",
+                            None,
+                            0xFF0000,
+                        )
+                        .await
                     }
                     Ok(APIResult::APIError(_)) => {
-                        return prompt(&ctx, &msg, "500: Internal Server Error from", "Unable to fetch player data from Brawl Stars API", None, 0xFF0000).await
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "500: Internal Server Error from",
+                            "Unable to fetch player data from Brawl Stars API",
+                            None,
+                            0xFF0000,
+                        )
+                        .await
                     }
                     Err(e) => {
-                        return prompt(&ctx, &msg, "Error accessing database", &format!("Error: {}", e), None, 0xFF0000).await
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Error accessing database",
+                            &format!("Error: {}", e),
+                            None,
+                            0xFF0000,
+                        )
+                        .await
+                    }
                 }
             }
-           }
-           None => { 
-            return prompt(&ctx, &msg, "404 not found", "Player not found in the database", None, 0xFF0000).await;
-        } 
+            None => {
+                return prompt(
+                    &ctx,
+                    &msg,
+                    "404 not found",
+                    "Player not found in the database",
+                    None,
+                    0xFF0000,
+                )
+                .await;
+            }
         }
     }
     Ok(())
