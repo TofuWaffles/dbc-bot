@@ -47,10 +47,10 @@ Please stay tuned for the announcement to know when next round starts!",
                             })
                         })
                         .await?;
-                return Ok(());
+                Ok(())
             } else {
                 let round = config.get_i32("round")?;
-                return view_opponent(ctx, msg, player, enemy, round, config).await;
+                view_opponent(ctx, msg, player, enemy, round, config).await
             }
         }
         None => {
@@ -61,9 +61,9 @@ Please stay tuned for the announcement to know when next round starts!",
                 })
             })
             .await?;
-            return Ok(());
+            Ok(())
         }
-    };
+    }
 }
 
 /// View your opponent

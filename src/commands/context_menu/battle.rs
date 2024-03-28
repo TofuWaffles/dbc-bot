@@ -95,10 +95,10 @@ async fn view_battle_helper(
     round: &str,
     player: &Document,
 ) -> Result<(), Error> {
-    if !tournament(&ctx, &region).await {
+    if !tournament(ctx, region).await {
         return prompt(
-            &ctx,
-            &msg,
+            ctx,
+            msg,
             "Tournament is not open!",
             "The tournament is not open yet! Please run this command again when the tournament is open!",
             None,
@@ -107,19 +107,19 @@ async fn view_battle_helper(
         .await;
     }
     let enemy = match find_enemy_by_match_id_and_self_tag(
-        &ctx,
-        &region,
-        &round,
+        ctx,
+        region,
+        round,
         &player.get_i32("match_id")?,
-        &player.get_str("tag")?,
+        player.get_str("tag")?,
     )
     .await
     {
         Some(e) => e,
         None => {
             return prompt(
-                &ctx,
-                &msg,
+                ctx,
+                msg,
                 "Not found",
                 "Enemy not found in the database",
                 None,
@@ -128,7 +128,7 @@ async fn view_battle_helper(
             .await;
         }
     };
-    let config = get_config(&ctx, &region).await;
+    let config = get_config(ctx, region).await;
     let round = config.get_i32("round")?;
-    view_opponent(&ctx, &msg, player.clone(), enemy, round, config).await
+    view_opponent(ctx, msg, player.clone(), enemy, round, config).await
 }

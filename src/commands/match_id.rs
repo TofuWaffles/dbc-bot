@@ -8,7 +8,7 @@ use crate::{Context, Error};
 use futures::StreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::Collection;
-use poise::ReplyHandle;
+
 
 #[poise::command(slash_command, guild_only, check = "is_host")]
 pub async fn find_match(
@@ -46,7 +46,7 @@ pub async fn find_match(
         .await?;
     match player {
         None => {
-            return prompt(
+            prompt(
                 &ctx,
                 &msg,
                 "Error",
@@ -54,7 +54,7 @@ pub async fn find_match(
                 None,
                 Some(0xFF0000),
             )
-            .await;
+            .await
         }
         Some(player) => {
             let tag = player.get_str("tag")?;
@@ -63,17 +63,17 @@ pub async fn find_match(
                     .await;
             match enemy {
                 Some(enemy) => {
-                    return view_opponent(&ctx, &msg, player, enemy, round, config).await
+                    view_opponent(&ctx, &msg, player, enemy, round, config).await
                 }
                 None => {
-                    return prompt(
+                    prompt(
             &ctx,
             &msg,
             "Not found",
             "This player has no opponent yet! Probably run this command again to check previous round with twice the value of match id.",
             None,
             Some(0xFF0000),
-          ).await;
+          ).await
                 }
             }
         }

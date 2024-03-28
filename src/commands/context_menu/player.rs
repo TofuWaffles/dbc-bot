@@ -1,7 +1,7 @@
 use crate::brawlstars::{api::request, api::APIResult, player::stat};
 use crate::database::config::get_config;
 use crate::database::find::{find_player_by_discord_id, find_round_from_config};
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::{prompt};
 use crate::discord::role::{get_region_from_role, get_roles_from_user};
 use crate::{Context, Error};
 use dbc_bot::Region;
@@ -181,9 +181,9 @@ pub async fn get_data(
                 confirm(
                     ctx,
                     msg,
-                    &user,
-                    &round.as_ref().unwrap(),
-                    &region.as_ref().unwrap(),
+                    user,
+                    round.as_ref().unwrap(),
+                    region.as_ref().unwrap(),
                 )
                 .await?;
             }
@@ -192,11 +192,11 @@ pub async fn get_data(
     }
     match (region, round) {
         (Some(r), Some(rnd)) => {
-            return Ok((r, rnd));
+            Ok((r, rnd))
         }
-        (Some(r), None) => return Ok((r, "".to_owned())),
+        (Some(r), None) => Ok((r, "".to_owned())),
         (_, _) => {
-            return Err("Please select a region and round".into());
+            Err("Please select a region and round".into())
         }
     }
 }
@@ -206,8 +206,8 @@ async fn round_getter(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    let total: i32 = find_round_from_config(&get_config(&ctx, region).await)
-        .split(" ")
+    let total: i32 = find_round_from_config(&get_config(ctx, region).await)
+        .split(' ')
         .nth(1)
         .unwrap_or("0")
         .parse()

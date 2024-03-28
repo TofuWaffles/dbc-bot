@@ -1,6 +1,6 @@
 use crate::{
     bracket_tournament::bracket_update::update_bracket,
-    database::{config::get_config, find::find_round_from_config},
+    database::{config::get_config},
     discord::prompt::prompt,
     Context, Error,
 };

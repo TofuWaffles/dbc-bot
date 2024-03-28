@@ -7,7 +7,7 @@ use crate::{
     database::find::{find_player_by_discord_id, find_player_by_discord_id_without_region},
     discord::{
         checks::is_host,
-        prompt::{self, prompt},
+        prompt::{prompt},
     },
     players::view::view_info,
 };

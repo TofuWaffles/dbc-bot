@@ -58,8 +58,8 @@ impl<'a> Log<'a> {
         if form.reason.is_empty() {
             form.reason = Self::DEFAULT_DISQUALIFY.to_string();
         }
-        let imgs: Vec<String> = match &form.proof {
-            Some(imgs) => imgs.split(",").map(String::from).to_owned().collect(),
+        let _imgs: Vec<String> = match &form.proof {
+            Some(imgs) => imgs.split(',').map(String::from).to_owned().collect(),
             None => Vec::new(),
         };
         let msg = self

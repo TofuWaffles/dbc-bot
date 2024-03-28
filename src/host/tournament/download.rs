@@ -175,7 +175,7 @@ pub async fn compact(
             }
         }
         let content = pages[index].iter().fold(String::new(), |mut acc, id| {
-            write!(acc, "<@{id}>\n").unwrap();
+            writeln!(acc, "<@{id}>").unwrap();
             acc
         });
         press
