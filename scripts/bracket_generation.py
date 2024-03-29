@@ -28,12 +28,11 @@ def generate_bracket_image(region, total_rounds, args):
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split(sep)
         results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         
-    image_width = 10000
-    image_height = 5000
+    image_width = 2000
+    image_height = 1000
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13
-
     game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
     _size = total_rounds
@@ -41,7 +40,6 @@ def generate_bracket_image(region, total_rounds, args):
     _column_width = image_width / _columns
     _game_box_width = _column_width - horizontal_padding
     _game_box_height = _game_box_width / game_box_width_height_ratio
-    
 
     resized_background_image = cv2.resize(background_image, (image_width, image_height))
 
@@ -136,7 +134,7 @@ def write_text(image, text: str, x: float, y: float, font_path: str, font_size, 
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
     position = (x,y)
-    font = ImageFont.truetype(font_path, font_size*50)
+    font = ImageFont.truetype(font_path, font_size)
     draw.text(position, text, font=font, fill=color)
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 

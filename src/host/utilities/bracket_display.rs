@@ -7,6 +7,7 @@ use crate::{
 use dbc_bot::Region;
 use futures::StreamExt;
 use poise::ReplyHandle;
+use tracing::info;
 
 pub async fn bracket_display(
     ctx: &Context<'_>,
@@ -48,12 +49,13 @@ pub async fn bracket_display(
     if let Some(mci) = cic.next().await {
         mci.defer(ctx.http()).await?;
         start = mci.data.values[0].parse::<i32>().unwrap_or(1);
+        info!("Starting at round {}", start);
     }
     prompt(
         ctx,
         msg,
         "Generating bracket image",
-        "<a:loading:1187839622680690689> Please wait while the image is being generated",
+        format!("<a:loading:1187839622680690689> Please wait while the image is being generated starting at round {}", start),
         None,
         None,
     )
