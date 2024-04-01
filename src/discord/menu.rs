@@ -156,12 +156,12 @@ pub async fn tournament_menu(
                         .style(ButtonStyle::Primary)
                         .emoji(ReactionType::Unicode("🔍".to_string()))
                 })
-                .create_button(|b| {
-                    b.custom_id("help")
-                        .disabled(!help)
-                        .style(ButtonStyle::Secondary)
-                        .emoji(ReactionType::Unicode("❓".to_string()))
-                })
+                // .create_button(|b| {
+                //     b.custom_id("help")
+                //         .disabled(!help)
+                //         .style(ButtonStyle::Secondary)
+                //         .emoji(ReactionType::Unicode("❓".to_string()))
+                // })
             })
             // .create_action_row(|r| {
             //     r.create_button(|b| {
