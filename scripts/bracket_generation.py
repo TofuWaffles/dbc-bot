@@ -11,7 +11,7 @@ def generate_bracket_image(region, total_rounds, args):
     region_background_mapping = {
         'Europe': 'bracket_preset_eu.png',
         'North America & South America': 'bracket_preset_nasa.png',
-        'Asia & Oceania': 'bracket_preset_apac.jpg',
+        'Asia & Oceania': 'bracket_preset_apac.png',
     }
     # root = os.path.dirname(os.path.dirname(current_dir))
     background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.png'))
