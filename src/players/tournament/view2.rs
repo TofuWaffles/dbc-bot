@@ -246,11 +246,12 @@ pub async fn april_fool(ctx: &Context<'_>, msg: &ReplyHandle<'_>, enemy: &Docume
 }
 
 async fn progress_bar(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error>{
-    for i in 0..3 {
+    for i in 0..=3 {
         let progress: f64 = match i {
-            0 => 33.33,
-            1 => 66.66,
-            2 => 100.0,
+            0 => 0.0,
+            1 => 33.33,
+            2 => 66.66,
+            3 => 100.0,
             _ => 0.0, // Default case, not needed but added for completeness
         };
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
