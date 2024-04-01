@@ -272,8 +272,7 @@ async fn progress_bar(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Er
         ).await?;
         
     }
-    Ok(())
-    
+    Ok(()) 
 }
 
 ///View list of roles as manager of the tournament
