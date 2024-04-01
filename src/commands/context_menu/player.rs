@@ -160,7 +160,6 @@ pub async fn get_data(
         .timeout(std::time::Duration::from_secs(TIMEOUT));
     let mut cic = cib.build();
     while let Some(mci) = &cic.next().await {
-        info!("Got interaction: {:?}", mci.data.custom_id.as_str());
         match mci.data.custom_id.as_str() {
             "APAC" | "EU" | "NASA" => {
                 mci.defer(ctx.http()).await?;

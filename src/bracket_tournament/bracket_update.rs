@@ -124,7 +124,7 @@ pub async fn update_bracket(
         }
         match_ids.clear();
     }
-    let sep = "/se/pa/ra/tor/";
+    let sep = "/se/";
     let data = match player_data.is_empty() {
         true => format!("1{sep}1{sep} {sep} {sep} {sep} "),
         false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| {

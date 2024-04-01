@@ -11,7 +11,7 @@ def generate_bracket_image(region, total_rounds, args):
     region_background_mapping = {
         'Europe': 'bracket_preset_eu.png',
         'North America & South America': 'bracket_preset_nasa.png',
-        'Asia & Oceania': 'bracket_preset_apac.png',
+        'Asia & Oceania': 'bracket_preset_apac.jpg',
     }
     # root = os.path.dirname(os.path.dirname(current_dir))
     background_image_path = os.path.join(current_dir, "assets/brackets", region_background_mapping.get(region, 'bracket_preset_default.png'))
@@ -21,15 +21,15 @@ def generate_bracket_image(region, total_rounds, args):
     region = region
     
     total_rounds = int(total_rounds)
-    sep = "/se/pa/ra/tor/"
+    sep = "/se/"
     results = []
     for arg in args.split(","):
 
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split(sep)
         results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         
-    image_width = 2000
-    image_height = 1000
+    image_width = 10000
+    image_height = 5000
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13
@@ -122,7 +122,8 @@ def generate_bracket_image(region, total_rounds, args):
 
                     image = write_text(image, text1, text_x1, text_y1, font_path, font_scale, (0, 0, 0))
                     image = write_text(image, text2, text_x1, text_y2, font_path, font_scale, (0, 0, 0))
-
+                    # cv2.putText(image, text1, (text_x1, text_y1), font_face, font_scale, (0, 0, 0), font_thickness, cv2.LINE_AA)
+                    # cv2.putText(image, text2, (text_x1, text_y2), font_face, font_scale, (0, 0, 0), font_thickness, cv2.LINE_AA)
         total_previous_games += games / 2
         
     _, buffer = cv2.imencode(".png", image)
@@ -134,7 +135,7 @@ def write_text(image, text: str, x: float, y: float, font_path: str, font_size, 
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
     position = (x,y)
-    font = ImageFont.truetype(font_path, font_size)
+    font = ImageFont.truetype(font_path, 50*font_size)
     draw.text(position, text, font=font, fill=color)
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 

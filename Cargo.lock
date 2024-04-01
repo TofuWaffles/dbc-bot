@@ -507,6 +507,7 @@ dependencies = [
  "just",
  "mongodb",
  "poise",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
