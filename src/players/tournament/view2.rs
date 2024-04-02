@@ -143,11 +143,11 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
                             .label("Get opponent")
                             .style(ButtonStyle::Primary)
                     })
-                    .create_button(|b| {
-                        b.custom_id("secret")
-                            .label("Find trophies difference!")
-                            .style(ButtonStyle::Primary)
-                    })
+                    // .create_button(|b| {
+                    //     b.custom_id("secret")
+                    //         .label("Find trophies difference!")
+                    //         .style(ButtonStyle::Primary)
+                    // })
                 })
             })
     })

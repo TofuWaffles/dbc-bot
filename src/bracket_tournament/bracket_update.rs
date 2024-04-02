@@ -134,11 +134,12 @@ pub async fn update_bracket(
     };
     info!("Data: {data}");
     info!("Generating bracket.");
-
+    let total = (config.get_i32("total")?).to_string();
     let output = Command::new("python3")
         .arg("scripts/bracket_generation.py")
         .arg(current_region.to_string())
-        .arg((config.get_i32("total")?-start_round).to_string())
+        .arg(total)
+        .arg(start_round.to_string())
         .arg(data)
         .stdout(Stdio::piped())
         .current_dir(current_dir)
