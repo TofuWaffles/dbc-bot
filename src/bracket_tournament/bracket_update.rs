@@ -132,7 +132,7 @@ pub async fn update_bracket(
                 a
         }).collect::<Vec<String>>().join(",")
     };
-    info!("Data: {data}");
+    // info!("Data: {data}");
     info!("Generating bracket.");
     let total = (config.get_i32("total")?).to_string();
     let output = Command::new("python3")

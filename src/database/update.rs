@@ -1,7 +1,7 @@
 use dbc_bot::Region;
 use futures::TryStreamExt;
 use mongodb::{
-    bson::{self, doc, Document},
+    bson::{self, doc, Bson, Document},
     options::AggregateOptions,
     Collection, Database,
 };
@@ -81,12 +81,21 @@ pub async fn update_result(
             "_id": player.get_object_id("_id").unwrap()
         }
     };
+    let match_id = winner.get_i32("match_id").unwrap();
 
     let update = |defeated: bool| {
+        let position = if defeated { Bson::Null} else {
+            if match_id&1 == 0 {
+                Bson::Boolean(true)
+            } else{
+                Bson::Boolean(false)
+            }
+        };
         doc! {
             "$set": {
                 "battle": true,
-                "defeated": defeated
+                "defeated": defeated,
+                "position": position,
             }
         }
     };
