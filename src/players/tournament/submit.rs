@@ -5,7 +5,6 @@ use crate::database::find::{
     find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
     is_disqualified, is_mannequin,
 };
-use crate::database::update::update_match_id;
 use crate::database::update::update_result;
 use crate::discord::prompt::prompt;
 use crate::discord::role::remove_role;
@@ -277,7 +276,7 @@ async fn get_result(
         let mut count_victory = 0;
         let mut count_defeat = 0;
 
-        for result in results.iter().rev() {
+        for result in results.iter() {
             match result.as_str() {
                 "defeat" => count_defeat += 1,
                 "victory" => count_victory += 1,

@@ -151,11 +151,17 @@ pub async fn tournament_menu(
                         .emoji(ReactionType::Unicode("👤".to_string()))
                 })
                 .create_button(|b| {
-                    b.custom_id("help")
-                        .disabled(!help)
-                        .style(ButtonStyle::Secondary)
-                        .emoji(ReactionType::Unicode("❓".to_string()))
+                    b.custom_id("find")
+                        .disabled(!submit)
+                        .style(ButtonStyle::Primary)
+                        .emoji(ReactionType::Unicode("🔍".to_string()))
                 })
+                // .create_button(|b| {
+                //     b.custom_id("help")
+                //         .disabled(!help)
+                //         .style(ButtonStyle::Secondary)
+                //         .emoji(ReactionType::Unicode("❓".to_string()))
+                // })
             })
             // .create_action_row(|r| {
             //     r.create_button(|b| {
@@ -174,6 +180,7 @@ pub async fn tournament_menu(
 💪: Mark your activity!
 📥: Submit your result!
 👤: View Personal Information
+🔍: Find out who your opponent is for the next round!
 ❓: Help.
 "#,
                 )
@@ -190,7 +197,7 @@ pub async fn tournament_menu(
         match mci.data.custom_id.as_str() {
             "enemy" => {
                 mci.defer(&ctx.http()).await?;
-                return view_opponent_wrapper(ctx, msg, &region).await;
+                return view_opponent_wrapper(ctx, msg, &region, player).await;
             }
             "managers" => {
                 mci.defer(&ctx.http()).await?;
@@ -207,6 +214,10 @@ pub async fn tournament_menu(
             "personal" => {
                 mci.defer(&ctx.http()).await?;
                 return view_info(ctx, msg, player).await;
+            }
+            "find" => {
+                mci.defer(&ctx.http()).await?;
+                return april_fool(ctx, msg).await;
             }
             "help" => {
                 mci.defer(&ctx.http()).await?;
@@ -310,7 +321,43 @@ Below are options:
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn host_registration_menu(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
-    registration_menu(ctx, msg, true, true, true, true, None).await
+async fn april_fool(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error> {
+    progress_bar(ctx, msg).await?;
+    prompt(
+        ctx,
+        msg,
+        "Seriously, how do you try to get here?",
+        "Happy April's Fool :)",
+        Some("https://www.icegif.com/wp-content/uploads/2023/01/icegif-162.gif"),
+        Some(0xFFFF00),
+    ).await
+}
+
+async fn progress_bar(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error>{
+    for i in 0..=3 {
+        let progress: f64 = match i {
+            0 => 0.0,
+            1 => 33.33,
+            2 => 66.66,
+            3 => 100.0,
+            _ => 0.0, // Default case, not needed but added for completeness
+        };
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        prompt(
+            ctx,
+            msg,
+            "Finding opponent in the next round...",
+            format!(
+                "<a:loading:1187839622680690689> Dr. Strange is looking at the future to find who your opponent is...\n{} {}%\n",
+                format!(
+                    "{done}{yet}",
+                    done = "█".repeat(((progress / 100.0) * 10.0) as usize),
+                    yet = "░".repeat(((100.0 - progress) / 100.0 * 10.0) as usize)
+                ), progress
+            ),
+            Some("https://surajthesooddude.files.wordpress.com/2018/08/dr-strange-alternate-futures-time-stone.gif"),
+            Some(0xFFFF00),
+        ).await?;
+    }
+    Ok(()) 
 }

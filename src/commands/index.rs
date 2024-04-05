@@ -59,18 +59,16 @@ pub async fn home(ctx: Context<'_>, msg: Option<ReplyHandle<'_>>) -> Result<(), 
             };
             if registration_region_open(&ctx, &region).await {
                 registration_menu(&ctx, &msg, false, true, true, true, Some(player)).await
+            } else if !is_battle(
+                &ctx,
+                player.get("tag").unwrap().as_str(), // Don't unwrap this as the `is_battle()` handles it internally
+                find_round_from_config(&get_config(&ctx, &region).await),
+            )
+            .await?
+            {
+                tournament_menu(&ctx, &msg, true, true, true, true, true, player).await
             } else {
-                if !is_battle(
-                    &ctx,
-                    player.get("tag").unwrap().as_str(), // Don't unwrap this as the `is_battle()` handles it internally
-                    find_round_from_config(&get_config(&ctx, &region).await),
-                )
-                .await?
-                {
-                    tournament_menu(&ctx, &msg, true, true, true, true, true, player).await
-                } else {
-                    tournament_menu(&ctx, &msg, false, false, true, false, false, player).await
-                }
+                tournament_menu(&ctx, &msg, false, false, true, false, false, player).await
             }
         }
         None => {

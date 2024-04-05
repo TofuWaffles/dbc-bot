@@ -17,52 +17,102 @@ pub async fn get_individual_player_data(
     ctx: Context<'_>,
     user: serenity::User,
 ) -> Result<(), Error> {
-    info!(
-        "RUNNING context-menu 'Player information' on {}({})",
-        user.name, user.id.0
-    );
     ctx.defer_ephemeral().await?;
     let msg = ctx
         .send(|s| {
             s.embed(|s| {
                 s.title("Getting player data...")
-                    .description("Please wait a moment")
+                    .description("How would you like to view this player data? Choose\n - Current to view the player data for the current round.\n- Custom to view the player data for a specific round.")
                     .color(0x00FF00)
             })
             .reply(true)
+            .components(|c|{
+                c.create_action_row(|a| {
+                    a.create_button(|b| b.custom_id("current").label("Current"))
+                    .create_button(|b| b.custom_id("custom").label("Custom"))
+                })
+            })
         })
         .await?;
-
-    let (mut region, mut round) = (None, None);
-    let roles = get_roles_from_user(&ctx, Some(&user)).await?;
-    match get_region_from_role(&ctx, roles).await {
-        Some(r) => region = Some(r),
-        None => {
-            let (r, rnd) = get_data(&ctx, &msg, &user).await?;
-            match rnd.as_str() {
-                "" => round = Some(find_round_from_config(&get_config(&ctx, &r).await)),
-                _ => round = Some(rnd),
+    let mut cic = msg
+        .clone()
+        .into_message()
+        .await?
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT))
+        .build();
+    if let Some(mci) = cic.next().await {
+        let (region, round) = match mci.data.custom_id.as_str() {
+            "current" => {
+                mci.defer(ctx.http()).await?;
+                let roles = get_roles_from_user(&ctx, Some(&user)).await?;
+                match get_region_from_role(&ctx, roles).await {
+                    Some(region) => {
+                        let round = find_round_from_config(&get_config(&ctx, &region).await);
+                        (region, round)
+                    }
+                    None => {
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Error",
+                            "This player has no region role to find. Please try again with Custom.",
+                            None,
+                            0xFF0000,
+                        )
+                        .await;
+                    }
+                }
             }
-            region = Some(r);
-        }
-    }
-    if round.is_none() {
-        round = Some(find_round_from_config(
-            &get_config(&ctx, region.as_ref().unwrap()).await,
-        ));
-    }
-    let id: u64 = user.id.into();
-
-    let player_from_db = match find_player_by_discord_id(
-        &ctx,
-        region.as_ref().unwrap(),
-        id,
-        &round.unwrap(),
-    )
-    .await
-    {
-        Ok(player) => match player {
-            Some(p) => p,
+            "custom" => {
+                mci.defer(ctx.http()).await?;
+                get_data(&ctx, &msg, &user).await?
+            }
+            _ => return Err("Invalid custom_id".into()),
+        };
+        let player = find_player_by_discord_id(&ctx, &region, user.id.0, round.as_str()).await?;
+        match player {
+            Some(player) => {
+                let tag = player.get_str("tag").unwrap_or("#AAAAA");
+                match request("player", tag).await {
+                    Ok(APIResult::Successful(p)) => {
+                        return stat(&ctx, &msg, &p, &region, Some(&player)).await
+                    }
+                    Ok(APIResult::NotFound(_)) => {
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Could not find player from API",
+                            "Please make sure the player tag is valid",
+                            None,
+                            0xFF0000,
+                        )
+                        .await
+                    }
+                    Ok(APIResult::APIError(_)) => {
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "500: Internal Server Error from",
+                            "Unable to fetch player data from Brawl Stars API",
+                            None,
+                            0xFF0000,
+                        )
+                        .await
+                    }
+                    Err(e) => {
+                        return prompt(
+                            &ctx,
+                            &msg,
+                            "Error accessing database",
+                            &format!("Error: {}", e),
+                            None,
+                            0xFF0000,
+                        )
+                        .await
+                    }
+                }
+            }
             None => {
                 return prompt(
                     &ctx,
@@ -70,54 +120,16 @@ pub async fn get_individual_player_data(
                     "404 not found",
                     "Player not found in the database",
                     None,
-                    None,
+                    0xFF0000,
                 )
                 .await;
             }
-        },
-        Err(_) => {
-            return prompt(
-                &ctx,
-                &msg,
-                "Error accessing database",
-                "Please try again later",
-                None,
-                None,
-            )
-            .await;
-        }
-    };
-    let player = request("player", player_from_db.get_str("tag").unwrap()).await?;
-    match player {
-        APIResult::Successful(p) => {
-            stat(&ctx, &msg, &p, &region.unwrap(), Some(&player_from_db)).await
-        }
-        APIResult::NotFound(_) => {
-            prompt(
-                &ctx,
-                &msg,
-                "Could not find player from API",
-                "Please make sure the player tag is valid",
-                None,
-                None,
-            )
-            .await
-        }
-        APIResult::APIError(_) => {
-            prompt(
-                &ctx,
-                &msg,
-                "500: Internal Server Error from",
-                "Unable to fetch player data from Brawl Stars API",
-                None,
-                None,
-            )
-            .await
         }
     }
+    Ok(())
 }
 
-async fn get_data(
+pub async fn get_data(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     user: &serenity::User,
@@ -127,7 +139,7 @@ async fn get_data(
 
     msg.edit(*ctx, |m| {
         m.embed(|e| {
-            e.title("Failed to fetch user data due to lack of region role!")
+            e.title("Getting more data...")
                 .description("Step 1: Please pick a region to find.")
                 .color(0xFF0000)
         })
@@ -148,7 +160,6 @@ async fn get_data(
         .timeout(std::time::Duration::from_secs(TIMEOUT));
     let mut cic = cib.build();
     while let Some(mci) = &cic.next().await {
-        info!("Got interaction: {:?}", mci.data.custom_id.as_str());
         match mci.data.custom_id.as_str() {
             "APAC" | "EU" | "NASA" => {
                 mci.defer(ctx.http()).await?;
@@ -169,9 +180,9 @@ async fn get_data(
                 confirm(
                     ctx,
                     msg,
-                    &user,
-                    &round.as_ref().unwrap(),
-                    &region.as_ref().unwrap(),
+                    user,
+                    round.as_ref().unwrap(),
+                    region.as_ref().unwrap(),
                 )
                 .await?;
             }
@@ -180,11 +191,11 @@ async fn get_data(
     }
     match (region, round) {
         (Some(r), Some(rnd)) => {
-            return Ok((r, rnd));
+            Ok((r, rnd))
         }
-        (Some(r), None) => return Ok((r, "".to_owned())),
+        (Some(r), None) => Ok((r, "".to_owned())),
         (_, _) => {
-            return Err("Please select a region and round".into());
+            Err("Please select a region and round".into())
         }
     }
 }
@@ -194,15 +205,15 @@ async fn round_getter(
     msg: &ReplyHandle<'_>,
     region: &Region,
 ) -> Result<(), Error> {
-    let total: i32 = find_round_from_config(&get_config(&ctx, region).await)
-        .split(" ")
+    let total: i32 = find_round_from_config(&get_config(ctx, region).await)
+        .split(' ')
         .nth(1)
         .unwrap_or("0")
         .parse()
         .unwrap_or(0);
     msg.edit(*ctx, |m| {
         m.embed(|e| {
-            e.title("Failed to fetch user data due to lack of region role!")
+            e.title("Getting more data...")
                 .description("Please choose which round you want to search for.")
                 .color(0xFF0000)
         })

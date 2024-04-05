@@ -5,12 +5,18 @@ use base64::{engine::general_purpose, Engine as _};
 use dbc_bot::{CustomError, QuoteStripper, Region};
 use futures::TryStreamExt;
 use mongodb::bson::doc;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use std::env;
 use std::process::Command;
 use std::process::Stdio;
 use tracing::{error, info};
 
-pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Result<(), Error> {
+pub async fn update_bracket(
+    ctx: &Context<'_>,
+    region: Option<&Region>,
+    start_round: i32,
+) -> Result<(), Error> {
     let current_dir = match env::current_dir() {
         Ok(dir) => dir,
         Err(e) => {
@@ -51,7 +57,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
     let mut player_data: Vec<(i32, i32, String, String, bool, bool)> = Vec::new();
     let mut match_ids = Vec::new();
 
-    for round_number in 1..=config.get("total").unwrap().as_i32().unwrap() {
+    for round_number in start_round..=config.get_i32("total")? {
         let round_name = format!("Round {}", round_number);
         let mut database: mongodb::Cursor<mongodb::bson::Document> = ctx
             .data()
@@ -118,7 +124,7 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         }
         match_ids.clear();
     }
-    let sep = "/se/pa/ra/tor/";
+    let sep = "/se/";
     let data = match player_data.is_empty() {
         true => format!("1{sep}1{sep} {sep} {sep} {sep} "),
         false => player_data.iter().map(|(round, match_id, player1_tag, player2_tag, is_winner1, is_winner2)| {
@@ -126,11 +132,14 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
                 a
         }).collect::<Vec<String>>().join(",")
     };
+    // info!("Data: {data}");
     info!("Generating bracket.");
+    let total = (config.get_i32("total")?).to_string();
     let output = Command::new("python3")
         .arg("scripts/bracket_generation.py")
         .arg(current_region.to_string())
-        .arg(config.get("total").unwrap().to_string())
+        .arg(total)
+        .arg(start_round.to_string())
         .arg(data)
         .stdout(Stdio::piped())
         .current_dir(current_dir)
@@ -142,11 +151,21 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
         return Err("Failed to capture Python script output".into());
     }
 
-    let image_bytes = match general_purpose::STANDARD.decode(buffer) {
+    let image_bytes = match general_purpose::STANDARD.decode(buffer.trim()) {
         Ok(bytes) => bytes,
         Err(e) => {
             error!("{e}");
-            info!("Debug: {buffer}");
+            let mut file = match File::create("log.txt").await {
+                Ok(file) => file,
+                Err(e) => {
+                    error!("Failed to create log file: {}", e);
+                    return Err(e.into());
+                }
+            };
+            match file.write_all(buffer.as_bytes()).await {
+                Ok(_) => info!("Bytes written to log.txt successfully"),
+                Err(e) => error!("Failed to write bytes to log.txt: {}", e),
+            }
             return Err(e.into());
         }
     };
@@ -238,6 +257,5 @@ pub async fn update_bracket(ctx: &Context<'_>, region: Option<&Region>) -> Resul
             )));
         }
     };
-
     Ok(())
 }

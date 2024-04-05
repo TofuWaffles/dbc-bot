@@ -5,7 +5,7 @@ import cv2
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 
-def generate_bracket_image(region, total_rounds, args):
+def generate_bracket_image(region, total_rounds, offset, args):
 
     current_dir =  os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     region_background_mapping = {
@@ -20,20 +20,20 @@ def generate_bracket_image(region, total_rounds, args):
 
     region = region
     
-    total_rounds = int(total_rounds)
-    sep = "/se/pa/ra/tor/"
+    total_rounds = int(total_rounds) - int(offset) + 1
+    sep = "/se/"
     results = []
     for arg in args.split(","):
 
         round, match_id, player1_name, player2_name, is_winner1, is_winner2 = arg.split(sep)
-        results.append((int(round), int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
+        round = int(round) - int(offset)+1
+        results.append((round, int(match_id), player1_name, player2_name, bool(is_winner1 == "true"), bool(is_winner2 == "true")))
         
     image_width = 10000
     image_height = 5000
     horizontal_padding = 80
     reference_rounds = 6
     reference_ratio = 13
-
     game_box_width_height_ratio = (total_rounds / reference_rounds) * reference_ratio
     
     _size = total_rounds
@@ -41,7 +41,6 @@ def generate_bracket_image(region, total_rounds, args):
     _column_width = image_width / _columns
     _game_box_width = _column_width - horizontal_padding
     _game_box_height = _game_box_width / game_box_width_height_ratio
-    
 
     resized_background_image = cv2.resize(background_image, (image_width, image_height))
 
@@ -124,7 +123,8 @@ def generate_bracket_image(region, total_rounds, args):
 
                     image = write_text(image, text1, text_x1, text_y1, font_path, font_scale, (0, 0, 0))
                     image = write_text(image, text2, text_x1, text_y2, font_path, font_scale, (0, 0, 0))
-
+                    # cv2.putText(image, text1, (text_x1, text_y1), font_face, font_scale, (0, 0, 0), font_thickness, cv2.LINE_AA)
+                    # cv2.putText(image, text2, (text_x1, text_y2), font_face, font_scale, (0, 0, 0), font_thickness, cv2.LINE_AA)
         total_previous_games += games / 2
         
     _, buffer = cv2.imencode(".png", image)
@@ -135,9 +135,9 @@ def generate_bracket_image(region, total_rounds, args):
 def write_text(image, text: str, x: float, y: float, font_path: str, font_size, color):
     pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
-    position = (x,y)
-    font = ImageFont.truetype(font_path, font_size*50)
+    position = (x-500,y-75)
+    font = ImageFont.truetype(font_path, font_size*250)
     draw.text(position, text, font=font, fill=color)
     return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-generate_bracket_image(sys.argv[1], sys.argv[2], sys.argv[3])
+generate_bracket_image(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

@@ -32,12 +32,7 @@ pub async fn get_roles_from_user(
 ) -> Result<Vec<RoleId>, Error> {
     match user {
         Some(user) => {
-            let member = ctx
-                .guild_id()
-                .unwrap()
-                .member(ctx.http(), user.id)
-                .await
-                .unwrap();
+            let member = ctx.guild_id().unwrap().member(ctx.http(), user.id).await?;
             Ok(member.roles)
         }
         None => match ctx.author_member().await {

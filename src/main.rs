@@ -63,12 +63,13 @@ async fn run() -> Result<(), Error> {
         commands::update_proof::update_proof(),
         commands::setup::setup(),
         commands::player_lookup::lookup_player(),
+        commands::match_id::find_match(),
     ];
     info!("{} commands registered", commands.len());
-    // match dotenv::dotenv() {
-    //     Ok(_) => info!("Loaded .env file"),
-    //     Err(e) => error!("Error loading .env file: {e}"),
-    // }
+    match dotenv::dotenv() {
+        Ok(_) => info!("Loaded .env file"),
+        Err(e) => error!("Error loading .env file: {e}"),
+    }
     let token = match std::env::var("DISCORD_TOKEN") {
         Ok(token) => token,
         Err(e) => {

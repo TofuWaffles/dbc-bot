@@ -88,7 +88,7 @@ jobs:
     - name: Create .env file on droplet
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ vars.DROPLET_IP }}
+        host: ${{ secrets.DROPLET_IP }}
         username: root
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
@@ -100,12 +100,13 @@ jobs:
     - name: Deploy
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ vars.DROPLET_IP }}
+        host: ${{ secrets.DROPLET_IP }}
         username: root
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd ~
           docker-compose down
+          docker system prune -a -y
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker-compose pull
           docker-compose up -d

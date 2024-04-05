@@ -1,5 +1,5 @@
 use crate::database::config::get_config;
-use crate::database::find::{find_all_false_battles, find_round_from_config};
+use crate::database::find::{count_all_unfinished_matches, find_all_false_battles, find_all_unfinished_matches, find_round_from_config};
 use crate::database::update::update_round_config;
 use crate::discord::checks::is_mod;
 use crate::{Context, Error};
@@ -9,6 +9,7 @@ use mongodb::bson::{self, Document};
 use mongodb::Cursor;
 use poise::ReplyHandle;
 use std::collections::HashMap;
+use std::vec;
 use tracing::{error, info};
 
 use super::disqualify;
@@ -20,8 +21,9 @@ pub async fn display_next_round(
     region: &Region,
 ) -> Result<(), Error> {
     info!("Next round is triggered by {}", ctx.author().name);
-    let mut false_battles = find_all_false_battles(ctx, region).await;
-    if false_battles.next().await.is_none() {
+    let mut false_battles = find_all_unfinished_matches(ctx, region).await?;
+    let counter = count_all_unfinished_matches(ctx, region).await?;
+    if counter == 0 {
         info!("All matches are finished!");
         msg.edit(*ctx, |m| {
             m.embed(|e| {
@@ -63,56 +65,25 @@ pub async fn display_next_round(
 }
 
 pub async fn display_false_battles(result: &mut Cursor<Document>) -> Vec<String> {
-    let mut players = vec![];
-
-    while let Some(player) = result.next().await {
-        match player {
-            Ok(p) => players.push(p),
-            Err(err) => {
-                eprintln!("Error reading document: {}", err);
-                // Handle the error as needed
-            }
-        }
+    let mut matches = vec![];
+    while let Some(game) = result.next().await{
+        let m = format!(r#"
+**Some battles are not finished!**
+# Match {}
+Player 1: <@{}> ({}-{})
+Player 2: <@{}> ({}-{})
+"#, 
+game.as_ref().unwrap().get_i32("match_id").unwrap_or(0),
+game.as_ref().unwrap().get_array("players").unwrap().get(0).map_or_else(||"",|p| p.as_document().unwrap().get_str("discord_id").unwrap_or("")),
+game.as_ref().unwrap().get_array("players").unwrap().get(0).map_or_else(||"",|p| p.as_document().unwrap().get_str("name").unwrap_or("")),
+game.as_ref().unwrap().get_array("players").unwrap().get(0).map_or_else(||"",|p| p.as_document().unwrap().get_str("tag").unwrap_or("")),
+game.as_ref().unwrap().get_array("players").unwrap().get(1).map_or_else(||"",|p| p.as_document().unwrap().get_str("discord_id").unwrap_or("")),
+game.as_ref().unwrap().get_array("players").unwrap().get(1).map_or_else(||"",|p| p.as_document().unwrap().get_str("name").unwrap_or("")),
+game.as_ref().unwrap().get_array("players").unwrap().get(1).map_or_else(||"",|p| p.as_document().unwrap().get_str("tag").unwrap_or("")),
+);
+        matches.push(m);
     }
-    let mut match_groups: HashMap<i32, Vec<&Document>> = HashMap::new();
-    for player in &players {
-        if let Some(match_id) = player.get("match_id").and_then(bson::Bson::as_i32) {
-            match_groups.entry(match_id).or_default().push(player);
-        }
-    }
-    let mut battles: Vec<String> = match_groups
-        .values()
-        .map(|group| {
-            if group.len() == 2 {
-                let player1 = &group[0];
-                let player2 = &group[1];
-                let dis1 = player1.get_str("discord_id").unwrap_or("").to_string();
-                let name1 = player1.get_str("name").unwrap_or("").to_string();
-                let tag1 = player1.get_str("tag").unwrap_or("").to_string();
-                let dis2 = player2.get_str("discord_id").unwrap_or("").to_string();
-                let name2 = player2.get_str("name").unwrap_or("").to_string();
-                let tag2 = player2.get_str("tag").unwrap_or("").to_string();
-                format!(
-                    r#"**Some battles are not finished!**
-# Match {} 
-<@{}> - <@{}>
-{}({}) - {}({})"#,
-                    player1.get_i32("match_id").unwrap(),
-                    dis1,
-                    dis2,
-                    name1,
-                    tag1,
-                    name2,
-                    tag2
-                )
-            } else {
-                error!("{:#?}", group[0]);
-                format!("Error reading match {:#?}", group[0])
-            }
-        })
-        .collect::<Vec<String>>();
-    battles.sort();
-    battles
+    matches
 }
 
 //I stole from poise's example
@@ -154,7 +125,7 @@ pub async fn paginate(
                         b.custom_id(&disqualify_all_id)
                             .label("Disqualify All")
                             .emoji('❌')
-                            .disabled(!moderator)
+                            // .disabled(!moderator)
                     })
             })
         })
@@ -187,7 +158,7 @@ pub async fn paginate(
         } else if press.data.custom_id == disqualify_all_id {
             press.defer(ctx.http()).await?;
             let round = find_round_from_config(&get_config(ctx, region).await);
-            return disqualify::mass_disqualify_wrapper(ctx, msg, region, &round, false_battles)
+            return disqualify::mass_disqualify_wrapper(ctx, msg, region, &round)
                 .await;
         } else {
             // This is an unrelated button interaction

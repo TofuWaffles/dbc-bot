@@ -1,8 +1,8 @@
 use crate::{Context, Error};
 use dbc_bot::Region;
+use futures::StreamExt;
 use mongodb::{
-    bson::{doc, Bson, Document},
-    Collection, Cursor,
+    bson::{doc, Bson, Document}, options::AggregateOptions, Collection, Cursor
 };
 use strum::IntoEnumIterator;
 use tracing::error;
@@ -31,7 +31,29 @@ pub async fn find_self_by_discord_id(
     }
     Ok(None)
 }
-
+pub async fn find_player_by_discord_id_without_region(
+    ctx: &Context<'_>,
+    id: u64,
+) -> Result<Option<Document>, Error> {
+    for region in Region::iter() {
+        let database = ctx.data().database.regional_databases.get(&region).unwrap();
+        let round = find_round_from_config(&get_config(ctx, &region).await);
+        let collection: Collection<Document> = database.collection(&round);
+        let filter = doc! {"discord_id": id.to_string()};
+        match collection.find_one(filter, None).await {
+            Ok(result) => match result {
+                Some(p) => {
+                    return Ok(Some(p));
+                }
+                None => continue,
+            },
+            Err(_) => {
+                return Ok(None);
+            }
+        }
+    }
+    Ok(None)
+}
 pub async fn find_player_by_discord_id(
     ctx: &Context<'_>,
     region: &Region,
@@ -171,4 +193,174 @@ pub async fn find_all_false_battles(ctx: &Context<'_>, region: &Region) -> Curso
     let round = find_round_from_config(&get_config(ctx, region).await);
     let collection: Collection<Document> = database.collection(round.as_str());
     collection.find(doc! {"battle": false}, None).await.unwrap()
+}
+
+pub async fn find_all_unfinished_matches(ctx: &Context<'_>, region: &Region) -> Result<Cursor<Document>, Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let collection: Collection<Document> = database.collection(round.as_str());
+    let pipeline: Vec<Document> = vec![
+        doc!{
+            "$group": {
+                "_id": "$match_id",
+                "players": {
+                    "$push": "$$ROOT"
+                }
+            }
+        },
+        doc!{
+            "$addFields": {
+                "match_id": "$_id",
+                "players": "$players"
+            }
+        },
+        doc!{
+            "$unset": "_id"
+        },
+        doc!{
+            "$match": {
+                "players.0.battle": false,
+                "players.1.battle": false
+            }
+        }
+    ];
+    let options = AggregateOptions::builder().build();
+    collection.aggregate(pipeline, options).await.map_err(|e| e.into())
+}
+pub async fn count_all_unfinished_matches(ctx: &Context<'_>, region: &Region) -> Result<usize, Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let collection: Collection<Document> = database.collection(round.as_str());
+    let pipeline: Vec<Document> = vec![
+        doc!{
+            "$group": {
+                "_id": "$match_id",
+                "players": {
+                    "$push": "$$ROOT"
+                }
+            }
+        },
+        doc!{
+            "$addFields": {
+                "match_id": "$_id",
+                "players": "$players"
+            }
+        },
+        doc!{
+            "$unset": "_id"
+        },
+        doc!{
+            "$match": {
+                "players.0.battle": false,
+                "players.1.battle": false
+            }
+        },
+        doc!{
+            "$group": {
+                "_id": null,
+                "count": {"$sum": 1}
+            }
+        }
+    ];
+    let options = AggregateOptions::builder().build();
+    let mut cursor = collection.aggregate(pipeline, options).await?;
+    if let Some(count) = cursor.next().await {
+        return Ok(count?.get_i32("count").unwrap_or(0) as usize);
+    } else {
+        return Ok(0);
+    }
+}
+pub async fn find_all_inacive_matches(ctx: &Context<'_>, region: &Region) -> Result<Cursor<Document>, Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let collection: Collection<Document> = database.collection(round.as_str());
+    let pipeline: Vec<Document> = vec![
+        doc! {
+            "$group": {
+                "_id": "$match_id",
+                "players": {
+                    "$push": "$$ROOT"
+                }
+            }
+        },
+        doc! {
+            "$addFields": {
+                "match_id": "$_id",
+                "players": "$players"
+            }
+        },
+        doc! {
+            "$unset": "_id"
+        },
+        doc! {
+            "$match": {
+                "$and": [
+                    {
+                        "$or": [
+                            { "players.0.ready": false },
+                            { "players.1.ready": false }
+                        ]
+                    },
+                    {
+                        "players.0.battle": false
+                    },
+                    {
+                        "players.1.battle": false
+                    }
+                ]
+            }
+        }
+    ];
+    let options = AggregateOptions::builder().build();
+    collection.aggregate(pipeline, options).await.map_err(|e| e.into())
+}
+
+pub async fn count_all_inactive_matches(ctx: &Context<'_>, region: &Region) -> Result<usize, Error>{
+    let database = ctx.data().database.regional_databases.get(region).unwrap();
+    let round = find_round_from_config(&get_config(ctx, region).await);
+    let collection: Collection<Document> = database.collection(round.as_str());
+    let pipeline: Vec<Document> = vec![
+        doc!{
+            "$group": {
+                "_id": "$match_id",
+                "players": {"$push": "$$ROOT"}
+            }
+        },
+        doc!{
+            "$addFields": {
+                "match_id": "$_id",
+                "players": "$players"
+            }
+        },
+        doc!{
+            "$unset": "_id"
+        },
+        doc!{
+            "$match": {
+                "$and": [
+                    {
+                        "$or": [
+                            {"players.0.ready": false},
+                            {"players.1.ready": false}
+                        ]
+                    },
+                    {"players.0.battle": false},
+                    {"players.1.battle": false}
+                ]
+            }
+        },
+        doc!{
+            "$group": {
+                "_id": null,
+                "count": {"$sum": 1}
+            }
+        }
+    ];
+    let options = AggregateOptions::builder().build();
+    let mut cursor = collection.aggregate(pipeline, options).await?;
+    if let Some(count) = cursor.next().await {
+        return Ok(count?.get_i32("count").unwrap_or(0) as usize);
+    } else {
+        return Ok(0);
+    }
 }

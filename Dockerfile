@@ -26,5 +26,5 @@ COPY --from=builder /dbc-bot/target/x86_64-unknown-linux-musl/release/dbc-bot /d
 COPY assets/ /assets
 COPY scripts/ /scripts
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 ENTRYPOINT ["/dbc-bot"]

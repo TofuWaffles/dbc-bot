@@ -1,8 +1,7 @@
 use crate::database::battle::force_lose;
 use crate::database::config::get_config;
 use crate::database::find::{
-    find_enemy_by_match_id_and_self_tag, find_enemy_of_mannequin, find_player_by_discord_id,
-    find_round_from_config,
+    count_all_inactive_matches, find_all_inacive_matches, find_enemy_by_match_id_and_self_tag, find_player_by_discord_id, find_round_from_config
 };
 use crate::database::update::{set_ready, update_result};
 use crate::discord::log::{Log, LogType};
@@ -11,11 +10,9 @@ use crate::discord::role::remove_role;
 use crate::{Context, Error};
 use dbc_bot::Region;
 use futures::StreamExt;
-use mongodb::bson::{doc, Document};
-use mongodb::{Collection, Cursor};
+use mongodb::bson:: Document;
 use poise::serenity_prelude::UserId;
 use poise::ReplyHandle;
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 use tracing::{error, info};
@@ -320,22 +317,21 @@ pub async fn mass_disqualify_wrapper(
     msg: &ReplyHandle<'_>,
     region: &Region,
     round: &str,
-    _false_battles: &mut Cursor<Document>,
 ) -> Result<(), Error> {
-    let collection: Collection<Document> = ctx
-        .data()
-        .database
-        .regional_databases
-        .get(region)
-        .unwrap()
-        .collection(round);
-    let mut battles_handle = collection
-        .find(doc! {"battle": false, "ready": false}, None)
-        .await?;
-    let counts = collection
-        .count_documents(doc! {"battle": false, "ready": false}, None)
-        .await? as usize;
-    info!("Counts: {}", counts);
+    let mut matches = find_all_inacive_matches(ctx, region).await?;
+    let mut players = vec![];
+    let counts = count_all_inactive_matches(ctx, region).await?;
+    if counts == 0{
+        return prompt(
+            ctx,
+            msg,
+            "Mass disqualification",
+            "There are no inactive players to disqualify.",
+            None,
+            Some(0x50C878),
+        )
+        .await;
+    }
     prompt(
         ctx,
         msg,
@@ -351,77 +347,31 @@ pub async fn mass_disqualify_wrapper(
     )
     .await?;
     let log = Log::new(ctx, region, LogType::DisqualifyInactives).await?;
-    let mut players = HashSet::new();
-
-    let perc = counts / 10;
-    let mut index = 0;
-    while let Some(player) = battles_handle.next().await {
-        match player {
-            Ok(player) => match player.get_str("discord_id") {
-                Ok(id) => {
-                    if players.contains(&format!("<@{id}>")) {
-                        continue;
-                    }
-                    match player.get_bool("ready") {
-                        Ok(false) => {
-                            if force_lose(ctx, region, &player, "Inactive").await.is_ok() {
-                                players.insert(format!("<@{id}>"));
-                            }
-                        }
-
-                        _ => {
-                            continue; //Manually handled
-                        }
-                    }
-                }
-                Err(_) => {
-                    // Mannequins
-                    let match_id = player.get_i32("match_id")?;
-                    if let Some(opponent) =
-                        find_enemy_of_mannequin(ctx, region, round, &match_id).await
-                    {
-                        match update_result(ctx, region, round, &opponent, &player, "Inactive")
-                            .await
-                        {
-                            Err(e) => {
-                                error!("{e}");
-                            }
-                            Ok(_) => {}
-                        };
-                    }
-                }
-            },
-            Err(_) => {
-                continue;
-            }
+    while let Some(game) = matches.next().await {
+        let player1 = game.as_ref().unwrap().get_array("players").unwrap().get(0).unwrap().as_document().unwrap();
+        let player2 = game.as_ref().unwrap().get_array("players").unwrap().get(1).unwrap().as_document().unwrap();
+        if player1.get_bool("ready")?{
+            update_result(ctx, region, round, player1, player2, "[Auto Disqualified] Inactive player").await?;
+            players.push(player2.get_str("discord_id")?.to_string());
+            remove_role(ctx, &UserId(player2.get_str("discord_id")?.parse::<u64>()?).to_user(ctx.http()).await?, region).await?;
+        } else {
+            update_result(ctx, region, round, player2, player1, "[Auto Disqualified] Inactive player").await?;
+            players.push(player1.get_str("discord_id")?.to_string());
+            remove_role(ctx, &UserId(player1.get_str("discord_id")?.parse::<u64>()?).to_user(ctx.http()).await?, region).await?;
         }
-        if index % perc == 0 {
-            let progress = index / perc;
             prompt(
                 ctx,
                 msg,
                 "Mass disqualification",
-                format!(
-                    r#"Disqualifying inactive players...
-<a:loading:1187839622680690689> {}% completed...
-Progress bar: {} 
-                    "#,
-                    progress * 10,
-                    format!(
-                        "{done}{yet}",
-                        done = "█".repeat(progress),
-                        yet = "░".repeat(10 - progress)
-                    ),
-                ),
+                "Disqualifying inactive players...",
                 None,
                 Some(0x50C878),
             )
             .await?;
         }
-        index += 1;
-    }
+
     let m = log
-        .disqualify_inactive_logs(players.into_iter().collect())
+        .disqualify_inactive_logs(players)
         .await?;
     prompt(
         ctx,

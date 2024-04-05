@@ -5,7 +5,7 @@ use poise::ReplyHandle;
 pub async fn player_module(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    region: &Region,
+    _region: &Region,
 ) -> Result<(), Error> {
     msg.edit(*ctx, |m| {
         m.embed(|e| e.title("Getting battle from this player..."))

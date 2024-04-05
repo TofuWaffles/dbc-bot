@@ -1,11 +1,8 @@
-use std::f64::consts::E;
-
-use crate::database::config::{self, get_config};
+use crate::database::config::get_config;
 use crate::database::find::{
-    find_enemy_by_match_id_and_self_tag, find_round_from_config, find_self_by_discord_id,
-    is_disqualified, is_mannequin,
+    find_enemy_by_match_id_and_self_tag, find_round_from_config, is_disqualified, is_mannequin,
 };
-use crate::discord::prompt::{self, prompt};
+use crate::discord::prompt::prompt;
 use crate::visual::pre_battle::get_image;
 use crate::{Context, Error};
 use dbc_bot::{QuoteStripper, Region};
@@ -14,28 +11,16 @@ use mongodb::bson::{doc, Document};
 use poise::serenity_prelude::ButtonStyle;
 use poise::{serenity_prelude as serenity, ReplyHandle};
 use tracing::info;
+
 const TIMEOUT: u64 = 1200;
 pub async fn view_opponent_wrapper(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
     region: &Region,
+    player: Document,
 ) -> Result<(), Error> {
     let config = get_config(ctx, region).await;
-    let round = find_round_from_config(&config);
-    let player = match find_self_by_discord_id(ctx, round).await.unwrap() {
-        Some(caller) => caller,
-        None => {
-            msg.edit(*ctx, |s| {
-                s.embed(|e| {
-                    e.title("You are not in the tournament!")
-                        .description("Sorry, you are not in the tournament to use this command!")
-                })
-            })
-            .await?;
-            return Ok(());
-        }
-    };
-    if !(player.get_bool("battle").unwrap()) {
+    if player.get_bool("battle").unwrap_or(false) {
         return prompt(
             ctx,
             msg,
@@ -51,14 +36,7 @@ Please stay tuned for the announcement to know when next round starts!",
     let match_id: i32 = player.get_i32("match_id").unwrap();
     let caller_tag = player.get_str("tag").unwrap();
     let round_name = find_round_from_config(&config);
-    let enemy = match find_enemy_by_match_id_and_self_tag(
-        ctx,
-        region,
-        &round_name,
-        &match_id,
-        caller_tag,
-    )
-    .await
+    match find_enemy_by_match_id_and_self_tag(ctx, region, &round_name, &match_id, caller_tag).await
     {
         Some(enemy) => {
             if is_mannequin(&enemy) || is_disqualified(&enemy) {
@@ -70,9 +48,10 @@ Please stay tuned for the announcement to know when next round starts!",
                             })
                         })
                         .await?;
-                return Ok(());
+                Ok(())
             } else {
-                enemy
+                let round = config.get_i32("round")?;
+                view_opponent(ctx, msg, player, enemy, round, config).await
             }
         }
         None => {
@@ -83,19 +62,18 @@ Please stay tuned for the announcement to know when next round starts!",
                 })
             })
             .await?;
-            return Ok(());
+            Ok(())
         }
-    };
-    view_opponent(ctx, msg, region, player, enemy, config).await
+    }
 }
 
 /// View your opponent
 pub async fn view_opponent(
     ctx: &Context<'_>,
     msg: &ReplyHandle<'_>,
-    region: &Region,
     player: Document,
     enemy: Document,
+    round: i32,
     config: Document,
 ) -> Result<(), Error> {
     prompt(
@@ -107,7 +85,6 @@ pub async fn view_opponent(
         Some(0xFFFF00),
     )
     .await?;
-    let round = config.get_i32("round")?;
     let match_id = player.get_i32("match_id")?;
     let prebattle = match get_image(&player, &enemy, &config).await {
         Ok(prebattle) => prebattle,
@@ -166,6 +143,11 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
                             .label("Get opponent")
                             .style(ButtonStyle::Primary)
                     })
+                    // .create_button(|b| {
+                    //     b.custom_id("secret")
+                    //         .label("Find trophies difference!")
+                    //         .style(ButtonStyle::Primary)
+                    // })
                 })
             })
     })
@@ -195,6 +177,10 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
                 None,
                 None,
             ).await;
+            },
+            "secret" => {
+                mci.defer(&ctx.http()).await?;
+                return april_fool(ctx, msg, &enemy).await;
             }
             _ => {
                 continue;
@@ -203,6 +189,90 @@ Plan with your opponent to schedule at least 2 CONSECUTIVE battles.
     }
 
     Ok(())
+}
+
+pub async fn april_fool(ctx: &Context<'_>, msg: &ReplyHandle<'_>, enemy: &Document) -> Result<(), Error>{
+    use rand::Rng;
+    let rng = rand::thread_rng().gen_range(10_000..=60_000);
+    let trophies = rng;
+    progress_bar(ctx, msg).await?;
+    msg.edit(*ctx, |s| {
+        s.embed(|e| {
+            e.title("Trophies Disparity Detected!")
+                .description(format!(
+                    "<:info:1187845402163167363> {}({}) has {} more trophies than you!\n Play against a different opponent for this round?",
+                    enemy.get_str("name").unwrap_or("Unknown"),
+                    enemy.get_str("tag").unwrap_or("Unknown"),
+                    trophies
+                ))
+        })
+        .components(|c|{
+            c.create_action_row(|a| {
+                a.create_button(|b| {
+                    b.custom_id("yes")
+                        .label("Yes")
+                        .style(ButtonStyle::Primary)
+                })
+                .create_button(|b| {
+                    b.custom_id("no")
+                        .label("No")
+                        .style(ButtonStyle::Danger)
+                })
+            })
+        })
+    }).await?;
+    let mut cic = msg
+        .clone()
+        .into_message()
+        .await?
+        .await_component_interactions(&ctx.serenity_context().shard)
+        .timeout(std::time::Duration::from_secs(TIMEOUT))
+        .build();
+    while let Some(mci) = &cic.next().await{
+        match mci.data.custom_id.as_str(){
+            _ => {
+                return prompt(
+                    ctx,
+                    msg,
+                    "Seriously, how do you try to get here?",
+                    "Happy April's Fool :)",
+                    Some("https://www.icegif.com/wp-content/uploads/2023/01/icegif-162.gif"),
+                    Some(0xFFFF00),
+                ).await
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn progress_bar(ctx: &Context<'_>, msg: &ReplyHandle<'_>) -> Result<(), Error>{
+    for i in 0..=3 {
+        let progress: f64 = match i {
+            0 => 0.0,
+            1 => 33.33,
+            2 => 66.66,
+            3 => 100.0,
+            _ => 0.0, // Default case, not needed but added for completeness
+        };
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        prompt(
+            ctx,
+            msg,
+            "Trophies Disparity Detecting",
+            format!(
+                "<a:loading:1187839622680690689> Comparing trophies between you and your opponent...\n{} {}%\n",
+                format!(
+                    "{done}{yet}",
+                    done = "█".repeat(((progress / 100.0) * 10.0) as usize),
+                    yet = "░".repeat(((100.0 - progress) / 100.0 * 10.0) as usize)
+                ), progress
+            ),
+            None,
+            Some(0xFFFF00),
+        ).await?;
+        
+    }
+    Ok(()) 
 }
 
 ///View list of roles as manager of the tournament
